@@ -1,0 +1,13 @@
+export default {
+	printWidth: 80,
+	tabWidth: 4,
+	useTabs: true,
+	semi: true,
+	singleQuote: true,
+	trailingComma: 'es5',
+	bracketSpacing: true,
+	arrowParens: 'always',
+	endOfLine: 'lf',
+	jsxSingleQuote: false,
+	indetation: 4,
+};

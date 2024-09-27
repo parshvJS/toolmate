@@ -1,0 +1,305 @@
+import DemoVideo from "@/components/custom/DemoVideo";
+import LargeFeatureCard from "@/components/custom/LargeFeatureCard";
+import CommunityExample from "@/components/custom/CommunityExample";
+import FeatureWindow from "@/components/custom/FeatureWindow";
+import Price from "@/components/custom/Price";
+import ButtonCustom from "@/components/custom/ButtonCustom";
+import { Link } from "react-router-dom";
+import { Separator } from "@/components/ui/separator";
+
+export default function Landing() {
+  const largeFeatureCardsContent = [
+    {
+      icon: "/public/assets/icons/largeOrangeToolbox.svg",
+      titleLable: "Tailored for Your Project",
+      title: "Find the Perfect Tool for Every Job",
+      desc: "Matey understands your unique DIY needs and suggests the right tools, from screwdrivers to power drills, ensuring you get the job done efficiently.",
+      ctaText: "Find Your Tools with Matey",
+      mateyImagePath: "/public/assets/matey/tools.svg",
+      leftGradient: true,
+    },
+    {
+      icon: "/public/assets/icons/priceTag.svg",
+      titleLable: "Tools That Fit Your Budget",
+      title: "Get the Best Tools at the Best Prices",
+      desc: "Matey offers the best tool suggestions within your budget, making sure you never break the bank, whether you’re a pro or a beginner DIYer.",
+      ctaText: "See Budget-Friendly Tools",
+      mateyImagePath: "/public/assets/matey/thinking.svg",
+      leftGradient: false,
+    },
+    {
+      icon: "/public/assets/icons/helmet.svg",
+      titleLable: "Work Smarter, Work Safer",
+      title: "Always Equipped with the Right Safety Gear",
+      desc: "Matey ensures you work smarter and safer by recommending the best protective gear—like gloves, goggles, and dust masks—so you stay protected on every DIY project.",
+      ctaText: "Safeguard Your DIY Project",
+      mateyImagePath: "/public/assets/matey/confident.svg",
+      leftGradient: true,
+    },
+  ];
+
+  return (
+    <div className="md:px-7 px-2">
+      <div className="md:mt-28 mt-20">
+        {/* hero section */}
+        <section className="flex justify-between md:flex-row flex-col md:p-6 p-2">
+          {/* left side */}
+          <div className="text-center md:text-left md:w-2/3 place-content-center flex flex-col gap-8">
+            <p className="text-transparent bg-clip-text bg-gradient-to-r from-black via-blac to-orange font-[1000] md:text-8xl text-5xl text-left">
+              Find The Right Tool For Every DIY Job!
+            </p>
+            <p className="md:w-2/3 font-bold md:text-lg text-sm w-full text-left">
+              Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
+            </p>
+            <div className="flex gap-2 items-center md:items-start ">
+              <ButtonCustom
+                navigator="/preview"
+                text="Chat With Matey Now"
+                isArrow={true}
+                isDark={true}
+              />
+            </div>
+            <div className="flex gap-2 flex-col mt-5">
+              {/* users */}
+              <div className="font-bold text-3xl items-center gap-10 text-left w-fit flex  ">
+                <div>
+                  <img
+                    src="/public/assets/icons/image.png"
+                    alt="user"
+                    className="max-w-20"
+                    width={120}
+                  />
+                </div>
+                <Separator
+                  orientation="vertical"
+                  className="border border-gray"
+                />
+                <div className="flex items-center flex-col text-left">
+                  <p className="font-semibold text-left opacity-80 text-slate-500 text-xs">
+                    Trusted by People
+                  </p>
+                  <p className="font-mono md:text-2xl text-lg">100K+ Users</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute inset-0 -z-10 flex justify-center items-center md:top-[40rem] top-[550px]">
+            <img
+              src="/public/assets/images/gradient-circle.svg"
+              alt="gradient-circle"
+            />
+          </div>
+
+          {/* right side */}
+          <div className="mt-10 md:mt-0 flex justify-center">
+            <img
+              src="/public/assets/matey/wavy.svg"
+              alt="matey wavy"
+              width={340}
+              height={300}
+              className="md:w-96 w-56"
+            />
+          </div>
+        </section>
+
+        {/* demo video section */}
+        <section className="w-full mt-20">
+          {/* main/base */}
+          <div className="bg-white md:p-4 p-2 md:border-2 border-slate-400 rounded-2xl">
+            {/* title infography */}
+            <div className="md:flex hidden gap-2 items-center justify-center">
+              <p className="text-3xl md:text-8xl font-semibold">
+                Let Matey Show His
+              </p>
+              <h1 className="text-6xl font-bold">
+                <span className="font-semibold text-3xl md:text-8xl  bg-clip-text text-transparent bg-gradient-to-r from-yellow to-orange drop-shadow-[0_4px_4px_rgba(4,4,4,0.3)]">
+                  Know-how
+                </span>
+              </h1>
+            </div>
+
+            {/* mobile text */}
+            <p className="md:hidden font-semibold text-4xl w-full h-full">
+              Let Matey Show his
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow to-orange drop-shadow-[0_4px_4px_rgba(4,4,4,0.3)]"> Know-How</span>
+            </p>
+            {/* videop */}
+            <DemoVideo />
+          </div>
+        </section>
+
+        {/* mixed color text */}
+        <div className="md:my-20 mt-1 p-2">
+          {/* header */}
+          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
+            Discover how
+            <span className="text-orange"> Matey </span>
+            Makes <br />
+            DIY Easier
+          </p>
+          {/* Large Feature Card */}
+          {largeFeatureCardsContent.map((cardContent, index) => (
+            <LargeFeatureCard key={index} {...cardContent} />
+          ))}
+        </div>
+
+        {/* grid stock video section */}
+        {/* header */}
+        <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
+          How
+          <span className="text-orange text-left"> Matey </span>
+          Simplifies Your <br />
+          DIY Journey
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* card 1 */}
+          <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
+            <video
+              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+              src="/public/video/vid1.mp4"
+              autoPlay
+              loop
+              muted
+            />
+            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+              {/* content */}
+              <div>
+                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                  Find the Right Tools Fast
+                </p>
+                <p className="text-slate-300 text-xl font-bold mt-4 w-3/4">
+                  Effortlessly discover the perfect tools tailored to your
+                  unique projects.
+                </p>
+              </div>
+
+              {/* CTA */}
+              <Link
+                to={"/preview"}
+                className="w-fit bg-orange hover:bg-lightOrange rounded-lg p-4 text-white hover:bg-transparent hover:text-orange border-2 border-orange"
+              >
+                <p className="font-bold">Explore Tool Suggestions</p>
+              </Link>
+            </div>
+          </div>
+
+          {/* card2 */}
+          <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
+            <img
+              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+              src="/public/assets/images/tools.jpg"
+            />
+            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+
+            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+              {/* content */}
+              <div>
+                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                  Your Project, Your Tools, One Click
+                </p>
+                <p className="text-slate-300 text-xl font-semibold mt-4 w-3/4">
+                  Get a complete list of what you need, instantly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* card3 */}
+          <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
+            <img
+              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+              src="/public/assets/images/personalized.jpg"
+            />
+            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+
+            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+              {/* content */}
+              <div>
+                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                  Keep Track of Every Project and Tool
+                </p>
+                <p className="text-white text-xl font-semibold mt-4 w-3/4">
+                  Personalized help based on what you've used before.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* card 4 */}
+          <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
+            <video
+              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+              src="/public/video/vid2.mp4"
+              autoPlay
+              loop
+              muted
+              preload="auto"
+              playsInline
+            />
+            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+              {/* content */}
+              <div>
+                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                  Join a DIY Community
+                </p>
+                <p className="text-slate-300 text-xl font-bold mt-4 w-3/4">
+                  Connect, share, and learn with fellow DIY enthusiasts through
+                  our dedicated community.
+                </p>
+              </div>
+
+              {/* CTA */}
+              <Link
+                to={"/preview"}
+                className="w-fit bg-orange hover:bg-lightOrange rounded-lg p-4 text-white hover:bg-transparent hover:text-orange border-2 border-orange"
+              >
+                <p className="font-bold">Join the DIY Community</p>
+              </Link>
+            </div>
+          </div>
+        </div>
+        {/* community section */}
+
+        <div className="mx-16">
+
+          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left ">
+            Explore
+            <span className="text-orange text-left"> Interactive </span>
+            Community
+          </p>
+          {/* content */}
+          <CommunityExample />
+        </div>
+
+        {/* feature window section */}
+
+        <div className="md:my-36 my-20">
+          {/* header */}
+          <p className="md:text-8xl text-4xl  font-black hidden md:block">
+            Every Tool You Need,
+            <span className="text-orange"> Matey’s </span>
+            Got You Covered!
+          </p>
+          <FeatureWindow />
+        </div>
+
+        {/* price page */}
+
+        <div className="my-20 md:my-36">
+          {/* header */}
+          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
+            Get Started With
+            <span className="text-orange text-left"> ToolMate </span>
+            Today
+          </p>
+          {/* prices */}
+
+          <Price />
+        </div>
+      </div>
+    </div>
+  );
+}
