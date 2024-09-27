@@ -8,7 +8,7 @@ export default function OpenLayout() {
       <div className="w-full h-full">
         <Navbar />
 
-        {/* <Outlet /> */}
+        <Outlet />
         <Footer />
       </div>
     </>

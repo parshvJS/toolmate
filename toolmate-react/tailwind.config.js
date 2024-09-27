@@ -4,14 +4,29 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontSize: {
+        'xxs': '1px', // 6px
+        'xs': '4px',  // 8px
+        'sm': '10px', // 10px
+        'base': '12px', // 12px
+        'md': '14px',  // 14px
+        'lg': '16px',  // 16px
+        'xl': '18px',  // 18px
+        '2xl': '20px', // 20px
+        '3xl': '24px', // 24px
+        '4xl': '30px', // 30px
+        '5xl': '36px', // 36px
+        '6xl': '48px', // 48px
+        '7xl': '64px', // 64px
+      },
       gridTemplateColumns: {
-        sidebar: "350px auto", //for sidebar layout
+        sidebar: "310px auto", //for sidebar layout
         "sidebar-collapsed": "64px auto", //for collapsed sidebar layout
       },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-in": "slideIn 0.5s ease-out",
-        "rotate-shake": "rotate-shake 1.9s infinite", // rotation animation
+        "rotate-shake": "rotate-shake 1.9s infinite",
       },
       keyframes: {
         gradientShift: {
@@ -33,7 +48,7 @@ export default {
         },
         "rotate-shake": {
           "0%, 100%": { transform: "rotate(0deg)" },
-          "50%": { transform: "rotate(5deg)" }, // slight rotation
+          "50%": { transform: "rotate(5deg)" },
         },
       },
       borderRadius: {
@@ -83,9 +98,16 @@ export default {
           5: "hsl(var(--chart-5))",
         },
         yellow: "#FFD700",
-        ligherYellow: "#FFFEA6",
+        lighterYellow: "#FFFEA6",
         lightYellow: "#FEE773",
         mangoYellow: "#FDFFB1",
+        paleYellow: "#FFF9C4",
+        softYellow: "#FFF176",
+        goldenYellow: "#FFEB3B",
+        amberYellow: "#FFC107",
+        darkYellow: "#FFA000",
+        deepYellow: "#FF8F00",
+        whiteYellow:"#FFFCEA",
         orange: "#FF5900",
         gray: "#606060",
         white: "#FFFFFF",
@@ -103,18 +125,6 @@ export default {
           800: "#993D1F",
           900: "#662914",
         },
-        // yellow: {
-        //   50: "#FFFBEB",
-        //   100: "#FEF3C7",
-        //   200: "#FDE68A",
-        //   300: "#FCD34D",
-        //   400: "#FBBF24",
-        //   500: "#F59E0B",
-        //   600: "#D97706",
-        //   700: "#B45309",
-        //   800: "#92400E",
-        //   900: "#78350F",
-        // },
       },
       gradientColorStops: {
         "yellow-orange": ["#FFD700", "#FF5900"],
@@ -123,10 +133,6 @@ export default {
       },
       fontFamily: {
         roboto: ["Roboto", "sans-serif"],
-      },
-      fontSize: {
-        professional: ["18px", "1.6"],
-        bold: ["24px", "1.8"],
       },
     },
   },

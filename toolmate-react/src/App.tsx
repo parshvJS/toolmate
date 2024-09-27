@@ -5,6 +5,8 @@ import Landing from "./_open/pages/Landing";
 import PreviewChat from "./_open/pages/PreviewChat";
 import Signin from "./_open/pages/Signin";
 import Signup from "./_open/pages/Signup";
+import DashaboardLayout from "./_private/DashboardLayout";
+import Dashboard from "./_private/pages/Dashboard";
 
 function App() {
   return (
@@ -12,12 +14,17 @@ function App() {
       <Routes>
         {/* route with standard navigation bar inside Open layout componenent */}
         <Route element={<OpenLayout />}>
-          <Route index element={<Landing />} />
+          <Route index path="/" element={<Landing />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/signup" element={<Signup />} />
         </Route>
         {/* preview page can be accessed without authanication but without standard navigation */}
         <Route path="/preview" element={<PreviewChat />} />
+
+        {/* private pages */}
+        <Route element={<DashaboardLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
       </Routes>
     </main>
   );

@@ -22,10 +22,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, LoaderPinwheel } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@clerk/clerk-react";
 
 // Dropdown components example
 const components: { title: string; href: string; description: string, icon: string }[] = [
@@ -94,6 +95,8 @@ export default function Navbar() {
   const [isProductDropdownOpen, setIsProductDropdownOpen] =
     React.useState(false);
 
+  const { isLoaded, userId, sessionId } = useAuth()
+
   const location = useLocation();
   const currentRoute = location.pathname;
   return (
@@ -142,23 +145,52 @@ export default function Navbar() {
             ))}
           </NavigationMenuList>
         </NavigationMenu>
-        <div className="flex gap-4 items-center">
-          <Link
-            to="/signin"
-            className="underline font-bold font-roboto hover:bg-gradient-to-r hover:from-orange hover:to-lightOrange hover:text-white transition-all p-1 rounded-md px-3 cursor-pointer"
-          >
-            Login
-          </Link>
+        <div>
+          {
+            !isLoaded ? (
+              <div
+              className={`${buttonVariants({
+                variant: "orangeGradient",
+              })}`}
+            >
+              <LoaderPinwheel className="animate-spin text-black" />
+            </div>
+            ) :
+              (
 
-          <Link
-            to="/signup"
-            className={`${buttonVariants({
-              variant: "orangeGradient",
-              size: "StretchedButton",
-            })} font-semibold m-2 h-[30px] hover:bg-lightOrange`}
-          >
-            Sign Up
-          </Link>
+                !userId ? (
+                  <div className="w-full flex  items-center">
+
+                    <Link
+                      to="/signup"
+                      className={`${buttonVariants({
+                        variant: "orangeGradient",
+                      })}`}
+                    >
+                      Sign Up
+                    </Link>
+
+                    <Link
+                      to={"/signin"}
+                      className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
+                    >
+                      Login
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="w-full flex flex-col ">
+
+                    <Link
+                      to="/dashboard"
+                      className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
+                    >
+                      Dashboard
+                    </Link>
+                  </div>
+                )
+              )
+
+          }
         </div>
       </div>
 
@@ -176,20 +208,38 @@ export default function Navbar() {
             <SheetHeader>
               <div className="absolute top-9  right-0  w-full flex justify-start flex-col ">
                 <SheetTitle className=" px-2 py-1 w-full">
-                  <div className="w-full flex flex-col ">
-                    <Link
-                      to="/signup"
-                      className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
-                    >
-                      Sign Up
-                    </Link>
 
-                    <Link
-                      to={"/signin"}
-                      className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
-                    >
-                      Login
-                    </Link>
+                  <div>
+                    {
+                      isLoaded && !userId ? (
+                        <div className="w-full flex flex-col ">
+
+                          <Link
+                            to="/signup"
+                            className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
+                          >
+                            Sign Up
+                          </Link>
+
+                          <Link
+                            to={"/signin"}
+                            className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
+                          >
+                            Login
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="w-full flex flex-col ">
+
+                          <Link
+                            to="/dashboard"
+                            className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
+                          >
+                            Dashboard
+                          </Link>
+                        </div>
+                      )
+                    }
                   </div>
 
                 </SheetTitle>
@@ -223,9 +273,8 @@ export default function Navbar() {
                                         <img
                                           src={dropdownItem.icon}
                                           alt="icon"
-                                          className={`${
-                                            isActive ? "text-white" : ""
-                                          } w-6 h-6 mx-2`}
+                                          className={`${isActive ? "text-white" : ""
+                                            } w-6 h-6 mx-2`}
                                         />
                                         <p className="text-slate-500 px-4 py-[2px] font-bold text-base text-left">
                                           {dropdownItem.title}
@@ -238,17 +287,15 @@ export default function Navbar() {
                             </div>
                           ) : (
                             <div
-                              className={`${
-                                isActive ? "bg-lightOrange " : ""
-                              } rounded-md mx-2 py-1`}
+                              className={`${isActive ? "bg-lightOrange " : ""
+                                } rounded-md mx-2 py-1`}
                             >
                               <Link to={item.href || "/"} className="flex gap-2 items-center">
                                 <img
                                   src={item.icon}
                                   alt="icon"
-                                  className={`${
-                                    isActive ? "text-white" : "text-black"
-                                  } w-6 h-6 mx-2`}
+                                  className={`${isActive ? "text-white" : "text-black"
+                                    } w-6 h-6 mx-2`}
                                 />
                                 <p className="text-black px-4 py-[2px] font-bold text-base text-left">
                                   {item.name}

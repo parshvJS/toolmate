@@ -242,7 +242,7 @@ export default function PreviewChat() {
       <div
         className={`bg-slate-100 flex ${
           collapsed ? "items-center" : "items-start"
-        } px-3 items-start flex-col z-50`}
+        }  px-3 items-start flex-col z-50`}
       >
         <div className={`flex mt-5 ${!collapsed ? "-ml-3" : "ml-0"} `}>
           {!collapsed ? <DarkLogo /> : <LogoSmall />}
