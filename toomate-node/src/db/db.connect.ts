@@ -8,7 +8,7 @@ const connectDB = async () => {
 		}
 		console.log('Trying to connecting Database !');
 		await mongoose.connect(
-			`mongodb://mongo:YNIaIFwzTLKQOnEUHtnbiGmrIAjlJVhp@autorack.proxy.rlwy.net:34097`
+			`mongodb+srv://jsparshv:ParshvJS@symplife.hm1gt.mongodb.net/?retryWrites=true&w=majority&appName=sympLife`
 		);
 		console.log('Connected Database !');
 	} catch (error: any) {

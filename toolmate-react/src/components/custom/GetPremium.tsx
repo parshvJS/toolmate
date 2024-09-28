@@ -11,7 +11,7 @@ import Price from "./Price";
 
 export default function GetPremium() {
   return (
-    <div className="flex justify-between md:w-[400px] w-[500px] h-fit p-5 bg-gradient-to-t from-lightOrange via-yellow-500to-yellow-500rounded-lg ">
+    <div className="flex justify-between md:w-[400px] w-[500px] h-fit p-5 bg-gradient-to-t from-lightOrange via-softYellow to-paleYellow rounded-lg ">
       {/* icon */}
       <div>
         <img src="/public/assets/icons/doze.svg" width={80} alt="doze" />

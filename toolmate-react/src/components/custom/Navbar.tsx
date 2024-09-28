@@ -26,7 +26,7 @@ import { ChevronDown, ChevronUp, LoaderPinwheel } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@clerk/clerk-react";
+import { SignOutButton, useAuth } from "@clerk/clerk-react";
 
 // Dropdown components example
 const components: { title: string; href: string; description: string, icon: string }[] = [
@@ -149,12 +149,12 @@ export default function Navbar() {
           {
             !isLoaded ? (
               <div
-              className={`${buttonVariants({
-                variant: "orangeGradient",
-              })}`}
-            >
-              <LoaderPinwheel className="animate-spin text-black" />
-            </div>
+                className={`${buttonVariants({
+                  variant: "orangeGradient",
+                })}`}
+              >
+                <LoaderPinwheel className="animate-spin text-black" />
+              </div>
             ) :
               (
 
@@ -178,11 +178,14 @@ export default function Navbar() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="w-full flex flex-col ">
+                  <div className="w-full flex h-full">
 
+                    <SignOutButton>
+                      <button className="w-full">My custom button</button>
+                    </SignOutButton>
                     <Link
                       to="/dashboard"
-                      className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
+                      className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold items-center w-full`}
                     >
                       Dashboard
                     </Link>

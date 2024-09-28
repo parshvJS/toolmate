@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { produceMessage, startMessageConsumer } from './services/kafka.js';
 import { handleSocketSerivce } from './services/socket.js';
+import { clerkRoute } from './routes/webhooks/clerk.route.js';
 
 const app = express();
 const PORT = 5000;
@@ -33,6 +34,10 @@ app.use(
 	})
 );
 
+app.use("/webhook/clerk", express.raw({ type: 'application/json' }));
+
+app.use('/webhook',clerkRoute)
+
 // Create an HTTP server
 const server = http.createServer(app);
 startMessageConsumer();
@@ -52,8 +57,10 @@ app.get('/socket', (req, res) => {
 	res.send('Socket.IO Server for Streaming Responses');
 });
 
-// Handle Socket.IO connections
+
 io.on('connection',(socket:Socket)=>handleSocketSerivce(socket));
+
+// Handle Socket.IO connections
 
 server.listen(PORT, () => {
 	console.log(`Server running on http://localhost:${PORT}`);
