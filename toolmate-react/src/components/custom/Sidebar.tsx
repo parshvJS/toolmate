@@ -31,7 +31,7 @@ export default function Sidebar({
 
 
     return (
-        <div className={`${collabsable ? "px-1" : "px-3"} bg-whiteYellow border-r-2 border-slate-300`}>
+        <div className={`${collabsable ? "px-1" : "px-3"} bg-whiteYellow border-r-2 border-slate-300 `}>
             {/* logo */}
             <div>
                 <div className={`flex mt-5 items-center ${collabsable ? "justify-center" : "justify-start"} `}>
@@ -77,22 +77,22 @@ export default function Sidebar({
             <div className={`${collabsable ? "hidden" : "flex"} flex-col`}>
                 {navItem.map((item, index) => {
                     return (
-                        <div key={index} className="flex items-center gap-2 py-1 px-4 hover:bg-softYellow cursor-pointer rounded-lg">
-                            <img src={item.icon} alt={item.title} className="w-10 h-10" />
-                            <p className="font-semibold">{item.title}</p>
+                        <div key={index} className="flex items-center  gap-2 py-2 px-4 hover:bg-softYellow cursor-pointer rounded-lg">
+                            <img src={item.icon} alt={item.title} className="w-8 h-8" />
+                            <p className="font-semibold text-sm">{item.title}</p>
                         </div>
                     )
                 })}
             </div>
 
             {/* mobile nav */}
-            <div className={`${collabsable ? "flex" : "hidden"} flex-col`}>
+            <div className={`${collabsable ? "flex" : "hidden"} flex-col gap-2`}>
                 {navItem.map((item, index) => {
                     return <TooltipProvider>
                         <Tooltip delayDuration={70}>
                             <TooltipTrigger>
-                                <div className="flex items-center gap-2 px-2 py-2 hover:bg-softYellow cursor-pointer rounded-lg">
-                                    <img src={item.icon} alt={item.title} className="w-10 h-10" />
+                                <div className="flex items-center p-1  justify-center hover:bg-softYellow cursor-pointer rounded-lg">
+                                    <img src={item.icon} alt={item.title} className="w-8 h-8" />
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="bg-paleYellow">

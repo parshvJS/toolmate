@@ -45,8 +45,9 @@ export default function Landing() {
         <section className="flex justify-between md:flex-row flex-col md:p-6 p-2">
           {/* left side */}
           <div className="text-center md:text-left md:w-2/3 place-content-center flex flex-col gap-8">
-            <p className="text-transparent bg-clip-text bg-gradient-to-r from-black via-blac to-orange font-[1000] md:text-8xl text-5xl text-left">
-              Find The Right Tool For Every DIY Job!
+            <p className="text-transparent bg-clip-text bg-gradient-to-r from-black  to-orange font-[1000] md:text-8xl  text-6xl text-left">
+              Find The Right<br /> Tool For
+               Every <br /> DIY Job!
             </p>
             <p className="md:w-2/3 font-bold md:text-lg text-sm w-full text-left">
               Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.

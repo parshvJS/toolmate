@@ -178,16 +178,14 @@ export default function Navbar() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="w-full flex h-full">
+                  <div className="w-full flex h-full gap-2">
 
-                    <SignOutButton>
-                      <button className="w-full">My custom button</button>
-                    </SignOutButton>
+
                     <Link
                       to="/dashboard"
-                      className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold items-center w-full`}
+                      className={`hover:from-white hover:to-white hover:border-orange hover:text-orange bg-gradient-to-tr from-orange to-lightOrange w-full text-base text-black border-2 border-white rounded-md px-4 py-2 font-semibold items-center `}
                     >
-                      Dashboard
+                      Open Toolmate
                     </Link>
                   </div>
                 )

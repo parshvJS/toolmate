@@ -1,3 +1,4 @@
+import { UserPayment } from "../models/userPayment.model.js";
 import User from "../models/user.model.js";
 
 // Create a new user
@@ -13,11 +14,19 @@ export const createUser = async (userData: any) => {
     updatedAt: new Date(userData.updated_at),
   });
 
+  const newPayment = new UserPayment({
+    userId: newUser._id,
+    amountPaid: 0,
+  });
+
+  console.log("New User and new Payment user is created!", newPayment);
+
   try {
     await newUser.save();
-
+    await newPayment.save();
+    console.log("Data saved successfully!");
   } catch (error) {
-
+    console.error("Error saving data:", error);
     throw error;
   }
 };
