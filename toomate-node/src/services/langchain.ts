@@ -11,7 +11,7 @@ import {
 	RunnablePassthrough,
 	RunnableSequence,
 } from '@langchain/core/runnables';
-import { getChatMessages } from '../utils/utilsFunction.js';
+import { getChatMessages, getPremiumUserChatMessage } from '../utils/utilsFunction.js';
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -93,19 +93,21 @@ export async function findAndExecuteIntend(
 	sessionId: string,
 	socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) {
-	const chatHistory = await getChatMessages(
+	const chatHistory = await getPremiumUserChatMessage(
 		sessionId,
 		Number(process.env.CONTEXT_LIMIT_CHAT) || 15
 	); // get chat history from database
 
 	if (chatHistory.length > 0) {
-		const getIntendPrompt = `Analyze and select the intents of the user from the following options: 
-  1. Normal advice (default, must have)
-  2. Community suggest
-  3. Expert suggest
-  4. Product suggestion
-  5. Guidance for project
-  User Prompt: {prompt} | Never select too many intents, keep it balanced and select the ones that are good to have. | Selected intents (return a parsable array containing the numbers of the selected intents):`;
+		const getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]),you can stack the intend also :
+1.Normal advice (default, must have)
+2.Community suggestion
+3.Product suggestion 
+4.Guidance for project 
+5.Budget Planning
+6.Project time estimation
+User prompt:{prompt}
+Return only the selected intent numbers in an array:`;
 
 		const intendTemplate = PromptTemplate.fromTemplate(getIntendPrompt);
 
@@ -123,7 +125,7 @@ export async function findAndExecuteIntend(
 		});
 
 		console.log('user intend', JSON.parse(user_intend));
-		const intend = JSON.parse(user_intend);
+		const intend = JSON.parse(user_intend.replace(['`', ' '], ['', '']));
 
 		// go thought all intends of user
 		for (let i = 0; i < intend.length; i++) {
@@ -156,3 +158,26 @@ export async function findAndExecuteIntend(
 
 // get memory from session and database
 // generate
+
+export async function getChatName(prompt: string) {
+
+	const chatNamePrompt = `Given the following prompt, generate a suitable and concise name for this conversation that reflects the main topic or theme: {prompt}: Chat Name:`;
+	const chatNameTemplate = PromptTemplate.fromTemplate(chatNamePrompt);
+
+	const chatNameLLMChain = chatNameTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfChatName = RunnableSequence.from([
+		chatNameLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	const chatName = await runnableChainOfChatName.invoke({
+		prompt, // User prompt
+	});
+	console.log('chat name', chatName);
+	return chatName;
+}
+
+

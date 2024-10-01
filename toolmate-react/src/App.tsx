@@ -7,6 +7,7 @@ import Signin from "./_open/pages/Signin";
 import Signup from "./_open/pages/Signup";
 import DashaboardLayout from "./_private/DashboardLayout";
 import Dashboard from "./_private/pages/Dashboard";
+import { ChatPage } from "./_private/socket/pages/ChatPage";
 
 function App() {
   return (
@@ -20,10 +21,12 @@ function App() {
         </Route>
         {/* preview page can be accessed without authanication but without standard navigation */}
         <Route path="/preview" element={<PreviewChat />} />
+        {/* <Route path="/c/:slug" element={<PreviewChat />} /> */}
 
         {/* private pages */}
         <Route element={<DashaboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/matey/:sessionId" element={<ChatPage />} />
         </Route>
       </Routes>
     </main>

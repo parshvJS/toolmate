@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 
 import {
@@ -49,6 +49,8 @@ import { cn } from "@/lib/utils";
 let socket: Socket;
 
 export default function PreviewChat() {
+  const {slug} = useParams()
+  console.log(slug,"--------------------------------")
   const toolmateModels = [
     {
       name: "ToolMate Free",
@@ -110,7 +112,7 @@ export default function PreviewChat() {
       socket.disconnect();
     }
 
-    socket = io("http://localhost:5000");
+    socket = io(import.meta.env.VITE_SERVER_URL);
 
     const handleConnect = () => console.log("Socket connected");
     const handleAcknowledgement = (data: { sessionId: string }) =>

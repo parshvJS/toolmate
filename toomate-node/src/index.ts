@@ -7,7 +7,7 @@ import cors from 'cors';
 import { handleSocketSerivce } from './services/socket.js';
 import { clerkRoute } from './routes/webhooks/clerk.route.js';
 import { getUserPaidAndPersonalInfo } from './routes/_private/getUserPaidAndPersonalInfo.route.js';
-import { startMessageConsumer } from './services/kafka.js';
+import { startMessageConsumer, startNewMessageConsumer } from './services/kafka.js';
 
 const app = express();
 const PORT = 5000;
@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
 
 // Start Kafka consumer
 startMessageConsumer();
-
+startNewMessageConsumer();
 // Create an HTTP server
 const server = http.createServer(app);
 

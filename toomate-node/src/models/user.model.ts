@@ -12,6 +12,8 @@ export interface User extends Document {
 }
 
 const UserSchema = new mongoose.Schema({
+
+  // clerk
   id: {
     type: String,
     default: () => new mongoose.Types.ObjectId().toString(),
@@ -43,6 +45,30 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+
+  // custom 
+  status: {
+    type: [String],
+    default: "active" // can be [active,warned,suspended,blocked]
+  },
+  globalContext: {
+    type: [String],
+    default: [] // this will containt different memory for the particular user that can be used in creating next response for more personalized suggestions
+  },
+  toolInvetory: {
+    type: [{
+      toolId: String,
+      count: Number
+    }],
+  },
+  wishList: {
+    type: [{
+      toolId: String,
+      count: Number
+    }]
+  }
+
 });
 
 const User: Model<User> = mongoose.model<User>('User', UserSchema);

@@ -13,12 +13,11 @@ export default function Dashboard() {
     const [mainInput, setMainInput] = useState("");
     const [stateOfButton, setStateOfButton] = useState(-1);
 
-
     // main message function 
-
 
     async function handleUserPrompt() {
         console.log(mainInput, "is here")
+        
     }
     return (
         <div className="w-full h-full ">

@@ -20,14 +20,24 @@ const CommunityChatSchema = new mongoose.Schema(
     },
     fileUrls: {
       type: [String], // Array of file URLs
+      default:[]
     },
     previewUrls: {
       type: [String], // Array of preview image URLs
+      default:[]
     },
     isVisible: {
       type: Boolean,
       default: true,
     },
+    seenBy: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'User',
+    },
+    isDeletedByAdmin: {
+      type: Boolean,
+      default: false,
+    }
   },
   { timestamps: true }
 );

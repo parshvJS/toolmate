@@ -34,6 +34,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         id,
         setId,
     };
+    console.log(value);
 
     return (
         <UserContext.Provider value={value}>
@@ -42,5 +43,5 @@ function UserContextProvider({ children }: { children: ReactNode }) {
     );
 }
 
-export default UserContextProvider;
+export default UserContextProvider; 
 export { UserContext };
