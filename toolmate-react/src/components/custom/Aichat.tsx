@@ -9,7 +9,7 @@ export default function Aichat({ message }: { message: string }) {
       <div className="flex items-start gap-2 justify-start">
         {/* Chat Icon */}
         {/* {showExpression(expresion)} */}
-        <img src="/public/assets/icons/blur-ball.svg" alt="matey" width={45} />
+        <img src="/assets/icons/blur-ball.svg" alt="matey" width={45} />
         {/* Message Box */}
         <div className="font-roboto custom-p  flex flex-col w-fit bg-gray-100  p-3 rounded-md ">
           {message == "" ? (

@@ -35,7 +35,7 @@ const components: { title: string; href: string; description: string, icon: stri
     href: "/preview",
     description:
       "A modal dialog that interrupts the user with important content and expects a response.",
-    icon: "/public/assets/mobileNavIcons/hammer.svg"
+    icon: "/assets/mobileNavIcons/hammer.svg"
   },
 
 ];
@@ -52,42 +52,42 @@ const navItems: NavItem[] = [
   {
     name: "Home",
     href: "/",
-    icon: "/public/assets/mobileNavIcons/home.svg"
+    icon: "/assets/mobileNavIcons/home.svg"
   },
   {
     name: "Products", // Dropdown example
     dropdown: components,
-    icon: "/public/assets/mobileNavIcons/box.svg"
+    icon: "/assets/mobileNavIcons/box.svg"
   },
   {
     name: "Pricing",
     href: "/pricing",
-    icon: "/public/assets/mobileNavIcons/percentage.svg"
+    icon: "/assets/mobileNavIcons/percentage.svg"
   },
   {
     name: "Partner",
     href: "/partner",
-    icon: "/public/assets/mobileNavIcons/partner.svg"
+    icon: "/assets/mobileNavIcons/partner.svg"
   },
   {
     name: "About",
     href: "/about",
-    icon: "/public/assets/mobileNavIcons/about.svg"
+    icon: "/assets/mobileNavIcons/about.svg"
   },
   {
     name: "Contact Us",
     href: "/contact",
-    icon: "/public/assets/mobileNavIcons/contact.svg"
+    icon: "/assets/mobileNavIcons/contact.svg"
   },
   {
     name: "Blog",
     href: "/blog",
-    icon: "/public/assets/mobileNavIcons/blog.svg"
+    icon: "/assets/mobileNavIcons/blog.svg"
   },
   {
     name: "Help & Support",
     href: "/help",
-    icon: "/public/assets/mobileNavIcons/help.svg"
+    icon: "/assets/mobileNavIcons/help.svg"
   },
 ];
 
@@ -197,7 +197,7 @@ export default function Navbar() {
 
       {/* mobile navigation menu */}
 
-      <div className="flex p-2 md:hidden items-center justify-between">
+      <div className="flex px-2 py-1 md:hidden items-center justify-between">
         <Logo />
         <Sheet>
           <SheetTrigger>

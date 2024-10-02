@@ -6,7 +6,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/largeSmile.svg"
+          src="/assets/matey-emoji/largeSmile.svg"
           alt="exited"
           width={55}
           height={55}
@@ -16,7 +16,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/hello.svg"
+          src="/assets/matey-emoji/hello.svg"
           alt="hello"
           width={55}
           height={55}
@@ -26,7 +26,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/smile.svg"
+          src="/assets/matey-emoji/smile.svg"
           alt="happy"
           width={55}
           height={55}
@@ -36,7 +36,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/take.svg"
+          src="/assets/matey-emoji/take.svg"
           alt="offer"
           width={55}
           height={55}
@@ -46,7 +46,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/thumb1.svg"
+          src="/assets/matey-emoji/thumb1.svg"
           alt="thumb1"
           width={55}
           height={55}
@@ -56,7 +56,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/thumbs2.svg"
+          src="/assets/matey-emoji/thumbs2.svg"
           alt="thumb2"
           width={55}
           height={55}
@@ -66,7 +66,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/tool.svg"
+          src="/assets/matey-emoji/tool.svg"
           alt="tool"
           width={55}
           height={55}
@@ -76,7 +76,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/thinking.svg"
+          src="/assets/matey-emoji/thinking.svg"
           alt="thinking"
           width={55}
           height={55}
@@ -86,7 +86,7 @@ export default function MateyExpression({expression}:{expression: string}) {
       return (
         <img
           className={emojiClass}
-          src="/public/assets/matey-emoji/smile.svg"
+          src="/assets/matey-emoji/smile.svg"
           alt="exited"
           width={55}
           height={55}

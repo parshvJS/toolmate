@@ -13,7 +13,7 @@ export const pricing = [
           tabName: "month",
           color: ["#E8E8E8", "#A7A7A7"],
           isActivePlan: true,
-          icons: "/public/assets/icons/wrench.svg",
+          icons: "/assets/icons/wrench.svg",
           featureList: [
             {
               isTicked: true,
@@ -35,7 +35,7 @@ export const pricing = [
           tabName: "months",
           color: ["#FFF2AE", "#FFD700"],
           isActivePlan: false,
-          icons: "/public/assets/icons/gear.svg",
+          icons: "/assets/icons/gear.svg",
           featureList: [
             {
               isTicked: true,
@@ -67,7 +67,7 @@ export const pricing = [
           price: "$20/Month",
           title: "Toolmate Pro",
           tabName: "year",
-          icons: "/public/assets/icons/toolbox.svg",
+          icons: "/assets/icons/toolbox.svg",
           color: ["#FBDF29", "#EF5401"],
           isActivePlan: false,
           featureList: [
@@ -114,7 +114,7 @@ export const pricing = [
           tabName: "month",
           color: ["#E8E8E8", "#A7A7A7"],
           isActivePlan: true,
-          icons: "/public/assets/icons/wrench.svg",
+          icons: "/assets/icons/wrench.svg",
           featureList: [
             {
               isTicked: true,
@@ -134,7 +134,7 @@ export const pricing = [
           price: "$61.20 / 6 Months (15% off)",
           title: "Toolmate Essential",
           color: ["#FFF2AE", "#FFD700"],
-          icons: "/public/assets/icons/gear.svg",
+          icons: "/assets/icons/gear.svg",
           isActivePlan: false,
           featureList: [
             {
@@ -167,7 +167,7 @@ export const pricing = [
           price: "$102 / 6 Months (15% off)",
           title: "Toolmate Pro",
           color: ["#FBDF29", "#FF7C36"],
-          icons: "/public/assets/icons/toolbox.svg",
+          icons: "/assets/icons/toolbox.svg",
           isActivePlan: false,
 
           featureList: [
@@ -215,7 +215,7 @@ export const pricing = [
           isActivePlan: true,
 
           color: ["#E8E8E8", "#A7A7A7"],
-          icons: "/public/assets/icons/wrench.svg",
+          icons: "/assets/icons/wrench.svg",
           featureList: [
             {
               isTicked: true,
@@ -235,7 +235,7 @@ export const pricing = [
           price: "$100.80 / Year (30% off)",
           title: "Toolmate Essential",
           color: ["#FFF2AE", "#FFD700"],
-          icons: "/public/assets/icons/gear.svg",
+          icons: "/assets/icons/gear.svg",
           isActivePlan: false,
           featureList: [
             {
@@ -269,7 +269,7 @@ export const pricing = [
           title: "Toolmate Pro",
           color: ["#FBDF29", "#FF7C36"],
           isActivePlan: false,
-          icons: "/public/assets/icons/toolbox.svg",
+          icons: "/assets/icons/toolbox.svg",
           featureList: [
             {
               isTicked: true,

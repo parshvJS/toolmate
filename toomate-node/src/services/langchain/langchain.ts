@@ -1,17 +1,19 @@
-import { Chat } from '../models/chat.model.js';
+import { Chat } from '../../models/chat.model.js';
 import { ChatOpenAI } from '@langchain/openai';
 import { Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import dotenv from 'dotenv';
-import connectDB from '../db/db.connect.js';
-import { produceMessage } from './kafka.js';
+import connectDB from '../../db/db.connect.js';
+import { produceMessage } from '../kafka.js';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
 	RunnablePassthrough,
 	RunnableSequence,
 } from '@langchain/core/runnables';
-import { getChatMessages, getPremiumUserChatMessage } from '../utils/utilsFunction.js';
+import { getChatMessages, getPremiumUserChatMessage } from '../../utils/utilsFunction.js';
+import { tool } from "@langchain/core/tools";
+import { tools } from './tools.js';
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -93,14 +95,14 @@ export async function findAndExecuteIntend(
 	sessionId: string,
 	socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) {
+	console.log("prompt", prompt);
 	const chatHistory = await getPremiumUserChatMessage(
 		sessionId,
 		Number(process.env.CONTEXT_LIMIT_CHAT) || 15
 	); // get chat history from database
 
-	if (chatHistory.length > 0) {
-		const getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]),you can stack the intend also :
-1.Normal advice (default, must have)
+	const getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]),you can stack the intend also :
+1.Normal advice (default, must have for each prompt)
 2.Community suggestion
 3.Product suggestion 
 4.Guidance for project 
@@ -109,50 +111,111 @@ export async function findAndExecuteIntend(
 User prompt:{prompt}
 Return only the selected intent numbers in an array:`;
 
-		const intendTemplate = PromptTemplate.fromTemplate(getIntendPrompt);
+	const intendTemplate = PromptTemplate.fromTemplate(getIntendPrompt);
 
-		const intendLLMChain = intendTemplate
-			.pipe(llm)
-			.pipe(new StringOutputParser());
+	const intendLLMChain = intendTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
 
-		const runnableChainOfIntend = RunnableSequence.from([
-			intendLLMChain,
-			new RunnablePassthrough(),
-		]);
+	const runnableChainOfIntend = RunnableSequence.from([
+		intendLLMChain,
+		new RunnablePassthrough(),
+	]);
 
-		const user_intend = await runnableChainOfIntend.invoke({
-			prompt, // User prompt
-		});
+	const user_intend = await runnableChainOfIntend.invoke({
+		prompt, // User prompt
+	});
 
-		console.log('user intend', JSON.parse(user_intend));
-		const intend = JSON.parse(user_intend.replace(['`', ' '], ['', '']));
+	console.log('user intend', JSON.parse(user_intend));
+	const intend = JSON.parse(user_intend.replace(['`', ' '], ['', '']));
 
-		// go thought all intends of user
-		for (let i = 0; i < intend.length; i++) {
-			switch (intend[i]) {
-				case 1:
-
-					break;
-				case 2:
-					// get memory from session and database
-					// generate
-					break;
-				case 3:
-					// get memory from session and database
-					// generate
-					break;
-				case 4:
-					// get memory from session and database
-					// generate
-					break;
-				case 5:
-					// get memory from session and database
-					// generate
-					break;
-			}
+	// go thought all intends of user
+	for (let i = 0; i < intend.length; i++) {
+		switch (intend[i]) {
+			case 1:
+				await streamResponse(sessionId, prompt, chatHistory, socket)
+				break;
+			case 2:
+				// get memory from session and database
+				// generate
+				break;
+			case 3:
+				// get memory from session and database
+				// generate
+				break;
+			case 4:
+				// get memory from session and database
+				// generate
+				break;
+			case 5:
+				// get memory from session and database
+				// generate
+				break;
 		}
 	}
+
 }
+
+
+async function streamResponse(sessionId: string, prompt: string, chatHistory: any[], socket: Socket) {
+	console.log("Streaming response for", prompt);
+	let gatheredResponse=  '';
+	const streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
+	| User Prompt: ${prompt} 
+	Context of chat: ${JSON.stringify(chatHistory)} 
+	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
+	const stream = await llm.stream(streamPrompt);
+
+	for await (const chunk of stream) {
+		gatheredResponse += chunk.content; // Assuming 'content' is the property holding the text
+		socket.emit('message', { text: chunk.content });
+	}
+
+	socket.emit('terminate', { done: true });
+}
+
+
+export async function findAndExecuteIntend1(
+	prompt: string,
+	sessionId: string,
+	socket: Socket
+) {
+	// Fetch chat history from the database
+	const chatHistory = await getPremiumUserChatMessage(
+		sessionId,
+		Number(process.env.CONTEXT_LIMIT_CHAT) || 15
+	);
+
+	// Define a tool for providing normal advice
+	const normalAdvice = tool(
+		async function tool1(prompt: string) {
+			console.log('Normal advice received:', prompt);
+			// Return a response or perform any other action here
+			return `Here's some advice: ${prompt}`;
+		},
+		{
+			name: "normal_advice",
+			description: "This tool will give normal advice to the user",
+		}
+	);
+
+	// Create a new LLM instance and bind the tool to it
+	const llmWithTools = llm.bindTools(tools);
+
+	try {
+		// Use the LLM with the tools
+		const response = await llmWithTools.invoke(prompt); // Pass the user prompt
+		console.log(response, "response");
+
+		// Optionally send the response back to the user via the socket
+		socket.emit('response', response); // Adjust this based on your socket event
+	} catch (error) {
+		console.error('Error invoking LLM:', error);
+		socket.emit('error', 'Failed to get a response from the LLM.');
+	}
+}
+
+
 
 // get normal response for user
 

@@ -6,7 +6,7 @@ import cors from 'cors';
 
 import { handleSocketSerivce } from './services/socket.js';
 import { clerkRoute } from './routes/webhooks/clerk.route.js';
-import { getUserPaidAndPersonalInfo } from './routes/_private/getUserPaidAndPersonalInfo.route.js';
+import { paidDashbaord } from './routes/_private/paidDashboard.js';
 import { startMessageConsumer, startNewMessageConsumer } from './services/kafka.js';
 
 const app = express();
@@ -29,7 +29,7 @@ app.use("/webhook/clerk", express.raw({ type: 'application/json' }));
 app.use('/webhook', clerkRoute);
 
 // Routes
-app.use('/api/v1', getUserPaidAndPersonalInfo);
+app.use('/api/v1', paidDashbaord);
 app.get('/', (req, res) => {
 	res.send('Hello World');
 });

@@ -35,7 +35,7 @@ export default function DemoVideo() {
       <Link to="/preview" className="flex items-center gap-2 text-white rounded-md">
       <video
         ref={videoRef}
-        src="public/sanoke.mp4"
+        src="sanoke.mp4"
         muted
         className="rounded-lg w-full h-auto"
       ></video>

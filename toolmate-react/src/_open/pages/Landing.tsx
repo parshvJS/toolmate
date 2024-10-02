@@ -10,30 +10,30 @@ import { Separator } from "@/components/ui/separator";
 export default function Landing() {
   const largeFeatureCardsContent = [
     {
-      icon: "/public/assets/icons/largeOrangeToolbox.svg",
+      icon: "/assets/icons/largeOrangeToolbox.svg",
       titleLable: "Tailored for Your Project",
       title: "Find the Perfect Tool for Every Job",
       desc: "Matey understands your unique DIY needs and suggests the right tools, from screwdrivers to power drills, ensuring you get the job done efficiently.",
       ctaText: "Find Your Tools with Matey",
-      mateyImagePath: "/public/assets/matey/tools.svg",
+      mateyImagePath: "/assets/matey/tools.svg",
       leftGradient: true,
     },
     {
-      icon: "/public/assets/icons/priceTag.svg",
+      icon: "/assets/icons/priceTag.svg",
       titleLable: "Tools That Fit Your Budget",
       title: "Get the Best Tools at the Best Prices",
       desc: "Matey offers the best tool suggestions within your budget, making sure you never break the bank, whether you’re a pro or a beginner DIYer.",
       ctaText: "See Budget-Friendly Tools",
-      mateyImagePath: "/public/assets/matey/thinking.svg",
+      mateyImagePath: "/assets/matey/thinking.svg",
       leftGradient: false,
     },
     {
-      icon: "/public/assets/icons/helmet.svg",
+      icon: "/assets/icons/helmet.svg",
       titleLable: "Work Smarter, Work Safer",
       title: "Always Equipped with the Right Safety Gear",
       desc: "Matey ensures you work smarter and safer by recommending the best protective gear—like gloves, goggles, and dust masks—so you stay protected on every DIY project.",
       ctaText: "Safeguard Your DIY Project",
-      mateyImagePath: "/public/assets/matey/confident.svg",
+      mateyImagePath: "/assets/matey/confident.svg",
       leftGradient: true,
     },
   ];
@@ -45,9 +45,9 @@ export default function Landing() {
         <section className="flex justify-between md:flex-row flex-col md:p-6 p-2">
           {/* left side */}
           <div className="text-center md:text-left md:w-2/3 place-content-center flex flex-col gap-8">
-            <p className="text-transparent bg-clip-text bg-gradient-to-r from-black  to-orange font-[1000] md:text-8xl  text-6xl text-left">
+            <p className="text-transparent leading-10 md;leading-normal bg-clip-text bg-gradient-to-r from-black  to-orange font-[1000] md:text-8xl  text-6xl text-left">
               Find The Right<br /> Tool For
-               Every <br /> DIY Job!
+              Every <br /> DIY Job!
             </p>
             <p className="md:w-2/3 font-bold md:text-lg text-sm w-full text-left">
               Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
@@ -65,7 +65,7 @@ export default function Landing() {
               <div className="font-bold text-3xl items-center gap-10 text-left w-fit flex  ">
                 <div>
                   <img
-                    src="/public/assets/icons/image.png"
+                    src="/assets/icons/image.png"
                     alt="user"
                     className="max-w-20"
                     width={120}
@@ -87,7 +87,7 @@ export default function Landing() {
 
           <div className="absolute inset-0 -z-10 flex justify-center items-center md:top-[40rem] top-[550px]">
             <img
-              src="/public/assets/images/gradient-circle.svg"
+              src="/assets/images/gradient-circle.svg"
               alt="gradient-circle"
             />
           </div>
@@ -95,7 +95,7 @@ export default function Landing() {
           {/* right side */}
           <div className="mt-10 md:mt-0 flex justify-center">
             <img
-              src="/public/assets/matey/wavy.svg"
+              src="/assets/matey/wavy.svg"
               alt="matey wavy"
               width={340}
               height={300}
@@ -158,7 +158,7 @@ export default function Landing() {
           <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
             <video
               className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/public/video/vid1.mp4"
+              src="/video/vid1.mp4"
               autoPlay
               loop
               muted
@@ -190,7 +190,7 @@ export default function Landing() {
           <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
             <img
               className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/public/assets/images/tools.jpg"
+              src="/assets/images/tools.jpg"
             />
             <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
 
@@ -211,7 +211,7 @@ export default function Landing() {
           <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
             <img
               className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/public/assets/images/personalized.jpg"
+              src="/assets/images/personalized.jpg"
             />
             <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
 
@@ -232,7 +232,7 @@ export default function Landing() {
           <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
             <video
               className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/public/video/vid2.mp4"
+              src="/video/vid2.mp4"
               autoPlay
               loop
               muted

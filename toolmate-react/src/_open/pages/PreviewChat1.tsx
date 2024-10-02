@@ -167,7 +167,7 @@ export default function PreviewChat() {
                 className="flex justify-center items-center gap-2"
               >
                 <img
-                  src="/public/assets/icons/wrench.svg"
+                  src="/assets/icons/wrench.svg"
                   alt="free logo"
                   width={15}
                   height={15}
@@ -179,7 +179,7 @@ export default function PreviewChat() {
                 className="flex justify-center items-center gap-2"
               >
                 <img
-                  src="/public/assets/icons/gear.svg"
+                  src="/assets/icons/gear.svg"
                   alt="essential logo"
                   width={15}
                   height={15}
@@ -191,7 +191,7 @@ export default function PreviewChat() {
                 className="flex justify-center items-center gap-2"
               >
                 <img
-                  src="/public/assets/icons/toolbox.svg"
+                  src="/assets/icons/toolbox.svg"
                   alt="pro logo"
                   width={15}
                   height={15}
@@ -253,7 +253,7 @@ export default function PreviewChat() {
                 className="flex justify-center items-center gap-2"
               >
                 <img
-                  src="/public/assets/icons/wrench.svg"
+                  src="/assets/icons/wrench.svg"
                   alt="free logo"
                   width={15}
                   height={15}
@@ -265,7 +265,7 @@ export default function PreviewChat() {
                 className="flex justify-center items-center gap-2"
               >
                 <img
-                  src="/public/assets/icons/gear.svg"
+                  src="/assets/icons/gear.svg"
                   alt="essential logo"
                   width={15}
                   height={15}
@@ -277,7 +277,7 @@ export default function PreviewChat() {
                 className="flex justify-center items-center gap-2"
               >
                 <img
-                  src="/public/assets/icons/toolbox.svg"
+                  src="/assets/icons/toolbox.svg"
                   alt="pro logo"
                   width={15}
                   height={15}
@@ -411,15 +411,15 @@ export default function PreviewChat() {
     //       <div>
     //         <TabsList className="bg-white border-2 border-slate-400">
     //           <TabsTrigger value="free" className="flex justify-center items-center gap-2">
-    //             <img src="/public/assets/icons/wrench.svg" alt="free logo" width={15} height={15} />
+    //             <img src="/assets/icons/wrench.svg" alt="free logo" width={15} height={15} />
     //             <p className="text-black">Toolmate Free</p>
     //           </TabsTrigger>
     //           <TabsTrigger value="essential" className="flex justify-center items-center gap-2">
-    //             <img src="/public/assets/icons/gear.svg" alt="essential logo" width={15} height={15} />
+    //             <img src="/assets/icons/gear.svg" alt="essential logo" width={15} height={15} />
     //             <p className="text-black">Toolmate Essential</p>
     //           </TabsTrigger>
     //           <TabsTrigger value="pro" className="flex justify-center items-center gap-2">
-    //             <img src="/public/assets/icons/toolbox.svg" alt="pro logo" width={15} height={15} />
+    //             <img src="/assets/icons/toolbox.svg" alt="pro logo" width={15} height={15} />
     //             <p className="text-black">Toolmate Premium</p>
     //           </TabsTrigger>
     //         </TabsList>

@@ -79,7 +79,7 @@ export default function CommunityExample() {
                 <div className="p-4">
                   {/* community header and profile image section */}
                   <div className="flex items-center gap-4 my-2">
-                    <img src="/public/assets/icons/dummyCommuIcon.svg" alt="" />
+                    <img src="/assets/icons/dummyCommuIcon.svg" alt="" />
                     <p className="font-semibold text-lg">{community.name}</p>
                   </div>
                   <Separator className="border border-slate-300" />
@@ -125,7 +125,7 @@ export default function CommunityExample() {
 // {/* community header and profile image section */}
 // <div className="flex items-center gap-4 mb-2">
 //   <img
-//     src="/public/assets/icons/dummyCommuIcon.svg"
+//     src="/assets/icons/dummyCommuIcon.svg"
 //     alt=""
 //   />
 //   <p className="font-semibold text-lg">{community.name}</p>

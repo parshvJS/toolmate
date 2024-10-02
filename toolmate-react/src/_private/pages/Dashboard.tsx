@@ -8,23 +8,26 @@ import {
 } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { ArrowDownToDot, LoaderPinwheel, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import TradingVolumeSlider from "@/components/custom/Slider";
 export default function Dashboard() {
-    const { isLoaded, isSignedIn, user } = useUser();
+    // const { isLoaded, isSignedIn, user } = useUser();
     const [mainInput, setMainInput] = useState("");
     const [stateOfButton, setStateOfButton] = useState(-1);
-
+    const navigate = useNavigate();
     // main message function 
 
     async function handleUserPrompt() {
         console.log(mainInput, "is here")
-        
+        localStorage.setItem("userPrompt", mainInput);
+        navigate("/c");
     }
     return (
         <div className="w-full h-full ">
             {/* top section  */}
             <div
                 className="w-full min-h-[50vh] bg-cover bg-center px-14 py-10 gap-0 flex flex-col justify-start"
-                style={{ backgroundImage: "url('/public/assets/images/dashBG.jpg')" }}
+                style={{ backgroundImage: "url('/assets/images/dashBG.jpg')" }}
             >
                 {/* content */}
 

@@ -8,7 +8,7 @@ export default function ErrorPage({ title }: { title: string }) {
             <Logo />
             <section className="w-full h-full flex flex-col  justify-center items-center">
                 <img
-                    src="/public/assets/matey/confident.svg"
+                    src="/assets/matey/confident.svg"
                     alt="error"
                     className="w-80 h-80"
                 />

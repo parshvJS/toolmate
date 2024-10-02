@@ -14,7 +14,7 @@ export default function GetPremium() {
     <div className="flex justify-between md:w-[400px] w-[500px] h-fit p-5 bg-gradient-to-t from-lightOrange via-softYellow to-paleYellow rounded-lg ">
       {/* icon */}
       <div>
-        <img src="/public/assets/icons/doze.svg" width={80} alt="doze" />
+        <img src="/assets/icons/doze.svg" width={80} alt="doze" />
       </div>
 
       {/* content */}

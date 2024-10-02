@@ -1,67 +1,47 @@
-import LoadingPage from "@/components/custom/LoadingPage"
-import Sidebar from "@/components/custom/Sidebar"
-import { useAuth } from "@clerk/clerk-react"
-import classNames from "classnames"
-import { Columns2 } from "lucide-react"
-import { useContext, useEffect, useState } from "react"
-import { Outlet, useNavigate } from "react-router-dom"
+import LoadingPage from "@/components/custom/LoadingPage";
+import Sidebar from "@/components/custom/Sidebar";
+import { useAuth, UserButton } from "@clerk/clerk-react";
+import classNames from "classnames";
+import { Columns2 } from "lucide-react";
+import { useContext, useState } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip"
-import ErrorPage from "@/components/custom/ErrorPage"
-import axios from 'axios'
-import { env } from "@/lib/environment"
-import { UserContext } from '@/context/userContext'
+} from "@/components/ui/tooltip";
+import ErrorPage from "@/components/custom/ErrorPage";
+import { UserContext } from '@/context/userContext';
 
 export default function DashboardLayout() {
-    const [isDataLoaded, setIsDataLoaded] = useState(false)
-    const [isError, setIsError] = useState(false)
-    const { isLoaded, userId, sessionId } = useAuth();
+    const { data, isLoading, isError } = useContext(UserContext);
+    const { isLoaded, userId } = useAuth();
     const [collapsed, setSidebarCollapsed] = useState(false);
 
-    // context for user data
-    const { setData, setId } = useContext(UserContext)
-    useEffect(() => {
-        async function fetchPlanAccessAndStoreContext() {
-            try {
-                const data = await axios.post(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
-                    clerkUserId: userId
-                })
-
-                if (!data.data) {
-                    setIsError(true)
-                }
-                setData(data.data.data.planAccess)
-                setId(data.data.data.id)
-                setIsDataLoaded(true)
-
-            } catch (error: any) {
-                setIsError(true)
-            }
-        }
-
-        if (isLoaded) {
-            fetchPlanAccessAndStoreContext()
-        }
-    }, [isLoaded])
-
     const navigator = useNavigate();
-    if (isError) {
-        return <ErrorPage title="Something went wrong" />
-    }
-    if (!isDataLoaded) {
+
+    if (!isLoaded) {
         return <LoadingPage title="Preparing Dashboard..." />;
     }
-    if (!userId && isLoaded) {
+
+    if (!userId) {
         navigator("/signin");
+        return null;
     }
+
+    if (isLoading) {
+        return <LoadingPage title="Waking Up Matey..." />;
+    }
+
+    if (isError) {
+        return <ErrorPage title="Something went wrong while fetching user data." />;
+    }
+
     return (
         <div
             className={classNames(
-                "grid min-h-screen ", // Add overflow-hidden to remove scrollbars
+                "grid min-h-screen",
                 {
                     "grid-cols-sidebar": !collapsed,
                     "grid-cols-sidebar-collapsed": collapsed,
@@ -70,27 +50,37 @@ export default function DashboardLayout() {
             )}
         >
             {/* Sidebar */}
-            <Sidebar collabsable={collapsed} />
+            <Sidebar collabsable={collapsed}
+                setCollabsable={setSidebarCollapsed}
+
+            />
+
+
 
             {/* Collapse button */}
             <div className="relative w-full h-full">
-                <button
-                    className="absolute top-1 left-1 z-50"
-                    onClick={() => setSidebarCollapsed(!collapsed)}
-                >
-                    <TooltipProvider>
-                        <Tooltip delayDuration={90}>
-                            <TooltipTrigger>
-                                <div className="p-2 hover:bg-yellow rounded-md ">
-                                    <Columns2 />
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                                <p>{collapsed ? "Open Sidebar " : "Close Sidebar"}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </button>
+                <div>
+                    <button
+                        className="absolute top-1 left-1 z-50"
+                        onClick={() => setSidebarCollapsed(!collapsed)}
+                    >
+                        <TooltipProvider>
+                            <Tooltip delayDuration={90}>
+                                <TooltipTrigger>
+                                    <div className="p-2 hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
+                                        <Columns2 />
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                    <p>{collapsed ? "Open Sidebar " : "Close Sidebar"}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </button>
+                    <div className="absolute top-1 right-1 w-16 h-16">
+                        <UserButton />
+                    </div>
+                </div>
 
                 {/* Main content */}
                 <div>
@@ -100,4 +90,3 @@ export default function DashboardLayout() {
         </div>
     );
 }
-

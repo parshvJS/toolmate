@@ -23,7 +23,14 @@
       box-shadow: 0 0 1px rgba(255, 223, 0, 0.2), 0 0 2px rgba(255, 223, 0, 0.3);
     }
   }
+  .hide-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
 
+.hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
+}
 .glowing-border {
   animation: glow 1.5s infinite alternate;
   border-radius: 8px;
@@ -54,6 +61,25 @@
   box-shadow: 0 0 3px rgba(255, 223, 0, 0.3), 0 0 5px rgba(255, 223, 0, 0.5);
 }
 
+
+/* gradient effect */
+@keyframes rotate-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animation {
+  background: linear-gradient(45deg, #FFFF00, #FFA500);
+  background-size: 200% 200%;
+  animation: rotate-gradient 1.5s ease-in-out infinite;
+}
 
 /* main */
 @layer base {

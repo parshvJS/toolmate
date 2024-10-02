@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowDownToDot,
   Bolt,
+  Box,
   Check,
   ChevronsUpDown,
   Columns2,
@@ -45,46 +46,67 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import MateyInput from "@/components/custom/MateyInput";
+import { Separator } from "@/components/ui/separator";
 
 let socket: Socket;
 
 export default function PreviewChat() {
-  const {slug} = useParams()
-  console.log(slug,"--------------------------------")
+  const { slug } = useParams()
+  console.log(slug, "--------------------------------")
   const toolmateModels = [
     {
       name: "ToolMate Free",
-      src: "/public/assets/icons/wrench.svg",
-      activeSrc: "/public/assets/icons/orangeWrench.svg",
+      src: "/assets/icons/wrench.svg",
+      activeSrc: "/assets/icons/orangeWrench.svg",
     },
     {
       name: "ToolMate Essential",
-      src: "/public/assets/icons/gear.svg",
-      activeSrc: "/public/assets/icons/orangeGear.svg",
+      src: "/assets/icons/gear.svg",
+      activeSrc: "/assets/icons/orangeGear.svg",
     },
     {
       name: "ToolMate Premium",
-      src: "/public/assets/icons/toolbox.svg",
-      activeSrc: "/public/assets/icons/orangeToolbox.svg",
+      src: "/assets/icons/toolbox.svg",
+      activeSrc: "/assets/icons/orangeToolbox.svg",
     },
   ];
 
   const suggestions = [
     {
       message: "Need inspiration for your next DIY project?",
-      iconUrl: "/public/assets/icons/drill.svg",
+      iconUrl: "/assets/icons/drill.svg",
     },
     {
       message: "Looking for step-by-step guides?",
-      iconUrl: "/public/assets/icons/wrench1.svg",
+      iconUrl: "/assets/icons/wrench1.svg",
     },
     {
       message: "Want to know the best tools for the job?",
-      iconUrl: "/public/assets/icons/paint.svg",
+      iconUrl: "/assets/icons/paint.svg",
     },
     {
       message: "Need help troubleshooting your project?",
-      iconUrl: "/public/assets/icons/roller.svg",
+      iconUrl: "/assets/icons/roller.svg",
     },
   ];
 
@@ -222,11 +244,14 @@ export default function PreviewChat() {
   }, []);
 
   const scrollToBottom = () => {
+    if (currentMessage.length === 0) return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (currentMessage.length > 0) {
+      scrollToBottom();
+    }
   }, [currentMessage]);
 
   useEffect(() => {
@@ -235,15 +260,70 @@ export default function PreviewChat() {
 
   return (
     <div
-      className={classNames("grid min-h-screen  w-screen h-screen", {
-        "grid-cols-sidebar": !collapsed,
+      className={classNames("grid min-h-screen w-screen h-screen md:grid", {
+        "md:grid-cols-sidebar": !collapsed,
         "grid-cols-sidebar-collapsed": collapsed,
         "transition-[grid-template-columns] duration-300 ease-in-out": true,
       })}
     >
+      <div className="md:mb-0 w-full px-2 py-1 flex items-center bg-white justify-between pb-3 md:hidden fixed z-50 border-b-2 border-yellow shadow-sm">
+        <div>
+          <LogoSmall />
+        </div>
+
+        <div className="text-black font-semibold">
+          🌟1/10 Credit
+        </div>
+        <Sheet>
+          <SheetTrigger>
+            <div className="w-12 h-12 flex justify-center items-center">
+              <img src="/assets/line2.svg" alt="menu" className="w-8 h-8" />
+            </div>
+          </SheetTrigger>
+          <SheetContent side={"left"}>
+            <SheetHeader>
+              <SheetTitle>Are you absolutely sure?</SheetTitle>
+              <SheetDescription>
+                <div className="h-full w-full flex gap-1 flex-col">
+                  {toolmateModels.map((model, index) => (
+                    <div
+                      onClick={() => setTempActivePlan(index)}
+                      key={index}
+                      className={classNames(
+                        "bg-slate-200 cursor-pointer border-2 px-3 py-2 flex gap-3 rounded-md min-h-full transition-all duration-300 ease-in-out",
+                        {
+                          "text-orange": tempActivePlan === index,
+                          "border-slate-200": tempActivePlan !== index,
+                        }
+                      )}
+                    >
+                      <img
+                        src={
+                          tempActivePlan === index ? model.activeSrc : model.src
+                        }
+                        width={20}
+                        className={classNames({
+                          "text-orange": tempActivePlan === index,
+                          "text-slate-500": tempActivePlan !== index,
+                        })}
+                      />
+                      <p className="font-semibold text-md">{model.name}</p>
+                    </div>
+                  ))}
+                </div>
+              </SheetDescription>
+            </SheetHeader>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+
+
+
+      {/* desk top nav */}
       <div
         className={`bg-slate-100 flex ${collapsed ? "items-center" : "items-start"
-          }  px-3 items-start flex-col z-50`}
+          }  px-3 items-start flex-col z-50 md:flex hidden`}
       >
         <div className={`flex mt-5 ${!collapsed ? "-ml-3" : "ml-0"} `}>
           {!collapsed ? <DarkLogo /> : <LogoSmall />}
@@ -356,10 +436,9 @@ export default function PreviewChat() {
           )}
         </div>
       </div>
-
-      <div className="inset-0 flex justify-center overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col md:min-w-[28rem] lg:min-w-[32rem]">
-          <div className="bg-background relative z-10 ml-[54px] mr-4 flex h-16 w-[calc(100%-70px)] shrink-0 items-center justify-between gap-1 px-0 sm:mx-0 sm:h-14 sm:w-full sm:px-4 border-b-2 border-slate-100">
+      <div className="flex md:inset-0 md:mt-0 justify-center overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col md:min-w-[28rem] lg:min-w-[32rem] justify-between">
+          <div className="md:flex hidden bg-background relative z-10 ml-[54px] mr-4 h-16 w-[calc(100%-70px)] shrink-0 items-center justify-between gap-1 px-0 sm:mx-0 sm:h-14 sm:w-full sm:px-4 border-b-2 border-slate-100">
             <div className="flex justify-between w-full">
               <button
                 className="hover:bg-slate-300 p-2 rounded-md"
@@ -381,23 +460,28 @@ export default function PreviewChat() {
             </div>
           </div>
 
-          <div className="relative size-full overflow-y-auto p-4">
+          <div className="relative size-full overflow-y-auto p-4  md:mt-0">
             {currentMessage.length === 0 && (
-              <div className="text-left text-4xl font-bold">
-                <span className="bg-gradient-to-r font-black from-orange to-lightOrange bg-clip-text text-transparent">
-                  Hello There !
-                </span>
-                <br />
-                <div className="flex items-center gap-5">
-                  <p>Ask Matey About Your Latest DIY Plan</p>
+              <div className="text-left text-4xl font-bold my-14">
+                <div className="md:hidden">
                   <MateyExpression expression={"tool"} />
                 </div>
+                <span className="bg-gradient-to-r font-black from-orange to-lightOrange bg-clip-text text-transparent  ">
+                  Hello There!
+                </span>
+                <br />
+                <div className="flex flex-md:flex-row items-center gap-5">
+                  <p className="text-2xl">Ask Matey About Your Latest DIY Plan</p>
+                  <div className="hidden md:block">
+                    <MateyExpression expression={"tool"} />
+                  </div>
+                </div>
                 <div>
-                  <p className="font-medium text-xl text-gray">
+                  <p className="font-medium text-base md:text-xl text-gray">
                     Share your DIY project ideas with Matey for expert advice!
                   </p>
                 </div>
-                <div className="mt-12 flex gap-2 flex-wrap">
+                <div className="mt-12 flex gap-2 overflow-x-auto  py-2 no-scrollbar">
                   {suggestions.map((suggestion, index) => (
                     <div
                       onClick={() => {
@@ -405,7 +489,7 @@ export default function PreviewChat() {
                         setMainInput(suggestion.message);
                         handleUserPrompt();
                       }}
-                      className="cursor-pointer h-[150px] max-w-[200px] flex border-2 border-slate-300 bg-slate-100 bg-gradient-to-bl hover:from-yellow hover:to-white hover:border-yellow p-3 flex-col justify-between rounded-md gap-2 my-2 transition-all duration-600 ease-in-out"
+                      className="cursor-pointer flex h-[150px] max-w-[190px] md:min-w-[180px] md:max-w-[190px] flex-shrink-0 border-2 border-slate-300 bg-slate-100 bg-gradient-to-bl hover:from-yellow hover:to-white hover:border-yellow p-3 flex-col justify-between rounded-md gap-2 transition-all duration-600 ease-in-out"
                       key={index}
                     >
                       <img
@@ -413,16 +497,18 @@ export default function PreviewChat() {
                         alt="icon"
                         className="w-6 h-6"
                       />
-                      <p className="w-3/4 font-normal text-xs">
+                      <p className="md:w-3/4 md:font-normal text-lg md:text-xs">
                         {suggestion.message}
                       </p>
                     </div>
                   ))}
                 </div>
+
+
               </div>
             )}
 
-            <div id="scrollToBottom" className="mb-24">
+            <div className="mb-24 mt-28">
               {currentMessage.map((message, index) => (
                 <div key={index}>
                   {message.role === "ai" ? (
@@ -431,7 +517,7 @@ export default function PreviewChat() {
                     />
                   ) : (
                     <div className="flex items-end gap-2 justify-end w-full my-1">
-                      <p className="border-orange border-2 px-7 py-2 rounded-md bg-lightOrange">
+                      <p className="border-orange border-2 px-3 md:px-7 py-2 rounded-md bg-lightOrange">
                         {message.message}
                       </p>
                     </div>
@@ -439,16 +525,16 @@ export default function PreviewChat() {
                 </div>
               ))}
               {currentMessage.length !== 0 && isShowingUpsell && (
-                <div className="bg-gradient-to-br from-ligherYellow via-white to-white p-5 ml-10 ease-in-out opacity-100 gap-2 border-2 border-yellow hover:border-yellow w-fit rounded-md cursor-pointer">
+                <div className="bg-gradient-to-br from-ligherYellow via-white to-white p-5 ml-2 md:ml-10 ease-in-out opacity-100 gap-2 border-2 border-yellow hover:border-yellow w-fit rounded-md cursor-pointer">
                   <div className="flex items-start gap-4 mb-2">
                     <img
-                      src="/public/assets/icons/lock.svg"
+                      src="/assets/icons/lock.svg"
                       alt="lock"
                       width={20}
                     />
                     <div className="text-left">
                       <p className="font-bold">Get ToolMate Premium</p>
-                      <ul className="text-left">
+                      <ul className="text-left text-xs md:text-sm">
                         <li>
                           Matey Will Provide In-Depth Product Recommendations
                         </li>
@@ -469,25 +555,17 @@ export default function PreviewChat() {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
-            <div ref={messagesEndRef} />
           </div>
 
-          <div className="sticky inset-x-0 bottom-0 m-2 flex flex-col items-center  bg-transparent">
-            {/* scroll to buttom butt */}
-            {/* <div
-              onClick={scrollToBottom}
-              className="cursor-pointer rounded-full p-1 hover:bg-orange flex justify-center items-center absolute left-0 bottom-full border-2 border-orange bg-lightOrange "
-            >
-              <ArrowDown  width={20} height={20} />
-            </div> */}
-
-            <div className="w-full flex gap-0 border-2 bg-slate-100 border-lightOrange mt-2 rounded-lg flex-col">
+          <div className="fixed md:sticky bottom-0 inset-x-0 md:mb-5 m-2 flex flex-col items-center bg-transparent">
+            <div className="w-full flex gap-0 border-2 bg-slate-100 border-lightOrange rounded-lg flex-col">
               <textarea
                 value={mainInput}
                 onChange={(e) => setMainInput(e.target.value)}
                 placeholder="Give Your Idea To Matey."
-                className="w-full rounded-t-lg rounded-b-none pr-12 bg-slate-50 outline-none focus:outline-none focus:ring-0 placeholder-slate-900 text-slate-900 transition-all duration-1000 ease-in-out"
+                className=" w-full rounded-t-lg rounded-b-none pr-12 bg-slate-50 outline-none focus:outline-none focus:ring-0 placeholder-slate-900 text-slate-900 transition-all duration-1000 ease-in-out"
                 rows={isExpanded ? 9 : 3}
                 style={{ transition: "height 0.3s ease-in-out" }}
               />
@@ -495,7 +573,32 @@ export default function PreviewChat() {
                 <div className="bg-transparent">
                   <MateyExpression expression={mateyExpression} />
                 </div>
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 md:gap-4 items-center">
+
+                  <div className="block w-full h-full md:hidden">
+                    <Drawer>
+                      <DrawerTrigger>
+                        <div className={`${showStreamingState ? "gradient-animation" : ""} p-1 rounded-full w-9 h-9 flex items-center justify-center`}>
+                          <Box className="cursor-pointer text-slate-600" />
+                        </div>
+                      </DrawerTrigger>
+                      <DrawerContent>
+                        <div >
+                          <ToolSuggestion
+                            isDropdownOpen={isDropdownOpen}
+                            setDropDown={setIsDropdownOpen}
+                            defaultDropdownMessage={`-Garden Guru\n- FixIt Friends\n- Artisan's Choice\n- Sew Simple\n- Project Planner\n- Sew Simple\n- Project Planner`}
+                            message={`-Garden Guru\n- FixIt Friends\n- Artisan's Choice\n- Sew Simple\n- Project Planner\n- Sew Simple\n- Project Planner`}
+                            giveStreamingEffect={showStreamingState}
+                            isDropdownTyping={true}
+                            isInDrawer={true}
+                          />
+                        </div>
+                      </DrawerContent>
+                    </Drawer>
+
+                  </div>
+                  <Separator orientation="vertical" className="border border-slate-500 h-8" />
                   <TooltipProvider>
                     <Tooltip delayDuration={10}>
                       <TooltipTrigger>

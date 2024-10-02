@@ -46,7 +46,6 @@ const UserSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-
   // custom 
   status: {
     type: [String],

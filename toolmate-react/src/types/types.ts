@@ -10,3 +10,12 @@ export interface ExpressionData {
     content: string;
     };
   }
+
+  interface ChatItem{
+    sessionId:string;
+    chatName:string;
+  }
+  export interface iChatname {
+    dateDiff: string;
+    data:ChatItem[]
+  }

@@ -108,14 +108,14 @@ export default function Price() {
                       <div className="flex gap-2 items-start p-2">
                         {feature.isTicked ? (
                           <img
-                            src="/public/assets/icons/check.svg"
+                            src="/assets/icons/check.svg"
                             className="mt-2 mr-2"
                             alt="check"
                             width={20}
                           />
                         ) : (
                           <img
-                            src="/public/assets/icons/unchecked.svg"
+                            src="/assets/icons/unchecked.svg"
                             alt="unchecked"
                           />
                         )}

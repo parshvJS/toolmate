@@ -11,6 +11,7 @@ interface DropdownProps {
   defaultDropdownMessage: string;
   message: string;
   giveStreamingEffect: boolean;
+  isInDrawer?: boolean;
 }
 
 const ToolSuggestion: React.FC<DropdownProps> = ({
@@ -20,6 +21,7 @@ const ToolSuggestion: React.FC<DropdownProps> = ({
   isDropdownTyping,
   message,
   giveStreamingEffect,
+  isInDrawer = false,
 }) => {
   const [dropdownContent, setDropdownContent] = useState("");
   const [showPrice, setShowPrice] = useState(false);
@@ -60,14 +62,14 @@ const ToolSuggestion: React.FC<DropdownProps> = ({
   };
 
   return (
-    <div className={`p-[3px] bg-slate-300 rounded-md ${giveStreamingEffect ? 'animate-glow bg-gradient-to-r from-lightYellow to-lightOrange' : 'border-slate-600'}`}>
-      <div className="bg-slate-200 p-2 rounded-md relative cursor-pointer">
-        <div onClick={handleToggleDropdown} className="flex gap-2 justify-between mx-2">
+    <div className={`p-[3px]  ${isInDrawer?"bg-white":"bg-slate-300"} rounded-md ${giveStreamingEffect ? 'animate-glow gradient-animation bg-gradient-to-r from-lightYellow to-lightOrange' : 'border-slate-600'}`}>
+      <div className={`${isInDrawer?"bg-white":"bg-slate-200"} p-2 rounded-md relative cursor-pointer`}>
+        <div onClick={handleToggleDropdown} className={`flex gap-2 ${isInDrawer?"justify-start":"justify-between"} items-center  mx-2`}>
           <div>
             <Bolt />
           </div>
           <p className="text-md font-bold">Tools Suggestion By Matey</p>
-          <div className="transform transition-transform duration-500 ease-in-out">
+          <div className={`transform transition-transform duration-500 ease-in-out ${isInDrawer?"hidden":"block"}`}>
             {isDropdownOpen ? <ChevronDown /> : <ChevronUp />}
           </div>
         </div>
@@ -77,7 +79,7 @@ const ToolSuggestion: React.FC<DropdownProps> = ({
             <div className="absolute top-40 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white text-center w-4/5 p-4 rounded-md z-50 border border-black">
               <div className="flex justify-center items-center flex-col w-full">
                 <div className="flex gap-2 items-center justify-center mb-3">
-                  <img src="/public/assets/icons/lock.svg" alt="matey" width={15} />
+                  <img src="/assets/icons/lock.svg" alt="matey" width={15} />
                   <p className="text-lg font-bold">Get ToolMate Premium</p>
                 </div>
                 <div>
