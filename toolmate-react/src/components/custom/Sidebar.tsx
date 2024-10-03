@@ -1,54 +1,52 @@
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import Logo from "./Logo";
-import GetProSection from "./GetProSection";
-import DarkLogo from "./DarkLogo";
-import LogoSmall from "./LogoSmall";
+"use client"
+
+import { useState, useContext, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import DarkLogo from "./DarkLogo"
+import LogoSmall from "./LogoSmall"
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { History } from "lucide-react";
-import { Skeleton } from "../ui/skeleton";
-import { useContext, useEffect, useState } from "react";
-import { UserContext } from "@/context/userContext";
-import axios from "axios";
-import { useToast } from "@/hooks/use-toast";
-import { iChatname } from "@/types/types";
-import TextOverflow from "./TextOverflow";
+} from "@/components/ui/tooltip"
+import { Skeleton } from "../ui/skeleton"
+import { UserContext } from "@/context/userContext"
+import { iChatname } from "@/types/types"
+import { Ellipsis } from "lucide-react"
+import { useParams } from "react-router-dom"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import CommunityCreationDialog from "./CommunityForm"
 
-export default function Sidebar({
+export default function ImprovedAnimatedSidebar({
     collabsable = false,
     setCollabsable,
 }: {
-    collabsable?: boolean;
-    setCollabsable?: any;
+    collabsable?: boolean
+    setCollabsable?: React.Dispatch<React.SetStateAction<boolean>>
 }) {
-    const { toast } = useToast();
-    const { data } = useContext(UserContext);
-    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
-    const [chatHistory, setChatHistory] = useState<iChatname[]>([]);
-
+    const { historyData, isLoading, isFetching } = useContext(UserContext)
+    const [animatedHistory, setAnimatedHistory] = useState<iChatname[]>([])
+    const isInitialMount = useRef(true)
+    const { sessionId } = useParams<{ sessionId: string }>();
+    const [open, setOpen] = useState("")
     useEffect(() => {
-        async function fetchHistory() {
-            try {
-                const historyData = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getChatHistory`, {
-                    userId: data?.id
-                });
-                setChatHistory(historyData.data.data);
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: "Error while fetching history",
-                    variant: "destructive",
-                });
-            } finally {
-                setIsHistoryLoading(false);
+        if (isInitialMount.current) {
+            isInitialMount.current = false
+            setAnimatedHistory(historyData || [])
+        } else if (historyData && historyData.length > 0) {
+            const newItems = historyData.filter(
+                (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
+            )
+            if (newItems.length > 0) {
+                setAnimatedHistory((prev) => [...newItems, ...prev])
             }
         }
-        fetchHistory();
-    }, []);
+    }, [historyData])
 
     const navItem = [
         {
@@ -61,7 +59,7 @@ export default function Sidebar({
             title: "My Community",
             href: "/my-community",
         },
-    ];
+    ]
 
     return (
         <div className={`bg-whiteYellow border-r-2 border-slate-300 h-screen flex flex-col ${collabsable ? "px-1" : "px-3"}`}>
@@ -94,6 +92,9 @@ export default function Sidebar({
                 <p className="font-semibold">New Chat</p>
             </div>
 
+            <CommunityCreationDialog/>
+
+
             <hr className="border border-l-stone-300 my-2" />
 
             {/* Navigation Items */}
@@ -106,40 +107,71 @@ export default function Sidebar({
                 ))}
             </div>
 
-
             {/* Chat History */}
             <div className={`flex-1 overflow-y-auto ${collabsable ? "hidden" : "block"} space-y-2 hide-scrollbar`}>
                 <hr className="border border-l-stone-300 my-2" />
-                {isHistoryLoading ? (
+                {isLoading || isFetching ? (
                     <div className="space-y-2">
                         {Array.from({ length: 10 }).map((_, index) => (
-                            <Skeleton key={index} className="h-5 w-full bg-mangoYellow mt-1" style={{ opacity: 1 - index * 0.1 }} />
+                            <Skeleton key={index} className="h-5 w-full bg-mangoYellow mt-1" style={{ opacity: 1 }} />
                         ))}
                     </div>
                 ) : (
-                    chatHistory.length !== 0 &&
-                    chatHistory.map((item: iChatname, index) => {
-                        return (
-                            <div key={index} >
-                                <p className="font-bold text-black capitalize text-left sticky top-0 px-2 bg-whiteYellow py-2 z-10">
+                    <AnimatePresence>
+                        {animatedHistory.map((item: iChatname, index) => (
+                            <motion.div
+                                key={index}
+                                initial={isInitialMount.current ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                            >
+                                <p className="font-bold text-black capitalize text-left sticky top-0 px-2  py-2 bg-whiteYellow z-10">
                                     {item.dateDiff.replace(/_/g, " ")}
                                 </p>
-                                <div className="text-left px-2">
-                                    {item.data.map((chat, index) => {
-                                        return <div className="font-normal py-1 hover:bg-mangoYellow transition-all cursor-pointer px-3 rounded-md w-full " key={index}>
+                                <div className="text-left px-1">
+                                    <AnimatePresence>
+                                        {item.data.map((chat, chatIndex) => {
+                                            const isActive = sessionId === chat.sessionId;
 
-                                            <div
-                                                className={`overflow-hidden whitespace-nowrap text-ellipsis`}
-                                                style={{ maxWidth: '100%' }}  // Adjust the width as needed
+                                            return <motion.div
+
+                                                key={chat.chatName}
+                                                initial={isInitialMount.current ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -20 }}
+                                                transition={{
+                                                    duration: 0.3,
+                                                    delay: chatIndex * 0.05,
+                                                    ease: [0.25, 0.1, 0.25, 1]
+                                                }}
+                                                className={`${isActive && "bg-paleYellow"} font-normal flex justify-between  py-[7px] px-2 hover:bg-paleYellow transition-all cursor-pointer rounded-lg w-full group`}
                                             >
-                                                {chat.chatName.replace('"', '')}
-                                            </div>
-                                        </div>;
-                                    })}
+                                                <div className={`overflow-hidden whitespace-nowrap text-ellipsis flex justify-between`} style={{ maxWidth: '100%' }}>
+                                                    {chat.chatName.length > 28 ? chat.chatName.replace(/"/g, '').slice(0, 28) + "..." : chat.chatName.replace(/"/g, '')}
+                                                </div>
+                                                {/* 3 dot */}
+                                                <div className="hover:bg-lightYellow rounded-md transition-opacity">
+                                                    <DropdownMenu onOpenChange={(state) => state ? setOpen(chat.sessionId) : setOpen("")}>
+                                                        <DropdownMenuTrigger
+                                                            className={`w-6 h-6 flex items-center justify-center transition-opacity ${open == chat.sessionId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                                }`}
+                                                        >
+                                                            <Ellipsis />
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent className="bg-softYellow" side="bottom">
+
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+
+
+                                            </motion.div>
+                                        })}
+                                    </AnimatePresence>
                                 </div>
-                            </div>
-                        );
-                    })
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 )}
             </div>
 
@@ -167,7 +199,7 @@ export default function Sidebar({
                     <Tooltip delayDuration={70}>
                         <TooltipTrigger>
                             <div
-                                onClick={() => setCollabsable(false)}
+                                onClick={() => setCollabsable && setCollabsable(false)}
                                 className="flex items-center py-3 px-4 justify-center hover:bg-softYellow cursor-pointer rounded-lg"
                             >
                                 <img src="/assets/icons/history.svg" alt="history" className="w-6 h-6" />
@@ -180,5 +212,5 @@ export default function Sidebar({
                 </TooltipProvider>
             </div>
         </div>
-    );
+    )
 }

@@ -23,6 +23,10 @@ export default {
         sidebar: "310px auto", //for sidebar layout
         "sidebar-collapsed": "64px auto", //for collapsed sidebar layout
       },
+      gridTemplateColumnsMain: {
+        sidebar: "270px auto", //for sidebar layout
+        "sidebar-collapsed": "64px auto", //for collapsed sidebar layout
+      },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-in": "slideIn 0.5s ease-out",
@@ -107,7 +111,7 @@ export default {
         amberYellow: "#FFC107",
         darkYellow: "#FFA000",
         deepYellow: "#FF8F00",
-        whiteYellow:"#FFFCEA",
+        whiteYellow: "#FFFCEA",
         orange: "#FF5900",
         gray: "#606060",
         white: "#FFFFFF",
@@ -139,6 +143,16 @@ export default {
   plugins: [
     require("tailwindcss-animate"),
     require("@tailwindcss/typography"),
+    function ({ addUtilities, theme }) {
+      const newUtilities = Object.entries(theme("gridTemplateColumnsMain")).reduce(
+        (acc, [key, value]) => {
+          acc[`.grid-cols-main-${key}`] = { gridTemplateColumns: value };
+          return acc;
+        },
+        {}
+      );
+      addUtilities(newUtilities, ["responsive"]);
+    },
     function ({ addUtilities, theme }) {
       const newUtilities = Object.entries(theme("placeholderColor")).reduce(
         (acc, [key, value]) => {

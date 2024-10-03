@@ -15,7 +15,7 @@ import ErrorPage from "@/components/custom/ErrorPage";
 import { UserContext } from '@/context/userContext';
 
 export default function DashboardLayout() {
-    const { data, isLoading, isError } = useContext(UserContext);
+    const { isLoading, isError } = useContext(UserContext);
     const { isLoaded, userId } = useAuth();
     const [collapsed, setSidebarCollapsed] = useState(false);
 
@@ -40,14 +40,14 @@ export default function DashboardLayout() {
 
     return (
         <div
-            className={classNames(
-                "grid min-h-screen",
-                {
-                    "grid-cols-sidebar": !collapsed,
-                    "grid-cols-sidebar-collapsed": collapsed,
-                    "transition-[grid-template-columns] duration-300 ease-in-out": true,
-                }
-            )}
+        className={classNames(
+            "grid min-h-screen",
+            {
+                "grid-cols-main-sidebar": !collapsed,
+                "grid-cols-main-sidebar-collapsed": collapsed,
+                "transition-[grid-template-columns] duration-300 ease-in-out": true,
+            }
+        )}
         >
             {/* Sidebar */}
             <Sidebar collabsable={collapsed}

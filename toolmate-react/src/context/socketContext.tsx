@@ -14,6 +14,11 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
         const newSocket = io(import.meta.env.VITE_SERVER_URL);
         setSocket(newSocket);
         console.log("new socket connection done")
+        if (socket) {
+            socket.on("chatName", (data) => {
+                console.log(data, "chatName")
+            })
+        }
         return () => {
             newSocket.close();
         };

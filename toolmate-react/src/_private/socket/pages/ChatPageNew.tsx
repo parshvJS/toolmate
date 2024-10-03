@@ -1,7 +1,7 @@
 import Aichat from "@/components/custom/Aichat";
 import { Chat } from "@/components/custom/Chat";
 import { useSocket } from "@/context/socketContext";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function ChatPageNew() {
@@ -16,8 +16,9 @@ export function ChatPageNew() {
                 sessionId: string
             }) => {
                 console.log(data, "newSessionAcknowledge")
-                navigate(`/matey/${data.sessionId}?new=true`)
+                navigate(`/matey/${data.sessionId}?new= true`)
             })
+
         }
     }, [socket]);
 

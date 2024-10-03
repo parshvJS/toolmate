@@ -20,11 +20,11 @@ const CommunityChatSchema = new mongoose.Schema(
     },
     fileUrls: {
       type: [String], // Array of file URLs
-      default:[]
+      default: []
     },
     previewUrls: {
       type: [String], // Array of preview image URLs
-      default:[]
+      default: []
     },
     isVisible: {
       type: Boolean,
@@ -42,4 +42,5 @@ const CommunityChatSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+CommunityChatSchema.index({ communityId: 1, userId: 1 });
 export const CommunityChat = mongoose.model('CommunityChat', CommunityChatSchema);

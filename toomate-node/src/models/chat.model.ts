@@ -37,4 +37,7 @@ const ChatSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
+
+ChatSchema.index({ sessionId: 1 });
+
 export const Chat = mongoose.model('Chat', ChatSchema);

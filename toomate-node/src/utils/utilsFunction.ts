@@ -34,7 +34,8 @@ export function categorizeChatSessions(sessions: ChatSession[]) {
 
         const sessionData = {
             sessionId: session.sessionId,
-            chatName: session.chatName
+            chatName: session.chatName,
+            id: session.id
         };
 
         let categoryKey = "";
@@ -55,7 +56,7 @@ export function categorizeChatSessions(sessions: ChatSession[]) {
 
         // Push the sessionData into the respective category
         categoryMap[categoryKey] = categoryMap[categoryKey] || [];
-        categoryMap[categoryKey].push(sessionData);
+        categoryMap[categoryKey].unshift(sessionData);
     });
 
     // Convert categoryMap to the required format [{ dateDiff: '...', data: [...] }]

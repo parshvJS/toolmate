@@ -3,7 +3,6 @@ import remarkGfm from "remark-gfm";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Aichat({ message }: { message: string }) {
-  console.log(message);
   return (
     <div className="flex flex-col w-fit">
       <div className="flex items-start gap-2 justify-start">

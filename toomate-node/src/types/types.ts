@@ -12,6 +12,7 @@ export interface ChatSession {
     sessionId: string;
     chatName: string;
     updatedAt: string;
+    id: string;
 }
 
 

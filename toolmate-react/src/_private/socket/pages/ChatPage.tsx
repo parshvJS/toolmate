@@ -27,7 +27,7 @@ export function ChatPage() {
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
-    const { data } = useContext(UserContext);
+    const { userData, unshiftSidebarItem } = useContext(UserContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
 
@@ -80,17 +80,25 @@ export function ChatPage() {
             ]);
 
             // Emit the initial message to the server
-            if (socket && data) {
+            if (socket && userData) {
+                console.log("creating new chat name")
                 socket.emit("getChatName", {
                     prompt: initialMessage,
                     sessionId: sessionId,
-                    userId: data?.id,
+                    userId: userData?.id,
                 });
 
                 socket.emit("userMessage", {
                     sessionId: sessionId,
                     message: initialMessage,
                 });
+                socket.on('chatName', (data) => {
+                    console.log("chatname", data);
+                    unshiftSidebarItem({
+                        chatName: data.chatName,
+                        sessionId: data.sessionId
+                    })
+                })
             }
 
             // Remove 'new' parameter from URL after the initial operation
@@ -101,7 +109,6 @@ export function ChatPage() {
 
         // Listen for server responses
         const handleMessage = (data: { text: string }) => {
-            console.log(data.text, "new message from server");
             setCurrStreamingRes((prevData) => prevData + data.text); // Append the new data to the streaming response
         };
 
@@ -111,7 +118,7 @@ export function ChatPage() {
         return () => {
             socket?.off("message", handleMessage);
         };
-    }, [socket, isNew, data, sessionId, searchParams, setSearchParams]);
+    }, [socket, isNew, userData, sessionId, searchParams, setSearchParams]);
 
     // Automatically scroll to the bottom when the conversation updates
     useEffect(() => {

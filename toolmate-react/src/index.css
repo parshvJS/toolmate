@@ -81,6 +81,25 @@
   animation: rotate-gradient 1.5s ease-in-out infinite;
 }
 
+/* push sidebar item aniamtio  */
+
+/* styles.css */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: translateY(10px); /* Adjust as needed */
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+
 /* main */
 @layer base {
   :root {
