@@ -24,6 +24,9 @@ export default function Dashboard() {
     }
     return (
         <div className="w-full h-full ">
+          {/* <div className="flex justify-center items-center w-full p-10">
+          <TradingVolumeSlider/>
+          </div> */}
             {/* top section  */}
             <div
                 className="w-full min-h-[50vh] bg-cover bg-center px-14 py-10 gap-0 flex flex-col justify-start"

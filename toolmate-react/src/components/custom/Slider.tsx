@@ -1,8 +1,5 @@
-"use client"
-
 import * as React from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
-import { cn } from "@/lib/utils"
 
 const breakpoints = [
     { value: 0, label: "Entry-Level DIY", tooltip: "Entry-Level DIY (e.g., Ozito, Aldi's Workzone)" },

@@ -92,7 +92,9 @@ export default function ImprovedAnimatedSidebar({
                 <p className="font-semibold">New Chat</p>
             </div>
 
-            <CommunityCreationDialog/>
+            <CommunityCreationDialog 
+                collabsable={collabsable}
+            />
 
 
             <hr className="border border-l-stone-300 my-2" />
