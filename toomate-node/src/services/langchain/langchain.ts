@@ -4,7 +4,7 @@ import { Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import dotenv from 'dotenv';
 import connectDB from '../../db/db.connect.js';
-import { produceMessage } from '../kafka.js';
+import { produceMessage, produceNewMessage } from '../kafka.js';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
@@ -159,7 +159,7 @@ Return only the selected intent numbers in an array:`;
 
 async function streamResponse(sessionId: string, prompt: string, chatHistory: any[], socket: Socket) {
 	console.log("Streaming response for", prompt);
-	let gatheredResponse=  '';
+	let gatheredResponse = '';
 	const streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
 	| User Prompt: ${prompt} 
 	Context of chat: ${JSON.stringify(chatHistory)} 
@@ -170,8 +170,15 @@ async function streamResponse(sessionId: string, prompt: string, chatHistory: an
 		gatheredResponse += chunk.content; // Assuming 'content' is the property holding the text
 		socket.emit('message', { text: chunk.content });
 	}
-
 	socket.emit('terminate', { done: true });
+
+	await produceNewMessage(
+		gatheredResponse,
+		sessionId,
+		false,
+		false,
+		'ai'
+	);
 }
 
 

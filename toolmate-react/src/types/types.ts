@@ -11,9 +11,10 @@ export interface ExpressionData {
     };
   }
 
-  interface ChatItem{
+ export  interface ChatItem{
     sessionId:string;
     chatName:string;
+    id:string;
   }
   export interface iChatname {
     dateDiff: string;

@@ -1,29 +1,49 @@
-import Aichat from "@/components/custom/Aichat";
-import { useSocket } from "@/context/socketContext";
-import { UserContext } from "@/context/userContext";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import MateyExpression from "../../../components/custom/MateyExpression";
+import Aichat from "@/components/custom/Aichat";
+import MateyExpression from "@/components/custom/MateyExpression";
+import { useSocket } from "@/context/socketContext";
+import { UserContext } from "@/context/userContext";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel } from "lucide-react";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
     role: string;
     message: string;
 }
 
+async function fetchChatHistory(sessionId: string, userId: string, pagination: { page: number, limit: number }) {
+    try {
+        const chat = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getChatConversationHistory`, {
+            sessionId,
+            userId,
+            pagination
+        })
+        console.log(chat.data.data, "is user data")
+        return {
+            success: true,
+            data: chat.data.data
+        }
+    } catch (err: unknown) {
+        console.log(err, "error");
+        return {
+            success: false,
+            message: "Can't Load Your Chat History"
+        }
+
+    }
+}
+
+
 export function ChatPage() {
-    const [conversation, setConversation] = useState<Message[]>([
-        // {
-        //     role: "user",
-        //     message: localStorage.getItem('userPrompt') || "Hey Matey!"
-        // }
-    ]);
+    const [conversation, setConversation] = useState<Message[]>([]);
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
@@ -31,57 +51,70 @@ export function ChatPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
 
-    // State for the input area
     const [mainInput, setMainInput] = useState("");
     const [isExpanded, setIsExpanded] = useState(false);
     const [mateyExpression, setMateyExpression] = useState("");
     const [stateOfButton, setStateOfButton] = useState(-1);
-
-    // Ref for the chat container to enable auto-scrolling
+    const [pagination, setPagiantion] = useState({ page: 1, limit: 10 });
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [isError, setIsError] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-    // Function to scroll to the bottom of the chat
+    const { toast } = useToast();
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     useEffect(() => {
-        // Handle streaming responses from the server
+        async function fetchHistory() {
+            const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
+            console.log("Loading Chat History", isNew, isFetchAllowed)
+            if (!isNew && isFetchAllowed) {
+                console.log("Fetching Chat History")
+                setIsLoadingHistory(true);
+                const chatData = await fetchChatHistory(sessionId || "", userData?.id || "", pagination);
+                if (!chatData.success) {
+                    console.log(chatData, "chatData")
+                    toast({
+                        title: "Error",
+                        description: chatData.message,
+                        variant: "destructive"
+                    })
+                    setIsError(true);
+                }
+                setConversation(chatData.data);
+                setIsLoadingHistory(false);
+            }
+        }
+
+
+
+        fetchHistory();
+    }, [sessionId])
+
+    useEffect(() => {
         if (currStreamingRes !== "") {
             const lastConversationItem = conversation[conversation.length - 1];
-
-            // Check if last item is already AI's and update only if new
             if (lastConversationItem?.role === "ai") {
-                const newConversation = conversation.slice(0, -1); // Exclude the last incomplete item
+                const newConversation = conversation.slice(0, -1);
                 setConversation([...newConversation, { role: "ai", message: currStreamingRes }]);
             } else {
-                // Append new response if no AI response exists
                 setConversation([...conversation, { role: "ai", message: currStreamingRes }]);
             }
         }
+
+
     }, [currStreamingRes]);
 
     useEffect(() => {
-        console.log("Component mounted");
-
-        // Perform initial conversation setup if 'new' is in the URL
         if (isNew) {
-            console.log("Handling first response as new user");
 
             const initialMessage = localStorage.getItem('userPrompt') || "Hey Matey!";
-
-            // Add the user's initial message to the conversation
             setConversation((prevData) => [
                 ...prevData,
-                {
-                    role: "user",
-                    message: initialMessage,
-                },
+                { role: "user", message: initialMessage },
             ]);
 
-            // Emit the initial message to the server
             if (socket && userData) {
-                console.log("creating new chat name")
                 socket.emit("getChatName", {
                     prompt: initialMessage,
                     sessionId: sessionId,
@@ -92,56 +125,77 @@ export function ChatPage() {
                     sessionId: sessionId,
                     message: initialMessage,
                 });
+
                 socket.on('chatName', (data) => {
-                    console.log("chatname", data);
                     unshiftSidebarItem({
                         chatName: data.chatName,
-                        sessionId: data.sessionId
-                    })
-                })
+                        sessionId: data.sessionId,
+                    });
+                });
             }
-
-            // Remove 'new' parameter from URL after the initial operation
             searchParams.delete("new");
-            setSearchParams(searchParams); // Update the URL
+            setSearchParams(searchParams);
             localStorage.removeItem('userPrompt');
         }
 
-        // Listen for server responses
         const handleMessage = (data: { text: string }) => {
-            setCurrStreamingRes((prevData) => prevData + data.text); // Append the new data to the streaming response
+            setCurrStreamingRes((prevData) => prevData + data.text);
         };
 
         socket?.on("message", handleMessage);
+        socket?.on("terminate", () => {
+            setStateOfButton(-1);
+            setCurrStreamingRes("");
+        });
 
-        // Cleanup to avoid duplicate listeners
         return () => {
             socket?.off("message", handleMessage);
+            localStorage.setItem('retrieveChat', "yes")
         };
     }, [socket, isNew, userData, sessionId, searchParams, setSearchParams]);
 
-    // Automatically scroll to the bottom when the conversation updates
     useEffect(() => {
         scrollToBottom();
     }, [conversation]);
 
     const handleUserPrompt = () => {
-
-
-        console.log("User prompt submitted:", mainInput);
         const newConversation = [...conversation, { role: "user", message: mainInput }];
         setConversation(newConversation);
         socket?.emit("userMessage", {
             sessionId: sessionId,
             message: mainInput,
-        })
-        // Handle user prompt submission
+        });
     };
+
+    if (!isNew && isLoadingHistory) {
+        return (
+            <div className="w-full h-screen flex justify-center items-center">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                    <MateyExpression expression="tool" />
+                    <p className="text-lg text-center font-semibold capitalize">
+                        Matey is Recalling your chat...
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="w-full h-screen flex justify-center items-center flex-col">
+                <MateyExpression expression="thinking" />
+                <p className="text-lg text-center font-semibold capitalize">
+                    Error Occured While Fetching Chat History
+                </p>
+
+            </div>
+        )
+    }
 
     return (
         <div className="p-6 flex flex-col h-screen">
             <div className="flex-grow overflow-auto">
-                {conversation.map((data: Message, index) => (
+                {conversation?.map((data: Message, index) => (
                     <div key={index}>
                         {data.role === "ai" ? (
                             <Aichat message={data.message.replace("Typing...", "")} />
@@ -154,7 +208,6 @@ export function ChatPage() {
                         )}
                     </div>
                 ))}
-                {/* Empty div to reference for scrolling */}
                 <div ref={messagesEndRef} />
             </div>
             <div className="w-full flex gap-0 border-2 bg-slate-100 border-lightOrange mt-2 rounded-lg flex-col">
@@ -167,9 +220,7 @@ export function ChatPage() {
                     style={{ transition: "height 0.3s ease-in-out" }}
                 />
                 <div className="p-2 h-14 border-t-2 border-lightOrange justify-between items-center w-full flex space-x-2">
-                    <div className="bg-transparent">
-                        <MateyExpression expression={mateyExpression} />
-                    </div>
+                    <MateyExpression expression={mateyExpression} />
                     <div className="flex gap-4 items-center">
                         <TooltipProvider>
                             <Tooltip delayDuration={10}>
@@ -183,7 +234,6 @@ export function ChatPage() {
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-
                         <TooltipProvider>
                             <Tooltip delayDuration={10}>
                                 <TooltipTrigger className="flex items-center justify-center">
@@ -199,10 +249,9 @@ export function ChatPage() {
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-
                         <button
                             onClick={handleUserPrompt}
-                            disabled={stateOfButton === 0 ? true : false}
+                            disabled={stateOfButton === 0}
                             className="bg-orange rounded-md p-2 hover:bg-lightOrange hover:shadow-md hover:shadow-light"
                         >
                             {stateOfButton === -1 ? (
@@ -219,4 +268,3 @@ export function ChatPage() {
         </div>
     );
 }
-

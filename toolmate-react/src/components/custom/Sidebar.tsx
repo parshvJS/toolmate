@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useContext, useEffect, useRef } from "react"
+import { useState, useContext, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import DarkLogo from "./DarkLogo"
 import LogoSmall from "./LogoSmall"
@@ -13,14 +13,28 @@ import {
 import { Skeleton } from "../ui/skeleton"
 import { UserContext } from "@/context/userContext"
 import { iChatname } from "@/types/types"
-import { Ellipsis } from "lucide-react"
-import { useParams } from "react-router-dom"
+import { AlertTriangle, Ellipsis, Pencil, Trash, Trash2 } from "lucide-react"
+import { useNavigate, useParams } from "react-router-dom"
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import CommunityCreationDialog from "./CommunityForm"
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import axios from "axios"
+import { useToast } from "@/hooks/use-toast"
+import { DialogDescription } from "@radix-ui/react-dialog"
 
 export default function ImprovedAnimatedSidebar({
     collabsable = false,
@@ -29,24 +43,151 @@ export default function ImprovedAnimatedSidebar({
     collabsable?: boolean
     setCollabsable?: React.Dispatch<React.SetStateAction<boolean>>
 }) {
+    const navigate = useNavigate()
     const { historyData, isLoading, isFetching } = useContext(UserContext)
     const [animatedHistory, setAnimatedHistory] = useState<iChatname[]>([])
     const isInitialMount = useRef(true)
     const { sessionId } = useParams<{ sessionId: string }>();
     const [open, setOpen] = useState("")
+    const [dropDownDialog, setDropDownDialog] = useState(false)
+    const [activeDialog, setActiveDialog] = useState("")
+    const [newName, setNewName] = useState("")
+    const [isRenaming, setIsRenaming] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [deleteId, setDeleteId] = useState("")
+    const [deleteDialog, setDeleteDialog] = useState(false)
+
+    const { toast } = useToast()
     useEffect(() => {
         if (isInitialMount.current) {
-            isInitialMount.current = false
-            setAnimatedHistory(historyData || [])
+            isInitialMount.current = false;
+            setAnimatedHistory(historyData || []);
         } else if (historyData && historyData.length > 0) {
             const newItems = historyData.filter(
                 (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
-            )
+            );
             if (newItems.length > 0) {
-                setAnimatedHistory((prev) => [...newItems, ...prev])
+                setAnimatedHistory((prev) => [...newItems, ...prev]);
             }
         }
-    }, [historyData])
+    }, [historyData]);
+
+    const filteredHistory = useMemo(() => {
+        if (!historyData || historyData.length === 0) return [];
+        return historyData.filter(
+            (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
+        );
+    }, [historyData, animatedHistory]);
+
+    useEffect(() => {
+        if (filteredHistory.length > 0) {
+            setAnimatedHistory((prev) => [...filteredHistory, ...prev]);
+        }
+    }, [filteredHistory]);
+
+    function handleChatClick(sessionId: string) {
+        navigate(`/matey/${sessionId}`)
+    }
+
+    useEffect(() => {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === "style" && document.body.style.pointerEvents === "none" && !dropDownDialog) {
+                    document.body.style.pointerEvents = 'auto'; // Reset it when the dialog is closed
+                }
+            });
+        });
+
+        // Start observing changes to the body's style attribute
+        observer.observe(document.body, { attributes: true });
+
+        return () => observer.disconnect(); // Clean up when component unmounts
+    }, [dropDownDialog]);
+
+
+    async function handleRenameChat(id: string, newName: string) {
+        try {
+            if (newName === "") return
+            setIsRenaming(true)
+            const { data } = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/changeChatName`, {
+                id: id,
+                newName: newName
+            })
+
+            if (data.success) {
+                toast({
+                    title: "Success",
+                    description: "Chat renamed successfully",
+                    variant: "success"
+                })
+                console.log("Chat renamed successfully")
+                historyData?.forEach((item) => {
+                    item.data.forEach((chat) => {
+                        if (chat.id === id) {
+                            chat.chatName = newName
+                        }
+                    })
+                })
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to rename chat",
+                    variant: "destructive"
+                })
+            }
+            setDropDownDialog(false)
+        } catch (error) {
+            console.log(error)
+            toast({
+                title: "Error",
+                description: "An error occurred while renaming the chat",
+                variant: "destructive"
+            })
+        } finally {
+            setIsRenaming(false)
+        }
+    }
+
+
+    async function handleDelete(id: string) {
+        try {
+            setIsDeleting(true)
+            const { data } = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/deleteChat`, {
+                id: id
+            })
+
+            if (data.success) {
+                toast({
+                    title: "Success",
+                    description: "Chat deleted successfully",
+                    variant: "success"
+                })
+                console.log("Chat deleted successfully")
+                const updatedHistory = historyData?.map((item) => {
+                    item.data = item.data.filter((chat) => chat.id !== id)
+                    return item
+                })
+                setAnimatedHistory(updatedHistory || [])
+                navigate("/dashboard")
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to delete chat",
+                    variant: "destructive"
+                })
+            }
+            setDeleteDialog(false)
+        } catch (error) {
+            console.log(error)
+            toast({
+                title: "Error",
+                description: "An error occurred while deleting the chat",
+                variant: "destructive"
+            })
+        } finally {
+            setIsDeleting(false)
+        }
+    }
 
     const navItem = [
         {
@@ -77,7 +218,7 @@ export default function ImprovedAnimatedSidebar({
                         <img
                             src="/assets/matey-emoji/tool.svg"
                             alt="new chat"
-                            className="p-1 bg-mangoYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
+                            className="p-1 bg-goldenYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
                         />
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-paleYellow">
@@ -87,12 +228,12 @@ export default function ImprovedAnimatedSidebar({
             </TooltipProvider>
 
             {/* New Chat Button (Expanded View) */}
-            <div className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-mangoYellow transition duration-300 ease-in-out`}>
+            <div className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-goldenYellow transition duration-300 ease-in-out`}>
                 <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
                 <p className="font-semibold">New Chat</p>
             </div>
 
-            <CommunityCreationDialog 
+            <CommunityCreationDialog
                 collabsable={collabsable}
             />
 
@@ -136,7 +277,7 @@ export default function ImprovedAnimatedSidebar({
                                             const isActive = sessionId === chat.sessionId;
 
                                             return <motion.div
-
+                                                onClick={() => handleChatClick(chat.sessionId)}
                                                 key={chat.chatName}
                                                 initial={isInitialMount.current ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
@@ -148,9 +289,9 @@ export default function ImprovedAnimatedSidebar({
                                                 }}
                                                 className={`${isActive && "bg-paleYellow"} font-normal flex justify-between  py-[7px] px-2 hover:bg-paleYellow transition-all cursor-pointer rounded-lg w-full group`}
                                             >
-                                                <div className={`overflow-hidden whitespace-nowrap text-ellipsis flex justify-between`} style={{ maxWidth: '100%' }}>
-                                                    {chat.chatName.length > 28 ? chat.chatName.replace(/"/g, '').slice(0, 28) + "..." : chat.chatName.replace(/"/g, '')}
-                                                </div>
+                                                <p className={`overflow-hidden whitespace-nowrap text-ellipsis flex justify-between`} style={{ maxWidth: '100%' }}>
+                                                    {chat.chatName.length > 28 ? chat.chatName.replace(/"/g, '').slice(0, 28) + " ..." : chat.chatName.replace(/"/g, '')}
+                                                </p>
                                                 {/* 3 dot */}
                                                 <div className="hover:bg-lightYellow rounded-md transition-opacity">
                                                     <DropdownMenu onOpenChange={(state) => state ? setOpen(chat.sessionId) : setOpen("")}>
@@ -160,9 +301,35 @@ export default function ImprovedAnimatedSidebar({
                                                         >
                                                             <Ellipsis />
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent className="bg-softYellow" side="bottom">
 
+                                                        <DropdownMenuContent>
+                                                            {open === chat.sessionId && (
+                                                                <DropdownMenuItem onSelect={() => {
+                                                                    setDropDownDialog(true)
+                                                                    setActiveDialog(chat.id)
+                                                                }}
+                                                                >
+                                                                    <div className="flex gap-4 items-center">
+                                                                        <Pencil width={17} height={17} />
+                                                                        <p>Rename</p>
+                                                                    </div>
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            <DropdownMenuItem onSelect={() => { setDeleteDialog(true); setDeleteId(chat.id); }}>
+                                                                <div className="flex gap-4 items-center text-red-500">
+                                                                    <Trash width={17} height={17} />
+                                                                    <span>Delete</span>
+                                                                </div>
+                                                            </DropdownMenuItem>
+                                                            {/* <DropdownMenuItem>
+                                                                <Button onClick={() => setDeleteDialog(true)} variant="ghost" className=" flex gap-4 items-center"
+                                                                >
+                                                                    <Trash width={17} height={17} />
+                                                                    <span>Delete</span>
+                                                                </Button>
+                                                            </DropdownMenuItem> */}
                                                         </DropdownMenuContent>
+
                                                     </DropdownMenu>
                                                 </div>
 
@@ -213,6 +380,123 @@ export default function ImprovedAnimatedSidebar({
                     </Tooltip>
                 </TooltipProvider>
             </div>
+
+
+            {/* dialog for rename   */}
+
+            <Dialog open={dropDownDialog} onOpenChange={() => setDropDownDialog(false)}>
+                <AnimatePresence>
+                    {dropDownDialog && (
+                        <DialogContent className="sm:max-w-md bg-white border border-yellow/20 rounded-lg shadow-lg overflow-hidden">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-semibold text-gray-800">
+                                        Rename Item
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <div className="flex flex-col space-y-4 mt-4">
+                                    <div className="relative">
+                                        <Input
+                                            type="text"
+                                            placeholder="Enter new name"
+                                            value={newName}
+                                            onChange={(e) => setNewName(e.target.value)}
+                                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow/50 focus:border-yellow bg-white text-gray-800 placeholder-gray-400"
+                                        />
+                                        <Pencil className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                    </div>
+                                    <motion.div
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <Button
+                                            onClick={() => {
+                                                handleRenameChat(activeDialog, newName)
+                                            }}
+                                            className="w-full bg-softYellow hover:bg-yellow/90 text-black font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+                                        >
+                                            {
+                                                isRenaming ? "Renaming..." : "Rename"
+                                            }
+                                        </Button>
+                                    </motion.div>
+                                </div>
+                                <p className="mt-4 text-center text-gray-600 text-sm">
+                                    Choose a clear and descriptive name for easy identification.
+                                </p>
+                            </motion.div>
+                        </DialogContent>
+                    )}
+                </AnimatePresence>
+            </Dialog>
+
+
+
+            {/* delete  */}
+
+
+            <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+
+                <AnimatePresence>
+                    {deleteDialog && (
+                        <DialogContent className="sm:max-w-md bg-white border border-red-200 rounded-lg shadow-lg overflow-hidden">
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-semibold text-red-600 flex items-center justify-center">
+                                        <AlertTriangle className="mr-2 text-red-500" size={24} />
+                                        Delete Chat
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <DialogDescription>
+                                    <div className="flex flex-col space-y-4 mt-4">
+                                        <p className="text-center text-gray-700">
+                                            Are you sure you want to delete this chat? This action cannot be undone.
+                                        </p>
+                                        <div className="flex justify-center space-x-4">
+                                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                <Button
+                                                    onClick={() => setDeleteDialog(false)}
+                                                    variant="secondary"
+                                                    className="font-medium"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </motion.div>
+                                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                <Button
+                                                    onClick={() => { handleDelete(deleteId) }}
+                                                    variant="destructive"
+                                                    className="font-medium flex items-center"
+                                                >
+                                                    <Trash2 className="mr-2" size={18} />
+                                                    Delete
+                                                </Button>
+                                            </motion.div>
+                                        </div>
+                                    </div>
+                                </DialogDescription>
+                                <DialogFooter>
+
+
+                                    <p className="mt-4 text-center text-gray-500 text-sm">
+                                        This will permanently remove all messages in this chat.
+                                    </p>
+                                </DialogFooter>
+                            </motion.div>
+                        </DialogContent>
+                    )}
+                </AnimatePresence>
+            </Dialog>
         </div>
     )
 }

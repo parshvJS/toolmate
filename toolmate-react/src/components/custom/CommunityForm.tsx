@@ -228,7 +228,7 @@ export default function DIYCommunityCreationDialog({
         <Button
           onClick={step === totalSteps ? () => { } : nextStep}
           size="lg"
-          className="bg-yellow text-white hover:bg-softYellow"
+          className="bg-yellow text-black hover:bg-softYellow"
         >
           {step === totalSteps ? 'Create Community' : 'Next'}
           {step !== totalSteps && <ChevronRight className="ml-2 h-4 w-4" />}
@@ -261,23 +261,23 @@ export default function DIYCommunityCreationDialog({
         </Drawer>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
-          <TooltipProvider>
-            <Tooltip delayDuration={70}>
-              <TooltipTrigger className={`${collabsable ? "block" : "hidden"}`}>
-                <button onClick={() => setOpen(!open)} className={`${collabsable ? "flex" : "hidden"} mt-1`}>
-                  <img
-                    src="/assets/matey-emoji/newComm.svg"
-                    alt="new chat"
-                    className="p-1 bg-mangoYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
-                  />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-paleYellow">
-                <p>Create New Community</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
+  <TooltipProvider>
+                <Tooltip delayDuration={70}>
+                    <TooltipTrigger className={`${collabsable ? "block" : "hidden"}`}>
+                    <button onClick={() => setOpen(!open)} className={`${collabsable ? "flex":"hidden"} mt-1`}>
+            <img
+              src="/assets/matey-emoji/newComm.svg"
+              alt="new chat"
+              className="p-1 bg-mangoYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
+            />
+          </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-paleYellow">
+                        <p>Create New Community</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+         
 
           <button onClick={() => setOpen(!open)} className={`${collabsable ? "hidden" : "flex"}  mt-1  gap-3 items-center bg-mangoYellow px-3 rounded-lg hover:bg-softYellow transition duration-300 ease-in-out`}>
             <img src="/assets/matey-emoji/newComm.svg" alt="new chat" className="w-12 h-12" />

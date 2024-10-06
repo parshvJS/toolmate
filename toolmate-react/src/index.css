@@ -9,6 +9,8 @@
     max-height: var(--radix-popover-content-available-height);
   }
 }
+
+
 /* styles.css */
   @keyframes glow {
     0% {

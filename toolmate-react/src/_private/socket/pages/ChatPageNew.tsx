@@ -15,6 +15,7 @@ export function ChatPageNew() {
             socket.on("newSessionAcknowledge", (data: {
                 sessionId: string
             }) => {
+                localStorage.setItem('retrieveChat', "no")
                 console.log(data, "newSessionAcknowledge")
                 navigate(`/matey/${data.sessionId}?new= true`)
             })

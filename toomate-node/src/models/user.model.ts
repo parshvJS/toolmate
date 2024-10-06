@@ -37,14 +37,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
 
   // custom 
   status: {
@@ -66,9 +58,14 @@ const UserSchema = new mongoose.Schema({
       toolId: String,
       count: Number
     }]
+  },
+  bookmarked:{
+    type:[mongoose.Schema.Types.ObjectId],
+    ref:'UserChat',
+    default:[]
   }
 
-});
+},{timestamps: true});
 
 const User: Model<User> = mongoose.model<User>('User', UserSchema);
 

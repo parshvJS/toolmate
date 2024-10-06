@@ -3,30 +3,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { env } from "@/lib/environment";
 import { useAuth } from "@clerk/clerk-react";
+import { ChatItem,iChatname } from '@/types/types';
 
-interface SideBarHistItem {
-    sessionId: string;
-    chatName: string;
-}
-
-interface SideBarItem {
-    dateDiff: string;
-    data: SideBarHistItem[];
-}
 
 interface UserData {
     planAccess: [boolean, boolean, boolean];
     id: string;
-    sideBarHisotry: SideBarItem[];
+    sideBarHisotry: iChatname[];
 }
 
 interface UserContextType {
     userData: UserData | undefined;
-    historyData: SideBarItem[] | undefined;
+    historyData: iChatname[] | undefined;
     isLoading: boolean;
     isError: boolean;
     isFetching: boolean;
-    unshiftSidebarItem: (newItem: SideBarHistItem) => void;
+    unshiftiChatname: (newItem: ChatItem) => void;
 }
 
 const INITIAL_USER_DATA: UserContextType = {
@@ -35,7 +27,7 @@ const INITIAL_USER_DATA: UserContextType = {
     isLoading: false,
     isError: false,
     isFetching: false,
-    unshiftSidebarItem: () => { },
+    unshiftiChatname: () => { },
 };
 
 const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
@@ -43,7 +35,6 @@ const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
 function UserContextProvider({ children }: { children: ReactNode }) {
     const { userId } = useAuth();
     const queryClient = useQueryClient();
-
     const { data: userData, isLoading, isError, isFetching } = useQuery<UserData, Error>({
         queryKey: ['user', userId],
         queryFn: async () => {
@@ -62,15 +53,16 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         staleTime: Infinity,                 // Data is always considered fresh
         // Cache data forever (you can change this if you want a specific time)
     });
+    console.log(userData?.id, "userId");
 
 
-    const { data: historyData } = useQuery<SideBarItem[], Error>({
+    const { data: historyData } = useQuery<iChatname[], Error>({
         queryKey: ['chatHistory', userData?.id],
         queryFn: async () => {
             if (!userData?.id) {
                 throw new Error("User ID is not available");
             }
-            const response = await axios.post<{ data: SideBarItem[] }>(`${env.domain}/api/v1/getChatHistory`, {
+            const response = await axios.post<{ data: iChatname[] }>(`${env.domain}/api/v1/getChatHistory`, {
                 userId: userData.id,
             });
             return response.data.data;
@@ -83,21 +75,21 @@ function UserContextProvider({ children }: { children: ReactNode }) {
     });
 
 
-    const mutation = useMutation<SideBarItem[], Error, SideBarItem[], { previousHistory: SideBarItem[] | undefined }>({
-        mutationFn: (newHistory: SideBarItem[]) => {
+    const mutation = useMutation<iChatname[], Error, iChatname[], { previousHistory: iChatname[] | undefined }>({
+        mutationFn: (newHistory: iChatname[]) => {
             console.log("mutation called");
             return axios.post(`${env.domain}/api/v1/updateChatHistory`, {
                 userId: userData?.id,
                 newHistory,
             });
         },
-        onMutate: async (newHistory: SideBarItem[]) => {
+        onMutate: async (newHistory: iChatname[]) => {
             await queryClient.cancelQueries({ queryKey: ['chatHistory', userData?.id] });
-            const previousHistory = queryClient.getQueryData<SideBarItem[]>(['chatHistory', userData?.id]);
+            const previousHistory = queryClient.getQueryData<iChatname[]>(['chatHistory', userData?.id]);
             queryClient.setQueryData(['chatHistory', userData?.id], newHistory);
             return { previousHistory };
         },
-        onError: (err, newHistory, context) => {
+        onError: (_,v,context) => {
             if (context?.previousHistory) {
                 queryClient.setQueryData(['chatHistory', userData?.id], context.previousHistory);
             }
@@ -107,7 +99,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         },
     });
 
-    const unshiftSidebarItem = (newItem: SideBarHistItem) => {
+    const unshiftiChatname = (newItem: ChatItem) => {
         const today = "today";
         const updatedHistory = historyData ? [...historyData] : [];
 
@@ -131,7 +123,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         isLoading,
         isError,
         isFetching,
-        unshiftSidebarItem,
+        unshiftiChatname,
     };
 
     return (
