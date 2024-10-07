@@ -92,7 +92,7 @@ export default function CommunityExample() {
                     </p>
 
                     {/* tag */}
-                    <div className="px-2 py-1 text-center flex items-center justify-center  bg-lightOrange rounded-md capitalize text-xs">
+                    <div className="px-2 py-1 text-center flex items-center justify-center  bg-lightOrange rounded-md capitalize text-md">
                       {community.tag}
                     </div>
                   </div>

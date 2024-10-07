@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { env } from "@/lib/environment";
 import { useAuth } from "@clerk/clerk-react";
-import { ChatItem,iChatname } from '@/types/types';
+import { ChatItem, iChatname } from '@/types/types';
 
 
 interface UserData {
@@ -18,7 +18,10 @@ interface UserContextType {
     isLoading: boolean;
     isError: boolean;
     isFetching: boolean;
+    newIdForCache: (id: string) => void;
     unshiftiChatname: (newItem: ChatItem) => void;
+    retrieveCache: () => ChatItem[];
+    deleteCacheElement: (id:string) => void
 }
 
 const INITIAL_USER_DATA: UserContextType = {
@@ -28,6 +31,9 @@ const INITIAL_USER_DATA: UserContextType = {
     isError: false,
     isFetching: false,
     unshiftiChatname: () => { },
+    newIdForCache: () => { },
+    retrieveCache: () => { return [] },
+    deleteCacheElement: () => { }
 };
 
 const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
@@ -56,6 +62,85 @@ function UserContextProvider({ children }: { children: ReactNode }) {
     console.log(userData?.id, "userId");
 
 
+    function deleteCacheElement(id: string) {
+        const tempCache = JSON.parse(localStorage.getItem("tempCache") || "[]");
+        const mainCache = JSON.parse(localStorage.getItem("mainCache") || "[]");
+
+        const newTempCache = tempCache.filter((item: {
+            id:string,
+            usage:number
+        }) => item.id !== id);
+
+        const newMainCache = mainCache.filter((item: string) => item !== id);
+
+        localStorage.setItem("tempCache", JSON.stringify(newTempCache))
+        localStorage.setItem("mainCache", JSON.stringify(newMainCache))
+
+    }
+
+    function newIdForCache(id: string) {
+        // Initialize caches if they don't exist
+        const tempCache = JSON.parse(localStorage.getItem("tempCache") || "[]");
+        const mainCache = JSON.parse(localStorage.getItem("mainCache") || "[]");
+
+        // Add new ID to temp cache if it's not already there
+        const existingTempId = tempCache.find((item: any) => item.id === id);
+        if (existingTempId) {
+            // If ID is in tempCache, increase its usage count
+            existingTempId.usage += 1;
+        } else {
+            // If not in tempCache, add it with usage count of 1
+            tempCache.push({ id, usage: 1 });
+        }
+
+        // Sort tempCache by usage in descending order
+        tempCache.sort((a: any, b: any) => b.usage - a.usage);
+
+        // Keep tempCache to a maximum of 10 items
+        if (tempCache.length > 10) {
+            tempCache.pop();
+        }
+
+        // Check if any IDs should be promoted to main cache
+        const mostUsedIds = tempCache.filter((item: any) => item.usage >= 3);  // Threshold for high usage
+        mostUsedIds.forEach((item: any) => {
+            if (!mainCache.includes(item.id)) {
+                mainCache.push(item.id);
+            }
+        });
+
+        // Keep mainCache to a maximum of 6 items
+        if (mainCache.length > 6) {
+            mainCache.shift();  // Remove oldest entry when exceeding limit
+        }
+
+        // Update local storage with new tempCache and mainCache
+        localStorage.setItem("tempCache", JSON.stringify(tempCache));
+        localStorage.setItem("mainCache", JSON.stringify(mainCache));
+    }
+
+    function retrieveCache() {
+        const mainCache = JSON.parse(localStorage.getItem("mainCache") || "[]");
+        console.log("mainCache", mainCache);
+        // If no mainCache is available, return top 6 from historyData
+        console.log(historyData?.map((item) => item.data).slice(0, 6), "historyData.map((item) => item.data).slice(0, 6)");
+        if (mainCache.length === 0 && historyData) {
+            console.log(historyData.map((item) => item.data).slice(0, 6), "historyData.map((item) => item.data).slice(0, 6)");
+            return historyData.flatMap((item) => {
+                if (item.data) {
+                    return item.data
+                }
+            }).slice(0, 6);
+        }
+        const resp = mainCache.map((id: string) => {
+            const chatItem = historyData?.flatMap((item) => item.data).find((chat) => chat.id === id);
+            return chatItem;
+        }).filter((item) => item !== undefined);
+        console.log(resp,"here")
+        return resp
+    }
+
+
     const { data: historyData } = useQuery<iChatname[], Error>({
         queryKey: ['chatHistory', userData?.id],
         queryFn: async () => {
@@ -65,6 +150,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
             const response = await axios.post<{ data: iChatname[] }>(`${env.domain}/api/v1/getChatHistory`, {
                 userId: userData.id,
             });
+            console.log(response.data.data, "response.data.data");
             return response.data.data;
         },
         enabled: !!userData?.id,             // Only run when userData.id exists
@@ -89,7 +175,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
             queryClient.setQueryData(['chatHistory', userData?.id], newHistory);
             return { previousHistory };
         },
-        onError: (_,v,context) => {
+        onError: (_, v, context) => {
             if (context?.previousHistory) {
                 queryClient.setQueryData(['chatHistory', userData?.id], context.previousHistory);
             }
@@ -124,6 +210,10 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         isError,
         isFetching,
         unshiftiChatname,
+        newIdForCache,
+        retrieveCache,
+        deleteCacheElement
+
     };
 
     return (

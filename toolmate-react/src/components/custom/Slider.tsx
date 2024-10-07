@@ -50,7 +50,7 @@ export default function TradingVolumeSlider() {
                                 style={{ left: `${breakpoint.value}%` }}
                             />
                             <div
-                                className={`absolute bottom-6 left-${breakpoint.value}% transform -translate-x-1/2 bg-white shadow-lg px-2 py-1 rounded text-sm font-semibold text-black`}
+                                className={`absolute bottom-6 left-${breakpoint.value}% transform -translate-x-1/2 bg-white shadow-lg px-2 py-1 rounded text-md font-semibold text-black`}
                                 style={{
                                     left: `${breakpoint.value}%`,
                                     opacity: value[0] === breakpoint.value ? 1 : 0,
@@ -64,7 +64,7 @@ export default function TradingVolumeSlider() {
 
                     <SliderPrimitive.Thumb className="block w-5 h-5 bg-slate-200 border-2 border-yellow-500 rounded-full shadow-lg focus:outline-none">
                         {showTooltip && (
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 w-[160px] bg-yellow text-white text-xs rounded">
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 w-[160px] bg-yellow text-white text-md rounded">
                                 {getCurrentTooltip()}
                             </div>
                         )}
@@ -73,7 +73,7 @@ export default function TradingVolumeSlider() {
 
                 {/* Dynamic Upgrade Teaser */}
                 <div className="flex justify-between mt-4">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-md font-medium text-gray-700">
                         Unlock advanced recommendations with <strong>ToolMate Pro</strong>
                     </span>
                 </div>

@@ -28,7 +28,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -36,6 +35,18 @@ import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
 import { DialogDescription } from "@radix-ui/react-dialog"
 
+const navItem = [
+    {
+        icon: "/assets/icons/communityNavIcon.svg",
+        title: "Explore Community",
+        href: "/community",
+    },
+    {
+        icon: "/assets/icons/userCommunityNavIcon.svg",
+        title: "My Community",
+        href: "/my-community",
+    },
+]
 export default function ImprovedAnimatedSidebar({
     collabsable = false,
     setCollabsable,
@@ -44,7 +55,7 @@ export default function ImprovedAnimatedSidebar({
     setCollabsable?: React.Dispatch<React.SetStateAction<boolean>>
 }) {
     const navigate = useNavigate()
-    const { historyData, isLoading, isFetching } = useContext(UserContext)
+    const { historyData, isLoading, isFetching, newIdForCache, deleteCacheElement } = useContext(UserContext)
     const [animatedHistory, setAnimatedHistory] = useState<iChatname[]>([])
     const isInitialMount = useRef(true)
     const { sessionId } = useParams<{ sessionId: string }>();
@@ -70,7 +81,7 @@ export default function ImprovedAnimatedSidebar({
                 setAnimatedHistory((prev) => [...newItems, ...prev]);
             }
         }
-    }, [historyData]);
+    }, []);
 
     const filteredHistory = useMemo(() => {
         if (!historyData || historyData.length === 0) return [];
@@ -85,8 +96,9 @@ export default function ImprovedAnimatedSidebar({
         }
     }, [filteredHistory]);
 
-    function handleChatClick(sessionId: string) {
+    function handleChatClick(sessionId: string, id: string) {
         navigate(`/matey/${sessionId}`)
+        newIdForCache(id)
     }
 
     useEffect(() => {
@@ -157,6 +169,8 @@ export default function ImprovedAnimatedSidebar({
             })
 
             if (data.success) {
+                deleteCacheElement(deleteId)
+
                 toast({
                     title: "Success",
                     description: "Chat deleted successfully",
@@ -176,7 +190,7 @@ export default function ImprovedAnimatedSidebar({
                     variant: "destructive"
                 })
             }
-            setDeleteDialog(false)
+
         } catch (error) {
             console.log(error)
             toast({
@@ -186,21 +200,10 @@ export default function ImprovedAnimatedSidebar({
             })
         } finally {
             setIsDeleting(false)
+            setDeleteDialog(false)
         }
     }
 
-    const navItem = [
-        {
-            icon: "/assets/icons/communityNavIcon.svg",
-            title: "Explore Community",
-            href: "/community",
-        },
-        {
-            icon: "/assets/icons/userCommunityNavIcon.svg",
-            title: "My Community",
-            href: "/my-community",
-        },
-    ]
 
     return (
         <div className={`bg-whiteYellow border-r-2 border-slate-300 h-screen flex flex-col ${collabsable ? "px-1" : "px-3"}`}>
@@ -218,7 +221,7 @@ export default function ImprovedAnimatedSidebar({
                         <img
                             src="/assets/matey-emoji/tool.svg"
                             alt="new chat"
-                            className="p-1 bg-goldenYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
+                            className="p-1 bg-lighterYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
                         />
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-paleYellow">
@@ -228,7 +231,7 @@ export default function ImprovedAnimatedSidebar({
             </TooltipProvider>
 
             {/* New Chat Button (Expanded View) */}
-            <div className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-goldenYellow transition duration-300 ease-in-out`}>
+            <div className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out`}>
                 <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
                 <p className="font-semibold">New Chat</p>
             </div>
@@ -245,7 +248,7 @@ export default function ImprovedAnimatedSidebar({
                 {navItem.map((item, index) => (
                     <div key={index} className="flex items-center gap-2 py-2 px-4 hover:bg-softYellow cursor-pointer rounded-lg">
                         <img src={item.icon} alt={item.title} className="w-8 h-8" />
-                        <p className="font-semibold text-sm">{item.title}</p>
+                        <p className="font-semibold text-md">{item.title}</p>
                     </div>
                 ))}
             </div>
@@ -277,7 +280,10 @@ export default function ImprovedAnimatedSidebar({
                                             const isActive = sessionId === chat.sessionId;
 
                                             return <motion.div
-                                                onClick={() => handleChatClick(chat.sessionId)}
+                                                onClick={() => {
+
+                                                    handleChatClick(chat.sessionId, chat.id)
+                                                }}
                                                 key={chat.chatName}
                                                 initial={isInitialMount.current ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
@@ -311,14 +317,14 @@ export default function ImprovedAnimatedSidebar({
                                                                 >
                                                                     <div className="flex gap-4 items-center">
                                                                         <Pencil width={17} height={17} />
-                                                                        <p>Rename</p>
+                                                                        <p className="font-semibold">Rename</p>
                                                                     </div>
                                                                 </DropdownMenuItem>
                                                             )}
                                                             <DropdownMenuItem onSelect={() => { setDeleteDialog(true); setDeleteId(chat.id); }}>
                                                                 <div className="flex gap-4 items-center text-red-500">
                                                                     <Trash width={17} height={17} />
-                                                                    <span>Delete</span>
+                                                                    <span className="font-semibold">Delete</span>
                                                                 </div>
                                                             </DropdownMenuItem>
                                                             {/* <DropdownMenuItem>
@@ -426,7 +432,7 @@ export default function ImprovedAnimatedSidebar({
                                         </Button>
                                     </motion.div>
                                 </div>
-                                <p className="mt-4 text-center text-gray-600 text-sm">
+                                <p className="mt-4 text-center text-gray-600 text-md">
                                     Choose a clear and descriptive name for easy identification.
                                 </p>
                             </motion.div>
@@ -488,7 +494,7 @@ export default function ImprovedAnimatedSidebar({
                                 <DialogFooter>
 
 
-                                    <p className="mt-4 text-center text-gray-500 text-sm">
+                                    <p className="mt-4 text-center text-gray-500 text-md">
                                         This will permanently remove all messages in this chat.
                                     </p>
                                 </DialogFooter>

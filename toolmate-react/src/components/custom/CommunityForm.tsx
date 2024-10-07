@@ -142,12 +142,12 @@ export default function DIYCommunityCreationDialog({
               }`}>
               {formStep.icon}
             </div>
-            <div className="text-sm font-medium text-center">{formStep.title}</div>
+            <div className="text-md font-medium text-center">{formStep.title}</div>
           </motion.div>
         ))}
       </div>
       <div className="relative">
-        <div className="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-200">
+        <div className="overflow-hidden h-3 mb-4 text-md flex rounded-full bg-slate-200">
           <motion.div
             className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-yellow"
             initial={{ width: '0%' }}

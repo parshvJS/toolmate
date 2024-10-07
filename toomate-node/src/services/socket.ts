@@ -111,5 +111,6 @@ async function handleGetChatName(socket: Socket, data: iChatname) {
         sessionId: data.sessionId,
         message: "New Chat Inititalized",
         chatName: chatName,
+        id: isDbEntryCreated._id!
     })
 }

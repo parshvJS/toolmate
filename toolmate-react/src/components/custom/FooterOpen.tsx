@@ -56,7 +56,7 @@ export default function Footer() {
 
         {/* Copyright notice */}
         <div className="text-center mt-8">
-          <p className="text-sm text-gray-600 font-semibold">
+          <p className="text-md text-gray-600 font-semibold">
             &copy;2024 Toolmate.tool. All rights reserved.
           </p>
         </div>

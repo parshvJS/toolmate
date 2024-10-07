@@ -49,7 +49,7 @@ export default function Landing() {
               Find The Right<br /> Tool For
               Every <br /> DIY Job!
             </p>
-            <p className="md:w-2/3 font-bold md:text-lg text-sm w-full text-left">
+            <p className="md:w-2/3 font-bold md:text-lg text-md w-full text-left">
               Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
             </p>
             <div className="flex gap-2 items-center md:items-start ">
@@ -76,7 +76,7 @@ export default function Landing() {
                   className="border border-gray"
                 />
                 <div className="flex items-center flex-col text-left">
-                  <p className="font-semibold text-left opacity-80 text-slate-500 text-xs">
+                  <p className="font-semibold text-left opacity-80 text-slate-500 text-md">
                     Trusted by People
                   </p>
                   <p className="font-mono md:text-2xl text-lg">100K+ Users</p>

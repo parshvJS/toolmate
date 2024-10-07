@@ -40,14 +40,14 @@ export default function DashboardLayout() {
 
     return (
         <div
-        className={classNames(
-            "grid min-h-screen",
-            {
-                "grid-cols-main-sidebar": !collapsed,
-                "grid-cols-main-sidebar-collapsed": collapsed,
-                "transition-[grid-template-columns] duration-300 ease-in-out": true,
-            }
-        )}
+            className={classNames(
+                "grid min-h-screen scrollbar-hide",
+                {
+                    "grid-cols-main-sidebar": !collapsed,
+                    "grid-cols-main-sidebar-collapsed": collapsed,
+                    "transition-[grid-template-columns] duration-300 ease-in-out": true,
+                }
+            )}
         >
             {/* Sidebar */}
             <Sidebar collabsable={collapsed}
@@ -77,13 +77,11 @@ export default function DashboardLayout() {
                             </Tooltip>
                         </TooltipProvider>
                     </button>
-                    <div className="absolute top-1 right-1 w-16 h-16">
-                        <UserButton />
-                    </div>
+
                 </div>
 
                 {/* Main content */}
-                <div>
+                <div className="scrollbar-hide">
                     <Outlet />
                 </div>
             </div>

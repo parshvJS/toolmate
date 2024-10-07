@@ -10,7 +10,7 @@ export default function GetProSection() {
             <div className="flex flex-col text-left">
                 <p className="text-lg font-bold">Get Pro</p>
                 <p className="text-xxs">Unlock All Tools Of Toolmate</p>
-                <Link to={'/price'} className="underline flex gap-2 text-xs items-center font-semibold">
+                <Link to={'/price'} className="underline flex gap-2 text-md items-center font-semibold">
                     Check Features
                     <ArrowRight />
                 </Link>

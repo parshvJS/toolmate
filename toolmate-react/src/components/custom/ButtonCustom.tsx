@@ -22,7 +22,7 @@ function ButtonCustom({
     };
 
     const sizeClasses = {
-        small: "px-3 rounded-md py-2 text-sm",
+        small: "px-3 rounded-md py-2 text-md",
         medium: "px-4 py-2 text-base",
         large: "px-5 py-3 text-lg md:px-6 md:py-4",
     };

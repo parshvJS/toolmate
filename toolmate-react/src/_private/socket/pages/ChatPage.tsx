@@ -47,7 +47,7 @@ export function ChatPage() {
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
-    const { userData, unshiftSidebarItem } = useContext(UserContext);
+    const { userData, unshiftiChatname } = useContext(UserContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
 
@@ -120,6 +120,7 @@ export function ChatPage() {
                     sessionId: sessionId,
                     userId: userData?.id,
                 });
+                console.log("Emitting Chat Name")
 
                 socket.emit("userMessage", {
                     sessionId: sessionId,
@@ -127,9 +128,11 @@ export function ChatPage() {
                 });
 
                 socket.on('chatName', (data) => {
-                    unshiftSidebarItem({
+                    console.log(data, "chatName-----------------------")
+                    unshiftiChatname({
                         chatName: data.chatName,
                         sessionId: data.sessionId,
+                        id: data.id
                     });
                 });
             }
@@ -193,7 +196,7 @@ export function ChatPage() {
     }
 
     return (
-        <div className="p-6 flex flex-col h-screen">
+        <div className="flex flex-col h-screen p-6">
             <div className="flex-grow overflow-auto">
                 {conversation?.map((data: Message, index) => (
                     <div key={index}>

@@ -1,22 +1,28 @@
 import MateyExpression from "@/components/custom/MateyExpression";
-import { useUser } from "@clerk/clerk-react";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useState } from "react";
-import { ArrowDownToDot, LoaderPinwheel, Send } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import TradingVolumeSlider from "@/components/custom/Slider";
+
+import { useContext, useEffect, useState } from "react";
+import { Anvil, LoaderPinwheel, Send } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserContext } from "@/context/userContext";
+import { ChatItem, iChatname } from "@/types/types";
 export default function Dashboard() {
     // const { isLoaded, isSignedIn, user } = useUser();
     const [mainInput, setMainInput] = useState("");
     const [stateOfButton, setStateOfButton] = useState(-1);
+    const { retrieveCache, historyData } = useContext(UserContext);
+
+    const [cache, setCache] = useState<ChatItem[]>([]);
     const navigate = useNavigate();
     // main message function 
 
+
+    useEffect(() => {
+        if (historyData) {
+            const cacher: ChatItem[] = retrieveCache()
+            setCache(cacher)
+            console.log(cacher, "cacheData")
+        }
+    }, [historyData])
     async function handleUserPrompt() {
         console.log(mainInput, "is here")
         localStorage.setItem("userPrompt", mainInput);
@@ -24,7 +30,7 @@ export default function Dashboard() {
     }
     return (
         <div className="w-full h-full ">
-          {/* <div className="flex justify-center items-center w-full p-10">
+            {/* <div className="flex justify-center items-center w-full p-10">
           <TradingVolumeSlider/>
           </div> */}
             {/* top section  */}
@@ -78,7 +84,36 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+
+
+                {/* pick where you have left     */}
+
+                {cache.length !== 0 &&
+                    <div className="my-5 flex flex-col gap-3">
+                        <h1>
+                            Pick
+                            <span className="text-orange"> Where </span>
+                            You Have Left
+                        </h1>
+
+
+                        {/* card */}
+
+                        <div className="flex gap-1 items-center">
+                            {cache.map((item: ChatItem, index) => (
+                                <Link to={`/matey/${item.sessionId}`} key={index} className="md:h-60 bg-gradient-to-tr from-slate-100 to-slate-300 hover:to-softYellow hover:from-white hover:border-yellow transition-all duration-300 ease-in-out cursor-pointer w-1/6 justify-between flex flex-col p-2 text-left rounded-md border-2 border-slate-300">
+                                    <Anvil color="#ff6600" />
+                                    <p className="text-slate-700 max-h-[70%] overflow-hidden">
+                                        {typeof item.chatName === 'string' && item.chatName.length > 130 ? `${item.chatName.slice(0, 130)}...` : item.chatName}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
+
+                    </div>
+                }
             </div>
+
 
 
 

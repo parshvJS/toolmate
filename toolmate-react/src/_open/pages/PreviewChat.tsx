@@ -368,7 +368,7 @@ export default function PreviewChat() {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="right" color="yellow">
-                    <p className="text-xs">
+                    <p className="text-md">
                       {showStreamingState
                         ? "Matey is Typing Product Suggestions...."
                         : "Tool Suggestion By Matey"}
@@ -467,7 +467,7 @@ export default function PreviewChat() {
                   <MateyExpression expression={"tool"} />
                 </div>
                 <span className="bg-gradient-to-r font-black from-orange to-lightOrange bg-clip-text text-transparent  ">
-                  Hello There!
+                  Try Matey For Free!
                 </span>
                 <br />
                 <div className="flex flex-md:flex-row items-center gap-5">
@@ -497,7 +497,7 @@ export default function PreviewChat() {
                         alt="icon"
                         className="w-6 h-6"
                       />
-                      <p className="md:w-3/4 md:font-normal text-lg md:text-xs">
+                      <p className="md:w-3/4 md:font-normal text-lg md:text-md">
                         {suggestion.message}
                       </p>
                     </div>
@@ -534,7 +534,7 @@ export default function PreviewChat() {
                     />
                     <div className="text-left">
                       <p className="font-bold">Get ToolMate Premium</p>
-                      <ul className="text-left text-xs md:text-sm">
+                      <ul className="text-left text-md md:text-md">
                         <li>
                           Matey Will Provide In-Depth Product Recommendations
                         </li>

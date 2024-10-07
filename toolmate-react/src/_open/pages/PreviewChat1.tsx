@@ -29,7 +29,7 @@ export default function PreviewChat() {
       socket.disconnect();
     }
 
-    socket = io("http://localhost:5000");
+    socket = io(import.meta.env.VITE_SOCKET_URL as string);
 
     // event Fire to create session
 

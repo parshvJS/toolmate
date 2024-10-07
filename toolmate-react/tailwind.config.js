@@ -145,6 +145,7 @@ export default {
     require('postcss-nested'),
     require("tailwindcss-animate"),
     require("@tailwindcss/typography"),
+    require('tailwind-scrollbar-hide'),
     function ({ addUtilities, theme }) {
       const newUtilities = Object.entries(theme("gridTemplateColumnsMain")).reduce(
         (acc, [key, value]) => {

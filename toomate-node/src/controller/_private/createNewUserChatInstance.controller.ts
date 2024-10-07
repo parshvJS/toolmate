@@ -14,7 +14,11 @@ export async function createnewUserChatInstace({ sessionId, userId, chatName }: 
     });
     await userChat.save();
     if (!userChat) {
-        return false
+        return {
+            success: false,
+            message: "Error creating new Chat",
+            _id:null
+        }
     }
-    return true
+    return userChat;
 }
