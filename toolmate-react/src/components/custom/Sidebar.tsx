@@ -69,19 +69,39 @@ export default function ImprovedAnimatedSidebar({
     const [deleteDialog, setDeleteDialog] = useState(false)
 
     const { toast } = useToast()
-    useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            setAnimatedHistory(historyData || []);
-        } else if (historyData && historyData.length > 0) {
-            const newItems = historyData.filter(
-                (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
-            );
-            if (newItems.length > 0) {
-                setAnimatedHistory((prev) => [...newItems, ...prev]);
-            }
-        }
-    }, []);
+
+    // useEffect(() => {
+    //     if (!historyData || historyData.length === 0) return; // Exit if no data
+    
+    //     // Filter out items that already exist in animatedHistory based on dateDiff
+    //     const newItems = historyData.filter(
+    //         (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
+    //     );
+    
+    //     // Check for duplicate sessionId in new items
+    //     const isDuplicate = animatedHistory.some((existingItem) =>
+    //         existingItem.data.some((chat) => chat.sessionId === sessionId)
+    //     );
+    
+    //     if (newItems.length > 0 && !isDuplicate) {
+    //         setAnimatedHistory((prevAnimatedHistory) => [
+    //             ...prevAnimatedHistory,
+    //             ...newItems,
+    //         ]);
+    //     }
+    // }, [sessionId]); // Only depend on historyData and sessionId
+    
+
+    // useEffect(() => {
+    //     console.log("animatedHistory", animatedHistory)
+    //     setAnimatedHistory((prev) => {
+    //         const uniqueHistory = prev.filter(
+    //             (item, index, self) =>
+    //                 index === self.findIndex((t) => t.dateDiff === item.dateDiff)
+    //         );
+    //         return uniqueHistory;
+    //     })
+    // },[])
 
     const filteredHistory = useMemo(() => {
         if (!historyData || historyData.length === 0) return [];

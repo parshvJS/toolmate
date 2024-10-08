@@ -196,14 +196,14 @@ export function ChatPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen p-6">
-            <div className="flex-grow overflow-auto">
+        <div className="flex flex-col h-screen p-6 items-center">
+            <div className="flex-grow  overflow-y-scroll max-w-4xl mt-10 relative" style={{ paddingRight: '1rem' }}>
                 {conversation?.map((data: Message, index) => (
                     <div key={index}>
                         {data.role === "ai" ? (
                             <Aichat message={data.message.replace("Typing...", "")} />
                         ) : (
-                            <div className="w-full flex justify-end">
+                            <div className="w-full flex justify-end items-end">
                                 <div className="flex w-fit justify-end px-3 py-2 bg-yellow rounded-md">
                                     {data.message}
                                 </div>
@@ -212,8 +212,9 @@ export function ChatPage() {
                     </div>
                 ))}
                 <div ref={messagesEndRef} />
+
             </div>
-            <div className="w-full flex gap-0 border-2 bg-slate-100 border-lightOrange mt-2 rounded-lg flex-col">
+            <div className="max-w-4xl w-full flex gap-0 border-2 bg-slate-100 border-lightOrange mt-2 rounded-lg flex-col">
                 <textarea
                     value={mainInput}
                     onChange={(e) => setMainInput(e.target.value)}

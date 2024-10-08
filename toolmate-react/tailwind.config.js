@@ -27,6 +27,10 @@ export default {
         sidebar: "270px auto", //for sidebar layout
         "sidebar-collapsed": "64px auto", //for collapsed sidebar layout
       },
+      gridTemplateColumnsRightSidebar: {
+        sidebar: "auto 310px", // for right sidebar layout
+        "sidebar-collapsed": "auto 64px", // for collapsed right sidebar layout
+      },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-in": "slideIn 0.5s ease-out",
@@ -145,7 +149,6 @@ export default {
     require('postcss-nested'),
     require("tailwindcss-animate"),
     require("@tailwindcss/typography"),
-    require('tailwind-scrollbar-hide'),
     function ({ addUtilities, theme }) {
       const newUtilities = Object.entries(theme("gridTemplateColumnsMain")).reduce(
         (acc, [key, value]) => {

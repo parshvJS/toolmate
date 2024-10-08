@@ -11,7 +11,7 @@ export default function Aichat({ message }: { message: string }) {
         <img src="/assets/icons/blur-ball.svg" alt="matey" width={45} />
         {/* Message Box */}
         <div className="font-roboto custom-p  flex flex-col w-fit bg-gray-100  p-3 rounded-md ">
-          {message == "" ? (
+          {(message == "" || !message) ? (
             <div className="flex flex-col gap-4 w-full">
               {/* line 1 */}
               <div className="flex gap-3 w-full">

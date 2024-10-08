@@ -67,7 +67,7 @@ export default function DashboardLayout() {
                         <TooltipProvider>
                             <Tooltip delayDuration={90}>
                                 <TooltipTrigger>
-                                    <div className="p-2 hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
+                                    <div className="p-1 text-white bg-yellow hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
                                         <Columns2 />
                                     </div>
                                 </TooltipTrigger>

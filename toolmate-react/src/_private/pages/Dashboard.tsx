@@ -101,7 +101,7 @@ export default function Dashboard() {
 
                         <div className="flex gap-1 items-center">
                             {cache.map((item: ChatItem, index) => (
-                                <Link to={`/matey/${item.sessionId}`} key={index} className="md:h-60 bg-gradient-to-tr from-slate-100 to-slate-300 hover:to-softYellow hover:from-white hover:border-yellow transition-all duration-300 ease-in-out cursor-pointer w-1/6 justify-between flex flex-col p-2 text-left rounded-md border-2 border-slate-300">
+                                <Link to={`/matey/${item.sessionId}`} key={index} className="md:h-60 bg-gradient-to-tr from-slate-100 to-slate-300 hover:to-softYellow hover:from-white hover:border-yellow transition-all duration-300 ease-in-out cursor-pointer max-w-52 w-1/6 justify-between flex flex-col p-2 text-left rounded-md border-2 border-slate-300">
                                     <Anvil color="#ff6600" />
                                     <p className="text-slate-700 max-h-[70%] overflow-hidden">
                                         {typeof item.chatName === 'string' && item.chatName.length > 130 ? `${item.chatName.slice(0, 130)}...` : item.chatName}
