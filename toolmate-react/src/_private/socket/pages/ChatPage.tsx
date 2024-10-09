@@ -196,7 +196,7 @@ export function ChatPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen p-6 items-center">
+        <div className={`flex flex-col h-screen p-6 ${conversation.length==1?"items-end":"items-center"}`}>
             <div className="flex-grow  overflow-y-scroll max-w-4xl mt-10 relative" style={{ paddingRight: '1rem' }}>
                 {conversation?.map((data: Message, index) => (
                     <div key={index}>

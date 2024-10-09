@@ -7,6 +7,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import PrivateToolSugg from "./PrivateToolSugg";
 export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCollapsed: React.Dispatch<React.SetStateAction<boolean>> }) {
     return (
         <div className="flex flex-col h-full bg-whiteYellow  border-l-2 border-slate-300">
@@ -38,6 +39,8 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
                         -tool 1
                     "
                     /> */}
+
+                    <PrivateToolSugg/>
                 </div>
 
                 <div className={`${collapsed ? "block" : "hidden"} flex flex-col gap-2 items-center justify-center py-3`}>

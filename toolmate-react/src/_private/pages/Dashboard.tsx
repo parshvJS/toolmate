@@ -5,6 +5,7 @@ import { Anvil, LoaderPinwheel, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "@/context/userContext";
 import { ChatItem, iChatname } from "@/types/types";
+import { UserButton } from "@clerk/clerk-react";
 export default function Dashboard() {
     // const { isLoaded, isSignedIn, user } = useUser();
     const [mainInput, setMainInput] = useState("");
@@ -30,6 +31,9 @@ export default function Dashboard() {
     }
     return (
         <div className="w-full h-full ">
+            <div className="absolute top-2 right-2">
+                <UserButton />
+            </div>
             {/* <div className="flex justify-center items-center w-full p-10">
           <TradingVolumeSlider/>
           </div> */}

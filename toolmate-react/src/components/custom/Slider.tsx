@@ -32,7 +32,7 @@ export default function TradingVolumeSlider() {
     }
 
     return (
-        <div className="w-full max-w-md p-6 bg-yellow rounded-xl shadow-md border-2 border-black">
+        <div className="w-full max-w-md p-6 bg-lightYellow rounded-xl shadow-md border-2 border-black">
             <h2 className="text-xl font-semibold mb-2 text-left">Select Your Maximum Budget</h2>
             <p className="text-[3px] text-gray-600 mb-4 text-left">
                 Budget for New Tool Suggestions
@@ -94,7 +94,7 @@ export default function TradingVolumeSlider() {
                     </div>
 
                     <div className="flex items-center gap-2 ">
-                        <Switch id="apply-budget" color="yellow" checked={applyBudget} onCheckedChange={setApplyBudget} className="bg-yellow-500" />
+                        <Switch id="apply-budget" checked={applyBudget} onCheckedChange={setApplyBudget} />
                         <Label htmlFor="apply-budget" className="text-black">Apply Budget</Label>
                     </div>
                 </div>

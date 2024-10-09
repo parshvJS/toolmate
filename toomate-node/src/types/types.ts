@@ -19,3 +19,9 @@ export interface ChatSession {
 export interface ResponseFormat {
     [key: string]: Array<{ sessionId: string; chatName: string }>;
 }
+export interface IPaymentPlan extends Document {
+    essntialPrice: number;
+    proPrice: number;
+    discountOnSixMonth: number;
+    discountOnYearly: number;
+}

@@ -8,6 +8,7 @@ import { handleSocketSerivce } from './services/socket.js';
 import { clerkRoute } from './routes/webhooks/clerk.route.js';
 import { paidDashbaord } from './routes/_private/paidDashboard.js';
 import { startMessageConsumer, startNewMessageConsumer } from './services/kafka.js';
+import { admin } from './routes/admin/admin.js';
 
 const app = express();
 const PORT = 5000;
@@ -30,6 +31,7 @@ app.use('/webhook', clerkRoute);
 
 // Routes
 app.use('/api/v1', paidDashbaord);
+app.use('/api/v1',admin)
 app.get('/', (req, res) => {
 	res.send('Hello World');
 });
