@@ -43,6 +43,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import axios from 'axios'
 const useMediaQuery = (query: string): boolean => {
   const [matches, setMatches] = useState(false)
 
@@ -98,6 +99,44 @@ export default function DIYCommunityCreationDialog({
   const [open, setOpen] = useState(false)
   const [direction, setDirection] = useState(0)
   const isMobile = useMediaQuery("(max-width: 640px)")
+  const [profileImageLoading, setProfileImageLoading] = useState(false)
+  const [bannerImageLoading, setBannerImageLoading] = useState(false)
+  const [profileImageError, setProfileImageError] = useState<string | null>(null)
+  const [bannerImageError, setBannerImageError] = useState<string | null>(null)
+
+  const [formData, setFormData] = useState({})
+  async function handleProfileImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      setProfileImageLoading(true)
+      console.log("loading...")
+      const url = `${import.meta.env.VITE_SERVER_URL}/api/v1/get-s3-presigned-url`
+      const fileName = file.name;
+      const fileType = file.type;
+
+      const response = await axios.post(url, { filename: fileName, fileType: fileType });
+      if (response.status === 200) {
+        const preSignedUrl = response.data
+        console.log(response.data, 'server')
+        const uploadedFile = await axios.put(preSignedUrl.url, file, {
+          headers: {
+            'Content-Type': fileType,
+          },
+        })
+        console.log(uploadedFile);
+        if (uploadedFile.status === 200) {
+          const publicUrl = response.data.publicUrl
+          console.log(publicUrl)
+          setFormData((prev) => ({ ...prev, profileImage: url }))
+        }
+        else {
+          setProfileImageError('Error Uploading File ! Try Uploading Again !')
+        }
+      }
+    }
+
+  }
+
 
   const totalSteps = formSteps.length
 
@@ -191,6 +230,19 @@ export default function DIYCommunityCreationDialog({
                       <Upload className="mr-2 h-4 w-4" />
                       Upload {field.label}
                     </Button>
+                    <input
+                      type="file"
+                      id={field.name}
+                      accept='image/*'
+                      className="absolute opacity-0 w-full h-full cursor-pointer"
+                      onChange={(e) => {
+                        if (field.name === "profileImage") {
+                          handleProfileImageUpload(e)
+                        } else if (field.name === "bannerImage") {
+                          setBannerImageFile(e.target.files?.[0] || null);
+                        }
+                      }}
+                    />
                   </div>
                 )}
                 {field.type === 'radio' && (
@@ -261,23 +313,23 @@ export default function DIYCommunityCreationDialog({
         </Drawer>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
-  <TooltipProvider>
-                <Tooltip delayDuration={70}>
-                    <TooltipTrigger className={`${collabsable ? "block" : "hidden"}`}>
-                    <button onClick={() => setOpen(!open)} className={`${collabsable ? "flex":"hidden"} mt-1`}>
-            <img
-              src="/assets/matey-emoji/newComm.svg"
-              alt="new chat"
-              className="p-1 bg-mangoYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
-            />
-          </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-paleYellow">
-                        <p>Create New Community</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-         
+          <TooltipProvider>
+            <Tooltip delayDuration={70}>
+              <TooltipTrigger className={`${collabsable ? "block" : "hidden"}`}>
+                <button onClick={() => setOpen(!open)} className={`${collabsable ? "flex" : "hidden"} mt-1`}>
+                  <img
+                    src="/assets/matey-emoji/newComm.svg"
+                    alt="new chat"
+                    className="p-1 bg-mangoYellow hover:bg-softYellow rounded-lg w-14 h-14 cursor-pointer"
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-paleYellow">
+                <p>Create New Community</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
 
           <button onClick={() => setOpen(!open)} className={`${collabsable ? "hidden" : "flex"}  mt-1  gap-3 items-center bg-mangoYellow px-3 rounded-lg hover:bg-softYellow transition duration-300 ease-in-out`}>
             <img src="/assets/matey-emoji/newComm.svg" alt="new chat" className="w-12 h-12" />

@@ -6,6 +6,7 @@ import { getChatConversationHistory } from '../../controller/_private/getChatCon
 import { changeChatName } from '../../controller/_private/changeChatName.controller.js';
 import { deleteChat } from '../../controller/_private/deleteChat.controller.js';
 import { bookmarkChat } from '../../controller/_private/bookmarkChat.controller.js';
+import { getPresignedUrl } from '../../controller/_private/getPresignedUrl.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -15,4 +16,5 @@ paidDashbaord.route("/getChatConversationHistory").post(getChatConversationHisto
 paidDashbaord.route("/changeChatName").post(changeChatName);
 paidDashbaord.route("/deleteChat").post(deleteChat);
 paidDashbaord.route("/bookmarkChat").post(bookmarkChat);
+paidDashbaord.route("/get-s3-presigned-url").post(getPresignedUrl);
 export {paidDashbaord}

@@ -33,30 +33,32 @@ export async function Payment(req: Request, res: Response) {
         const discountPrice = totalPrice - (totalPrice * discount / 100);
 
         // Create PayPal payment JSON
+        
         const create_payment_json = {
             intent: 'sale',
             payer: {
-                payment_method: 'paypal'
+            payment_method: 'paypal'
             },
             redirect_urls: {
-                return_url: process.env.PAYPAL_SUCCESSS_REDIRECT_URL!,
-                cancel_url: process.env.PAYPAL_CANCEL_REDIRECT_URL!
+            return_url: process.env.PAYPAL_SUCCESSS_REDIRECT_URL!,
+            cancel_url: process.env.PAYPAL_CANCEL_REDIRECT_URL!
             },
             transactions: [{
-                item_list: {
-                    items: [{
-                        name: `Service Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}`, // Service Name
-                        sku: '001', // Unique SKU for the service
-                        price: discountPrice.toFixed(2), // Final price after discount
-                        currency: 'USD',
-                        quantity: 1
-                    }]
-                },
-                amount: {
-                    currency: 'USD',
-                    total: discountPrice.toFixed(2), // Total price for the transaction
-                },
-                description: `Purchase of Toolmate ${plan} plan for ${duration === "sixMonth" ? "6(Six)" : (duration === "yearly" ? "12(Twelve)" : "1(One)")} (Duration: ${durationInt} month(s))` // Description
+            item_list: {
+                items: [{
+                name: `Service Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}`, // Service Name
+                sku: '001', // Unique SKU for the service
+                price: discountPrice.toFixed(2), // Final price after discount
+                currency: 'USD',
+                quantity: 1
+                }]
+            },
+            amount: {
+                currency: 'USD',
+                total: discountPrice.toFixed(2), // Total price for the transaction
+            },
+            description: `Purchase of Toolmate ${plan} plan for ${duration === "sixMonth" ? "6(Six)" : (duration === "yearly" ? "12(Twelve)" : "1(One)")} (Duration: ${durationInt} month(s))`, // Description
+            custom: JSON.stringify({ userId }) // Custom field for userId
             }]
         };
 
