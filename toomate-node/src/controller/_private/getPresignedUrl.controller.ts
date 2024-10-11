@@ -34,7 +34,7 @@ export async function getPresignedUrl(req: Request, res: Response) {
         // After generating the presigned URL, you can also create a public URL
         const publicUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
 
-        return res.status(200).json({ url: presignedUrl, publicUrl: publicUrl }); // Include public URL in response
+        return res.status(200).json({ url: presignedUrl, publicUrl: publicUrl,params:params.Key }); // Include public URL in response
     } catch (error: any) {
         console.error('Error generating presigned URL:', error);
         return res.status(500).json({

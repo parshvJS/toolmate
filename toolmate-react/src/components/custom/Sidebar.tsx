@@ -14,7 +14,7 @@ import { Skeleton } from "../ui/skeleton"
 import { UserContext } from "@/context/userContext"
 import { iChatname } from "@/types/types"
 import { AlertTriangle, Ellipsis, Pencil, Trash, Trash2 } from "lucide-react"
-import { useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -39,7 +39,7 @@ const navItem = [
     {
         icon: "/assets/icons/communityNavIcon.svg",
         title: "Explore Community",
-        href: "/community",
+        href: "/explore-community",
     },
     {
         icon: "/assets/icons/userCommunityNavIcon.svg",
@@ -72,17 +72,17 @@ export default function ImprovedAnimatedSidebar({
 
     // useEffect(() => {
     //     if (!historyData || historyData.length === 0) return; // Exit if no data
-    
+
     //     // Filter out items that already exist in animatedHistory based on dateDiff
     //     const newItems = historyData.filter(
     //         (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
     //     );
-    
+
     //     // Check for duplicate sessionId in new items
     //     const isDuplicate = animatedHistory.some((existingItem) =>
     //         existingItem.data.some((chat) => chat.sessionId === sessionId)
     //     );
-    
+
     //     if (newItems.length > 0 && !isDuplicate) {
     //         setAnimatedHistory((prevAnimatedHistory) => [
     //             ...prevAnimatedHistory,
@@ -90,7 +90,7 @@ export default function ImprovedAnimatedSidebar({
     //         ]);
     //     }
     // }, [sessionId]); // Only depend on historyData and sessionId
-    
+
 
     // useEffect(() => {
     //     console.log("animatedHistory", animatedHistory)
@@ -256,9 +256,6 @@ export default function ImprovedAnimatedSidebar({
                 <p className="font-semibold">New Chat</p>
             </div>
 
-            <CommunityCreationDialog
-                collabsable={collabsable}
-            />
 
 
             <hr className="border border-l-stone-300 my-2" />
@@ -266,10 +263,10 @@ export default function ImprovedAnimatedSidebar({
             {/* Navigation Items */}
             <div className={`${collabsable ? "hidden" : "flex"} flex-col`}>
                 {navItem.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 py-2 px-4 hover:bg-softYellow cursor-pointer rounded-lg">
+                    <Link to={item.href} key={index} className="flex items-center gap-2 py-2 px-4 hover:bg-softYellow cursor-pointer rounded-lg">
                         <img src={item.icon} alt={item.title} className="w-8 h-8" />
                         <p className="font-semibold text-md">{item.title}</p>
-                    </div>
+                    </Link>
                 ))}
             </div>
 

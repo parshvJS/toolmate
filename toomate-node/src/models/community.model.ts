@@ -11,42 +11,38 @@ const CommunitySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    description: {
+  description: {
       type: String,
     },
-    profileImage: {
+    profileImageParams: {
       type: String,
     },
-    bannerImage: {
+    bannerImageParams: {
       type: String,
     },
     batch: {
       type: String,
-      enum: ['Most Active', 'New Community'],
       default: 'New Community',
     },
     memberList: {
-      type: [String], // Array of user IDs
+      type: [String],
     },
-
-    // New Fields
     tags: {
-      type: [String], // Flexible list of tags like ["Woodworking", "Painting", "Electronics"]
-      index: true,    // Ensure efficient tag-based searches
+      type: [String],
+      index: true,
     },
-    location: {
-      city: String,
-      country: String,
+    city: {
+      type: String,
+    },
+    country: {
+      type: String,
     },
     sponsored: {
       type: Boolean,
       default: false,
     },
     badges: {
-      type: [String], // Example badges: ["Top Community", "Innovative Projects"]
-    },
-    milestones: {
-      type: [String], // Example milestones: ["100 Members", "1000 Posts"]
+      type: [String],
     },
   },
   { timestamps: true }

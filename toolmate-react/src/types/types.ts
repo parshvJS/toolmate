@@ -1,4 +1,3 @@
-
 export interface IChat {
     role: string;
     message: string;
@@ -19,4 +18,17 @@ export interface ExpressionData {
   export interface iChatname {
     dateDiff: string;
     data:ChatItem[]
+  }
+
+  export interface ICommunityForm {
+    name: string;
+    description: string;
+    tags: string;
+    profileImage:string;
+    bannerImage?:string;
+    profileImageParams: string;
+    bannerImageParams?: string;
+    city?: string;
+    country?: string;
+    sponsored?: boolean;
   }

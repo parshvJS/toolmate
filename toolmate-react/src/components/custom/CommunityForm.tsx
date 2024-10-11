@@ -1,6 +1,4 @@
-'use client'
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,7 +33,8 @@ import {
   PenTool,
   Image as ImageIcon,
   FileImage,
-  Wrench
+  Wrench,
+  Loader
 } from 'lucide-react'
 import {
   Tooltip,
@@ -60,12 +59,13 @@ const useMediaQuery = (query: string): boolean => {
   return matches
 }
 
+
 const formSteps = [
   {
     title: "Craft Your Space",
     icon: <Paintbrush className="w-6 h-6" />,
     fields: [
-      { name: "communityName", label: "Community Name", type: "input", icon: <PenTool className="w-4 h-4" /> },
+      { name: "communityName", label: "Community Name", type: "input", icon: <PenTool className="w-4 h-4" />, },
       { name: "description", label: "Description", type: "textarea", icon: <Scissors className="w-4 h-4" /> },
       { name: "profileImage", label: "Profile Image", type: "file", icon: <ImageIcon className="w-4 h-4" /> },
       { name: "bannerImage", label: "Banner Image", type: "file", icon: <FileImage className="w-4 h-4" /> },
@@ -75,7 +75,6 @@ const formSteps = [
     title: "Build Your Community",
     icon: <Users className="w-6 h-6" />,
     fields: [
-      { name: "communityType", label: "Community Type", type: "radio", options: ["Public", "Private"], icon: <Wrench className="w-4 h-4" /> },
       { name: "tags", label: "Tags", type: "input", icon: <Tag className="w-4 h-4" /> },
       { name: "city", label: "City (Optional)", type: "input", icon: <MapPin className="w-4 h-4" /> },
       { name: "country", label: "Country (Optional)", type: "input", icon: <Globe className="w-4 h-4" /> },
@@ -101,14 +100,72 @@ export default function DIYCommunityCreationDialog({
   const isMobile = useMediaQuery("(max-width: 640px)")
   const [profileImageLoading, setProfileImageLoading] = useState(false)
   const [bannerImageLoading, setBannerImageLoading] = useState(false)
+
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [profileImageError, setProfileImageError] = useState<string | null>(null)
   const [bannerImageError, setBannerImageError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({})
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+
+
+  useEffect(() => {
+    console.log(formData)
+  }, [formData])
+
+  const getValue = (name: string) => formData[name] || ""
   async function handleProfileImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) {
       setProfileImageLoading(true)
+      console.log("loading...")
+      const url = `${import.meta.env.VITE_SERVER_URL}/api/v1/get-s3-presigned-url`
+      const fileName = file.name;
+      const fileType = file.type;
+
+      const response = await axios.post(url, { filename: fileName, fileType: fileType });
+      if (response.status === 200) {
+        const preSignedUrl = response.data
+        const params = preSignedUrl.params
+        console.log(response.data, 'server')
+        const uploadedFile = await axios.put(preSignedUrl.url, file, {
+          headers: {
+            'Content-Type': fileType,
+          },
+        })
+        console.log(uploadedFile);
+        if (uploadedFile.status === 200) {
+          const publicUrl = response.data.publicUrl
+          console.log(publicUrl)
+          setFormData((prev) => ({ ...prev, profileImage: publicUrl, profileImageParams: params }))
+        }
+        else {
+          setProfileImageError('Error Uploading File ! Try Uploading Again !')
+        }
+        setProfileImageLoading(false)
+      }
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Optionally, set focus back to the input if it gets lost
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+  async function handleBannerImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      setBannerImageLoading(true)
       console.log("loading...")
       const url = `${import.meta.env.VITE_SERVER_URL}/api/v1/get-s3-presigned-url`
       const fileName = file.name;
@@ -127,16 +184,15 @@ export default function DIYCommunityCreationDialog({
         if (uploadedFile.status === 200) {
           const publicUrl = response.data.publicUrl
           console.log(publicUrl)
-          setFormData((prev) => ({ ...prev, profileImage: url }))
+          setFormData((prev) => ({ ...prev, bannerImage: publicUrl, bannerImageParams: response.params }))
         }
         else {
-          setProfileImageError('Error Uploading File ! Try Uploading Again !')
+          setBannerImageError('Error Uploading File ! Try Uploading Again !')
         }
+        setBannerImageLoading(false)
       }
     }
-
   }
-
 
   const totalSteps = formSteps.length
 
@@ -165,24 +221,22 @@ export default function DIYCommunityCreationDialog({
     }),
   }
 
+
   const ProgressBar = () => (
     <div className="mb-8">
       <div className="flex justify-between mb-4">
         {formSteps.map((formStep, index) => (
-          <motion.div
+          <div
             key={index}
             className={`flex flex-col items-center ${index + 1 <= step ? 'text-yellow-600' : 'text-gray-400'
               }`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
           >
             <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center mb-2 ${index + 1 <= step ? 'border-yellow bg-paleYellow' : 'border-slate-300 bg-slate-100'
               }`}>
               {formStep.icon}
             </div>
             <div className="text-md font-medium text-center">{formStep.title}</div>
-          </motion.div>
+          </div>
         ))}
       </div>
       <div className="relative">
@@ -219,17 +273,65 @@ export default function DIYCommunityCreationDialog({
                   <span className="ml-2">{field.label}</span>
                 </Label>
                 {field.type === 'input' && (
-                  <Input id={field.name} placeholder={`Enter ${field.label.toLowerCase()}`} className="pl-10 bg-gray-50 border-2 border-gray-200 focus:border-yellow" />
+
+                  <Input
+                    ref={inputRef} // Use ref here
+                    id={field.name}
+                    name={field.name}
+                    value={getValue(field.name)}
+                    onChange={handleChange}
+                  />
                 )}
+
                 {field.type === 'textarea' && (
-                  <Textarea id={field.name} placeholder={`Enter ${field.label.toLowerCase()}`} className="pl-10 bg-gray-50 border-2 border-gray-200 focus:border-yellow" />
+                  <Textarea
+                    id={field.name}
+                    name={field.name}
+                    value={getValue(field.name)} // Controlled textarea value
+                    onChange={handleChange} // Change handler
+                  />
                 )}
+
                 {field.type === 'file' && (
                   <div className="mt-1 flex items-center">
                     <Button variant="outline" size="lg" className="bg-gray-50 border-2 border-gray-200 hover:bg-teal-50 hover:border-yellow">
                       <Upload className="mr-2 h-4 w-4" />
                       Upload {field.label}
                     </Button>
+                    {
+                      field.name === "profileImage"
+                        ? (profileImageLoading ?
+                          <span className="ml-2 text-sm text-gray-400">
+                            <div className='flex gap-2'>
+                              <div className="animate-spin ">
+                                <Loader />
+                              </div>
+                              <div className="text-xs">Uploading...</div>
+                            </div>
+                          </span> : (
+                            formData.profileImage ? <img
+                              src={formData.profileImage}
+                              alt="profile"
+                              className="w-20 h-20 border-2 border-slate-600 rounded-md ml-2"
+                            /> : null
+                          )) : (
+                          bannerImageLoading ?
+                            <span className="ml-2 text-sm text-gray-400">
+                              <div className='flex gap-2'>
+                                <div className="animate-spin ">
+                                  <Loader />
+                                </div>
+                                <div className="text-xs">Uploading...</div>
+                              </div>
+                            </span> : (
+                              formData.bannerImage ? <img
+                                src={formData.bannerImage}
+                                alt="banner"
+                                className="w-36 h-20 border-2 border-slate-600   rounded-md ml-2"
+                              /> : null
+                            )
+                        )
+                    }
                     <input
                       type="file"
                       id={field.name}
@@ -239,7 +341,7 @@ export default function DIYCommunityCreationDialog({
                         if (field.name === "profileImage") {
                           handleProfileImageUpload(e)
                         } else if (field.name === "bannerImage") {
-                          setBannerImageFile(e.target.files?.[0] || null);
+                          handleBannerImageUpload(e)
                         }
                       }}
                     />

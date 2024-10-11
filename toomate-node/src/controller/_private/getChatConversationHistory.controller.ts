@@ -101,8 +101,8 @@ async function getCommunityDetails(communityId: string[]): Promise<{ success: bo
                 name: community.name,
                 memberCount: community.memberCount,
                 description: community.description,
-                profileImage: community.profileImage,
-                bannerImage: community.bannerImage,
+                profileImage: community.profileImageParams,
+                bannerImage: community.bannerImageParams,
                 tag: community.tags,
             })),
         };

@@ -37,8 +37,9 @@ app.get('/', (req, res) => {
 });
 
 // Start Kafka consumer
-// startMessageConsumer();
-startNewMessageConsumer();
+startMessageConsumer();
+console.log('starting new message consumer');
+// startNewMessageConsumer();
 // Create an HTTP server
 const server = http.createServer(app);
 

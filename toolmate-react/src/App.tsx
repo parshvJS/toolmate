@@ -12,6 +12,9 @@ import { ChatPageNew } from "./_private/socket/pages/ChatPageNew";
 import SocketProvider from "./context/socketContext";
 import { SocketLayout } from "./_private/socket/SocketLayout";
 import { Toaster } from "./components/ui/toaster";
+import { ExploreCommunity } from "./_private/pages/ExploreCommunity";
+import { MyCommunity } from "./_private/pages/MyCommunity";
+import { CommunityCreationForm } from "./components/custom/CommunityCreationForm";
 
 function App() {
   return (
@@ -30,6 +33,9 @@ function App() {
         {/* Private pages */}
         <Route element={<DashaboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/explore-community" element={<ExploreCommunity />} />
+          <Route path="/my-community" element={<MyCommunity />} />
+          <Route path="/create" element={<CommunityCreationForm />} />
 
           {/* Wrap the routes that need the SocketProvider */}
           <Route element={<SocketLayout />}>
