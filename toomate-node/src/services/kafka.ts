@@ -1,23 +1,25 @@
-import { Kafka, Producer, Consumer, logLevel } from 'kafkajs';
+import { Kafka, Producer, Consumer } from 'kafkajs';
 import { Chat } from '../models/chat.model.js';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
 
+
 const kafka = new Kafka({
-	brokers: [
-	  'b-3.toolmatechat.ywtv7q.c2.kafka.ap-southeast-2.amazonaws.com:9094', // TLS endpoint
-	  'b-2.toolmatechat.ywtv7q.c2.kafka.ap-southeast-2.amazonaws.com:9094',
-	  'b-1.toolmatechat.ywtv7q.c2.kafka.ap-southeast-2.amazonaws.com:9094'
-	],
-	clientId: 'chat-service',
+	brokers: ['kafka-3c67e43a-jsparshv-af38.g.aivencloud.com:11772'],
 	ssl: {
-	  ca: fs.readFileSync(path.join('./ca.pem'), 'utf-8'),
+		ca: [fs.readFileSync(path.resolve('./ca.pem'), 'utf-8')],
 	},
-  });
-  
-  
+	sasl: {
+		//   username: process.env.KAFKA_USERNAME!,
+		//   password: process.env.KAFKA_PASSWORD!,
+		username: 'avnadmin',
+		password: 'AVNS_3M46VBBV8AJkB4jOJhD',
+		mechanism: 'plain',
+	},
+});
+
 let producer: null | Producer = null;
 
 export async function createProducer() {

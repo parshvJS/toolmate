@@ -11,14 +11,17 @@ const CommunitySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-  description: {
+    description: {
       type: String,
+      required: true,
     },
     profileImageParams: {
       type: String,
+      required: true,
     },
     bannerImageParams: {
       type: String,
+      required: true,
     },
     batch: {
       type: String,
@@ -29,13 +32,15 @@ const CommunitySchema = new mongoose.Schema(
     },
     tags: {
       type: [String],
-      index: true,
+      default: [],
     },
     city: {
       type: String,
+      default: '',
     },
     country: {
       type: String,
+      default: '',
     },
     sponsored: {
       type: Boolean,
@@ -43,6 +48,7 @@ const CommunitySchema = new mongoose.Schema(
     },
     badges: {
       type: [String],
+      default: [],
     },
   },
   { timestamps: true }

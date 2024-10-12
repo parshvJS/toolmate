@@ -35,7 +35,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/explore-community" element={<ExploreCommunity />} />
           <Route path="/my-community" element={<MyCommunity />} />
-          <Route path="/create" element={<CommunityCreationForm />} />
+          <Route path="/createCommunity" element={<CommunityCreationForm />} />
 
           {/* Wrap the routes that need the SocketProvider */}
           <Route element={<SocketLayout />}>

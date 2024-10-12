@@ -51,7 +51,7 @@ export function SocketLayout() {
                 <div
                     className={classNames("transition-all duration-300 ease-in-out overflow-hidden", {
                         "w-[64px]": collapsed,  // Collapsed width
-                        "w-[340px]": !collapsed  // Expanded width
+                        "w-[430px]": !collapsed  // Expanded width
                     })}
                 >
                     <Toolbar
