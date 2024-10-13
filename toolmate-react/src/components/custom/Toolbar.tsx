@@ -68,7 +68,7 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
                             </div>
 
                         </div>
-                        <div className={`px-4 mb-5 ${isMateyOpen ? "flex-1" : ""}`}> {/* This also takes up the remaining 50% */}
+                        <div className={`px-2 pt-2 mb-5 ${isMateyOpen ? "flex-1" : ""}`}> {/* This also takes up the remaining 50% */}
 
                             <div className="flex justify-between py-2 px-2 bg-slate-200 rounded-md">
                                 <div className="flex gap-2">
