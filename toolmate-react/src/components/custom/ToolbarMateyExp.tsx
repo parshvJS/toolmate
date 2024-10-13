@@ -3,9 +3,11 @@ import React from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 
 export function ToolbarMateyExp({
-    expression
+    expression,
+    isMateyOpen,
 }: {
-    expression: string
+    expression: string,
+    isMateyOpen: boolean;
 }) {
     const [expressionState, setExpressionState] = useState<string>('hello');
 
@@ -15,11 +17,11 @@ export function ToolbarMateyExp({
 
     return (
         <div
-            className="flex items-center p-2 rounded-md mt-2 min-h-full mb-2 relative"
+            className={`${isMateyOpen ? "flex" : "hidden"} items-center p-2 rounded-md mt-2 h-full mb-2 relative`}
             style={{
                 backgroundImage: 'url(/assets/images/matey-bg.png)',
                 backgroundRepeat: 'no-repeat',
-                backgroundSize: 'cover'
+                backgroundSize: 'cover',
             }}
         >
             <RenderImage expression={expressionState} />
@@ -64,18 +66,18 @@ const RenderImage: React.FC<Props> = ({ expression }) => {
 
     return (
         <AnimatePresence>
-        <motion.img
-            key={imageUrl} // Make sure the image gets re-rendered on expression change
-            src={imageUrl}
-            alt={expression}
-            className="absolute w-full h-96 object-contain mb-7"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-        />
-      </AnimatePresence>
-      
+            <motion.img
+                key={imageUrl} // Make sure the image gets re-rendered on expression change
+                src={imageUrl}
+                alt={expression}
+                className="absolute w-full h-80 object-contain mb-7"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+            />
+        </AnimatePresence>
+
     );
 };
 

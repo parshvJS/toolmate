@@ -31,7 +31,7 @@ export function SocketLayout() {
                         <TooltipProvider>
                             <Tooltip delayDuration={90}>
                                 <TooltipTrigger>
-                                    <div className="p-1 text-white bg-yellow hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
+                                    <div className="p-1 text-white bg-yellow/60 hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
                                         <Columns2 />
                                     </div>
                                 </TooltipTrigger>
@@ -51,7 +51,7 @@ export function SocketLayout() {
                 <div
                     className={classNames("transition-all duration-300 ease-in-out overflow-hidden", {
                         "w-[64px]": collapsed,  // Collapsed width
-                        "w-[430px]": !collapsed  // Expanded width
+                        "w-[380px]": !collapsed  // Expanded width
                     })}
                 >
                     <Toolbar

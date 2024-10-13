@@ -1,16 +1,17 @@
 
-import { Lightbulb, } from "lucide-react";
+import { Box, ChevronDown, ChevronUp, Lightbulb, Tag, } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToolbarLabel } from "./ToolbarLabel";
 import { ToolbarMateyExp } from "./ToolbarMateyExp";
 import CustomSlider from "./Slider";
-import { ProductSuggestion } from "./productSuggestion";
+import { useState } from "react";
+import { ProductSuggestion } from "./ProductSuggestion";
+import { Separator } from "@/components/ui/separator"
 
 
 export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCollapsed: React.Dispatch<React.SetStateAction<boolean>> }) {
-
-
+    const [isMateyOpen, setIsMateyOpen] = useState(false);
+    const [isToolSuggestionOpen, setIsToolSuggestionOpen] = useState(false);
     return (
         <div className="border-l-2 border-slate-300 h-screen"> {/* Use h-screen to take the full viewport height */}
             {
@@ -21,8 +22,8 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
                 ) : (
                     <div className="h-full flex flex-col">
                         {/* Ensure each child takes up 50% of the height */}
-                        <div className="flex-1 h-[40%]">
-                            <Tabs defaultValue="tool" className="p-4 h-full">
+                        <div className={`${isMateyOpen ? "h-[60%]" : "flex-1"}`}>
+                            {/* <Tabs defaultValue="tool" className="p-4 h-full">
                                 <TabsList className="w-full bg-slate-200">
                                     <TabsTrigger value="tool" className="data-[state=active]:bg-yellow w-1/2 my-2">Tool Suggestion</TabsTrigger>
                                     <TabsTrigger value="price" className="data-[state=active]:bg-yellow w-1/2">Set Project Budget</TabsTrigger>
@@ -33,17 +34,62 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
                                 <TabsContent value="price">
                                     <CustomSlider />
                                 </TabsContent>
-                            </Tabs>
-                        </div>
-                        <div className="flex-1 p-4"> {/* This also takes up the remaining 50% */}
-                            <ToolbarLabel
-                                icon={<Lightbulb />}
-                                name="Matey"
-                            />
+                            </Tabs> */}
 
-                            <ToolbarMateyExp
-                                expression="confident"
-                            />
+
+                            <div className="m-1 flex gap-1">
+
+                                <div
+                                    onClick={() => {
+                                        if (!isToolSuggestionOpen) {
+                                            setIsToolSuggestionOpen(true);
+                                        }
+                                    }}
+                                    className={`p-2 flex justify-center items-center  hover:bg-lightYellow cursor-pointer rounded-md transition-colors duration-300 ${isToolSuggestionOpen ? "bg-softYellow" : "bg-white"} `}>
+                                    <Box />
+                                </div>
+                                <div
+                                    onClick={() => {
+                                        if (isToolSuggestionOpen) {
+                                            setIsToolSuggestionOpen(false);
+                                        }
+                                    }}
+                                    className={`p-2 flex justify-center items-center hover:bg-lightYellow cursor-pointer rounded-md transition-colors duration-300 ${!isToolSuggestionOpen ? "bg-softYellow" : "bg-white"} `}>
+                                    <Tag />
+                                </div>
+                            </div>
+                            {/* <Separator className="border border-slate-700" /> */}
+                            <div>
+                                {
+                                    isToolSuggestionOpen ? <ProductSuggestion
+                                        isMateyOpen={isMateyOpen}
+                                    /> : <CustomSlider />
+                                }
+                            </div>
+
+                        </div>
+                        <div className={`px-4 mb-5 ${isMateyOpen ? "flex-1" : ""}`}> {/* This also takes up the remaining 50% */}
+
+                            <div className="flex justify-between py-2 px-2 bg-slate-200 rounded-md">
+                                <div className="flex gap-2">
+                                    <Lightbulb />
+                                    <p className="font-semibold">Matey</p>
+                                </div>
+
+                                <div
+                                    onClick={() => setIsMateyOpen(!isMateyOpen)}
+                                    className="cursor-pointer"
+                                >
+                                    {isMateyOpen ? <ChevronUp /> : <ChevronDown />}
+                                </div>
+
+                            </div>
+                            {
+                                isMateyOpen && <ToolbarMateyExp
+                                    expression="confident"
+                                    isMateyOpen={isMateyOpen}
+                                />
+                            }
                         </div>
                     </div>
                 )
