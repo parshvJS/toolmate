@@ -36,6 +36,7 @@ export async function getChatConversationHistory(req: Request, res: Response) {
         const { page = 1, limit = 10 } = pagination;
 
         // Fetch chat history
+        console.log("sessionId", sessionId);
         const chatHistory = await Chat.find({ sessionId })
             .sort({ createdAt: 1 })
             .skip((page - 1) * limit)
@@ -68,7 +69,7 @@ export async function getChatConversationHistory(req: Request, res: Response) {
             communitySuggested: communityDetails?.success ? communityDetails.data?.find((community: any) => community._id === String(chat.communityId)) : null,
             productSuggested: productDetails?.success ? productDetails.data?.find((product: any) => product._id === String(chat.productId)) : null,
         }));
-
+        console.log(newChatHistory);
         res.status(200).json({
             success: true,
             data: newChatHistory,

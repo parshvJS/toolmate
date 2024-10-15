@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 
 export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCollapsed: React.Dispatch<React.SetStateAction<boolean>> }) {
     const [isMateyOpen, setIsMateyOpen] = useState(false);
-    const [isToolSuggestionOpen, setIsToolSuggestionOpen] = useState(false);
+    const [isToolSuggestionOpen, setIsToolSuggestionOpen] = useState(true);
     return (
         <div className="border-l-2 border-slate-300 h-screen"> {/* Use h-screen to take the full viewport height */}
             {
@@ -68,7 +68,7 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
                             </div>
 
                         </div>
-                        <div className={`px-2 pt-2 mb-5 ${isMateyOpen ? "flex-1" : ""}`}> {/* This also takes up the remaining 50% */}
+                        <div className={`px-2 pt-1 mb-5 ${isMateyOpen ? "flex-1" : ""}`}> {/* This also takes up the remaining 50% */}
 
                             <div className="flex justify-between py-2 px-2 bg-slate-200 rounded-md">
                                 <div className="flex gap-2">

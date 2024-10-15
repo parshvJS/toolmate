@@ -71,7 +71,7 @@ export default function TradingVolumeSlider() {
     }
 
     return (
-        <div className="w-full ">
+        <div className="w-full p-4">
             <div>
                 <ToolbarLabel name="Customize Your Budget" icon={<Tag />} />
             </div>

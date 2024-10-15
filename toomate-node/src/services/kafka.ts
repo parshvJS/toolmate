@@ -79,7 +79,7 @@ export async function produceMessage(
 }
 export async function startMessageConsumer() {
 	console.log('Consumer is running..');
-	const consumer: Consumer = kafka.consumer({ groupId: 'default' });
+	const consumer: Consumer = kafka.consumer({ groupId: 'new-message-group' });
 	await consumer.connect();
 	await consumer.subscribe({ topic: 'PREV-MESSAGES', fromBeginning: true });
 
@@ -124,6 +124,7 @@ export async function startMessageConsumer() {
 
 
 export async function startNewMessageConsumer() {
+	
 	console.log('Consumer is running..');
 	const consumer: Consumer = kafka.consumer({ groupId: 'default' });
 	await consumer.connect();

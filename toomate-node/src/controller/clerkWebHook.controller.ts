@@ -14,7 +14,7 @@ export async function handleClerkWebhook(req: Request, res: Response) {
   // Get the headers and body
   const headers: any = req.headers
   const payload: any = req.body
-
+  console.log('payload', payload)
   // Get the Svix headers for verification
   const svix_id = headers['svix-id']
   const svix_timestamp = headers['svix-timestamp']

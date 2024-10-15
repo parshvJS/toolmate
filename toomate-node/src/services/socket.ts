@@ -54,9 +54,9 @@ export async function handleSocketSerivce(socket: Socket) {
 
     // this service will stream some response
     socket.on('userMessage', async (data: INewUserMessage) => {
-        console.log("user message", data.message);
+        console.log("user message", data);
 
-        await produceNewMessage(data.message, data.sessionId, false, false, 'user');
+        await produceNewMessage(data.message, data.sessionId, false, false, 'user',[],[]);
         await findAndExecuteIntend(data.message, data.sessionId, socket);
     })
 

@@ -32,7 +32,11 @@ interface RightSidebarContextProps {
 const INITIAL_RIGHT_SIDEBAR_CONTEXT: RightSidebarContextProps = {
   sliderValue: 500,
   isBudgetOn: false,
-  breakpoints: [],
+  breakpoints: [
+    { value: 500, label: 'Low', tooltip: 'Budget-friendly products' },
+    { value: 1000, label: 'Medium', tooltip: 'Mid-range products' },
+    { value: 2000, label: 'High', tooltip: 'Premium products' }
+  ],
   productSuggestions: [
     {
       "id": 1,
@@ -114,7 +118,7 @@ export const RightSidebarContext = createContext<RightSidebarContextProps>(INITI
 
 export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sliderValue, setSliderValue] = useState<number>(0);
-  const [isBudgetOn, setIsBudgetOn] = useState<boolean>(false);
+  const [isBudgetOn, setIsBudgetOn] = useState<boolean>(true);
   const [breakpoints, setBreakpoints] = useState<Breakpoint[]>(INITIAL_RIGHT_SIDEBAR_CONTEXT.breakpoints);
   const [productSuggestions, setProductSuggestions] = useState<ProductSuggestion[]>(INITIAL_RIGHT_SIDEBAR_CONTEXT.productSuggestions);
   const [isSliderBreakPointEmpty, setIsSliderBreakPointEmpty] = useState<boolean>(true);
