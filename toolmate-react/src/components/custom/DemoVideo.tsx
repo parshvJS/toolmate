@@ -31,7 +31,7 @@ export default function DemoVideo() {
   }, []);
 
   return (
-    <div className="md:p-14  border-1 border-slate-400 rounded-lg w-full h-full">
+    <div className="  border-1 border-slate-400 rounded-lg w-full h-full">
       <Link to="/preview" className="flex items-center gap-2 text-white rounded-md">
       <video
         ref={videoRef}

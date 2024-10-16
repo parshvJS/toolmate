@@ -15,8 +15,11 @@ import { Toaster } from "./components/ui/toaster";
 import { ExploreCommunity } from "./_private/pages/ExploreCommunity";
 import { MyCommunity } from "./_private/pages/MyCommunity";
 import { CommunityCreationForm } from "./components/custom/CommunityCreationForm";
+import { useUser } from "@clerk/clerk-react";
 
 function App() {
+  const {user} = useUser()
+  console.log(user,"user")
   return (
     <main className="h-screen w-full font-roboto">
       <Routes>

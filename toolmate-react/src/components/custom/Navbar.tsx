@@ -40,6 +40,36 @@ const components: { title: string; href: string; description: string, icon: stri
 
 ];
 
+
+const info: { title: string; href: string; description: string, icon: string }[] = [
+  {
+    title: "Help & Support",
+    href: "/help",
+    description:
+      "Get help with your account, billing, and more.",
+    icon: "/assets/mobileNavIcons/help.svg"
+  },
+  {
+    title: "About",
+    href: "/about",
+    description: "Learn more about Toolmate and our team.",
+    icon: "/assets/mobileNavIcons/about.svg"
+  },
+  {
+    title: "Contact Us",
+    href: "/contact",
+    description: "Reach out to us for help or feedback.",
+    icon: "/assets/mobileNavIcons/contact.svg"
+  },
+  {
+    title: "Partner",
+    description: "Join our partner program to grow your business.",
+    href: "/partner",
+    icon: "/assets/mobileNavIcons/partner.svg"
+  },  
+]
+
+
 // Define the structure of NavItem to handle dropdown
 type NavItem = {
   name: string;
@@ -64,31 +94,19 @@ const navItems: NavItem[] = [
     href: "/pricing",
     icon: "/assets/mobileNavIcons/percentage.svg"
   },
-  {
-    name: "Partner",
-    href: "/partner",
-    icon: "/assets/mobileNavIcons/partner.svg"
-  },
-  {
-    name: "About",
-    href: "/about",
-    icon: "/assets/mobileNavIcons/about.svg"
-  },
-  {
-    name: "Contact Us",
-    href: "/contact",
-    icon: "/assets/mobileNavIcons/contact.svg"
-  },
+
+ 
   {
     name: "Blog",
     href: "/blog",
     icon: "/assets/mobileNavIcons/blog.svg"
   },
   {
-    name: "Help & Support",
-    href: "/help",
-    icon: "/assets/mobileNavIcons/help.svg"
-  },
+    name: "Info",
+    dropdown: info,
+    icon: "/assets/mobileNavIcons/info.svg"
+  }
+ 
 ];
 
 export default function Navbar() {
@@ -102,7 +120,7 @@ export default function Navbar() {
   return (
     <div className="fixed top-0 left-0 md:pt-0 pt-2 w-full right-0 z-50 bg-white/50 backdrop-blur-md shadow-md  ">
       {/* desktop navigation menu */}
-      <div className="justify-between items-center m-0 p-2 hidden md:flex">
+      <div className="justify-between items-center m-0 p-2 hidden md:flex px-24">
         <Logo />
 
         <NavigationMenu>

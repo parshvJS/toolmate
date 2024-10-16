@@ -2,31 +2,11 @@ import connectDB from "../../db/db.connect.js";
 import User from "../../models/user.model.js";
 import { UserPayment } from "../../models/userPayment.model.js";
 import { Request, Response } from "express";
-import CryptoJS from "crypto-js";
-
-// Helper function to generate encrypted data with an expiry
-interface TokenData {
-    data: string;
-    expiry: Date;
-}
-
-const encryptWithExpiry = (data: any, secretKey: string, expiryInDays: number): TokenData => {
-    const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + expiryInDays);
-    const token: TokenData = {
-        data: encryptedData,
-        expiry: expiryDate,
-    };
-    return token;
-};
+import { getRedisData, setRedisData } from "../../services/redis.js";
 
 export async function handleUserPaidAndPersonalInfo(req: Request, res: Response) {
     try {
-        await connectDB();
-        const { clerkUserId, currentDate } = req.body;
-
-        console.log("handleUserPaidAndPersonalInfo called", clerkUserId, currentDate);
+        const { clerkUserId } = req.body;
         if (!clerkUserId) {
             return res.status(400).json({
                 success: false,
@@ -34,6 +14,22 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
                 message: "Please provide clerkUserId"
             });
         }
+
+        // check the existing value in redis
+        const redisData = await getRedisData(`USER-PAYMENT-${clerkUserId}`);
+        if (redisData.success) {
+            console.log("hit")
+            return res.status(200).json({
+                success: true,
+                status: 200,
+                data: redisData.data
+            });
+        }
+
+        await connectDB();
+
+
+        console.log("handleUserPaidAndPersonalInfo called", clerkUserId);
 
         // Retrieve user info
         const user = await User.findOne({ clerkUserId });
@@ -57,33 +53,26 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
             });
         }
 
-        // Encrypt the planAccess array
-        const secretKey = process.env.PAYMENT_SECURE_KEY || 'defaultSecretKey';
-        const encryptedPlanAccess = CryptoJS.AES.encrypt(JSON.stringify(paidUser.planAccess), secretKey).toString();
-
-        // Encrypt token with expiry (1 day)
-        const tokenData = {
-            userId: user._id,
-            planAccess: paidUser.planAccess,
-            clerkUserId: user.clerkUserId
-        };
-        const encryptedToken = encryptWithExpiry(tokenData, secretKey, 1); // Token expires in 1 day
-
-        // Send response with encrypted plan access and encrypted token
-        console.log("User Paid and Personal Info fetched successfully with encryption!", paidUser, user,{
+        // Send response with user and payment info
+        console.log("User Paid and Personal Info fetched successfully!", paidUser, user, {
             id: user._id,
             clerkUserId: user.clerkUserId,
-            encryptedPlanAccess: encryptedPlanAccess,
-            encryptedToken: encryptedToken
+            planAccess: paidUser.planAccess
         });
+
+        // set the data to redis
+        const redisSetData = await setRedisData(`USER-PAYMENT-${clerkUserId}`, JSON.stringify({
+            id: user._id,
+            clerkUserId: user.clerkUserId,
+            planAccess: paidUser.planAccess
+        }), 60 * 60 * 24);
         return res.status(200).json({
             success: true,
             status: 200,
             data: {
                 id: user._id,
                 clerkUserId: user.clerkUserId,
-                encryptedPlanAccess: encryptedPlanAccess,
-                encryptedToken: encryptedToken
+                planAccess: paidUser.planAccess
             }
         });
 
@@ -95,3 +84,6 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
         });
     }
 }
+
+
+

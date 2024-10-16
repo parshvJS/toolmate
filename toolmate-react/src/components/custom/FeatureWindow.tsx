@@ -60,7 +60,7 @@ export default function FeatureWindow() {
       {/* main sections */}
       {largeFeatureCardsContent.map((feature, index) => (
         // main content
-        <div className="my-7 gap-5 md:mx-16" key={index}>
+        <div className="my-7 gap-5" key={index}>
           {/* main content */}
           <div className="flex justify-between md:flex-row flex-col">
             {/* left side */}

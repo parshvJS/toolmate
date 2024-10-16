@@ -14,7 +14,7 @@ export default function Landing() {
       titleLable: "Tailored for Your Project",
       title: "Find the Perfect Tool for Every Job",
       desc: "Matey understands your unique DIY needs and suggests the right tools, from screwdrivers to power drills, ensuring you get the job done efficiently.",
-      ctaText: "Find Your Tools with Matey",
+      ctaText: "Find Tools with Matey",
       mateyImagePath: "/assets/matey/tools.svg",
       leftGradient: true,
     },
@@ -23,7 +23,7 @@ export default function Landing() {
       titleLable: "Tools That Fit Your Budget",
       title: "Get the Best Tools at the Best Prices",
       desc: "Matey offers the best tool suggestions within your budget, making sure you never break the bank, whether you’re a pro or a beginner DIYer.",
-      ctaText: "See Budget-Friendly Tools",
+      ctaText: "Budget-Friendly Tools",
       mateyImagePath: "/assets/matey/thinking.svg",
       leftGradient: false,
     },
@@ -32,14 +32,14 @@ export default function Landing() {
       titleLable: "Work Smarter, Work Safer",
       title: "Always Equipped with the Right Safety Gear",
       desc: "Matey ensures you work smarter and safer by recommending the best protective gear—like gloves, goggles, and dust masks—so you stay protected on every DIY project.",
-      ctaText: "Safeguard Your DIY Project",
+      ctaText: "Safeguard DIY Project",
       mateyImagePath: "/assets/matey/confident.svg",
       leftGradient: true,
     },
   ];
 
   return (
-    <div className="md:px-7 px-2">
+    <div className="md:px-20 px-2">
       <div className="md:mt-28 mt-20">
         {/* hero section */}
         <section className="flex justify-between md:flex-row flex-col md:p-6 p-2">
@@ -85,7 +85,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="absolute inset-0 -z-10 flex justify-center items-center md:top-[40rem] top-[550px]">
+          <div className="absolute inset-0 -z-10 flex justify-center items-start md:top-[-20rem]  top-[550px]">
             <img
               src="/assets/images/gradient-circle.svg"
               alt="gradient-circle"
@@ -99,16 +99,16 @@ export default function Landing() {
               alt="matey wavy"
               width={340}
               height={300}
-              className="md:w-96 w-56"
+              className="md:w-96 w-96"
             />
           </div>
         </section>
 
         {/* demo video section */}
-        <section className="w-full mt-20">
+        <section className="w-full mt-10">
           {/* main/base */}
-          <div className="bg-white md:p-4 p-2 md:border-2 border-slate-400 rounded-2xl">
-            {/* title infography */}
+          <div className="bg-white md:p-0 p-2 rounded-2xl">
+            {/* title infography
             <div className="md:flex hidden gap-2 items-center justify-center">
               <p className="text-3xl md:text-8xl font-semibold">
                 Let Matey Show His
@@ -118,7 +118,7 @@ export default function Landing() {
                   Know-how
                 </span>
               </h1>
-            </div>
+            </div> */}
 
             {/* mobile text */}
             <p className="md:hidden font-semibold text-4xl w-full h-full">
@@ -139,10 +139,35 @@ export default function Landing() {
             Makes <br />
             DIY Easier
           </p>
-          {/* Large Feature Card */}
+          {/* Large Feature Card
           {largeFeatureCardsContent.map((cardContent, index) => (
             <LargeFeatureCard key={index} {...cardContent} />
-          ))}
+          ))} */}
+
+          <div className="flex flex-wrap justify-center w-full gap-2">
+
+            {
+              largeFeatureCardsContent.map((cardContent, index) => (
+                <div className="w-[calc(33%-0.5rem)] h-96 flex flex-col justify-between bg-paleYellow px-11 py-7 rounded-md">
+                  <div className="w-full flex justify-between">
+                    <p className="text-3xl w-2/3 text-left">{cardContent.title}</p>
+                    <div className=" rounded-md w-fit h-fit p-2">
+                      <img src={cardContent.icon} width={40} height={40} />
+                    </div>
+                  </div>
+
+                  <Link to={"/preview"} className="flex flex-col gap-4">
+                    <p className="text-md text-left">{cardContent.desc}</p>
+
+                    <div className="px-4 text-lg hover:scale-105 text-white py-2 cursor-pointer bg-gradient-to-r to-orange-yellow-0 from-orange transition-all duration-150 w-2/3 rounded-md ">
+                      {cardContent.ctaText}
+                    </div>
+                  </Link>
+                </div>
+              ))
+            }
+
+          </div>
         </div>
 
         {/* grid stock video section */}
@@ -266,7 +291,7 @@ export default function Landing() {
 
         <div className="mx-16">
 
-          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left ">
+          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left mt-32">
             Explore
             <span className="text-orange text-left"> Interactive </span>
             Community

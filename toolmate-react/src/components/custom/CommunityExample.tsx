@@ -60,19 +60,19 @@ export default function CommunityExample() {
   ];
 
   return (
-    <section className="w-full">
-      dfdsf
+    <section className="w-full mt-10">
+  
       <Carousel
         opts={{
           align: "start",
         }}
         className="w-full"
       >
-        <CarouselContent>
+        <CarouselContent className="flex">
           {communityState.map((community, index) => (
             <CarouselItem
               key={index}
-              className="md:basis-1/2  lg:basis-1/3  flex justify-between  "
+              className="md:basis-1/2  lg:basis-1/3  flex justify-between "
             >
               <div className="border border-slate-300 rounded-2xl overflow-hidden flex flex-col justify-between  bg-gradient-to-tr bg-slate-50">
                 {/* top side  */}

@@ -100,7 +100,7 @@ export async function findAndExecuteIntend(
 		sessionId,
 		Number(process.env.CONTEXT_LIMIT_CHAT) || 15
 	); // get chat history from database
-
+	console.log("chatHistory", chatHistory);
 	const getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]),you can stack the intend also :
 1.Normal advice (default, must have for each prompt)
 2.Community suggestion

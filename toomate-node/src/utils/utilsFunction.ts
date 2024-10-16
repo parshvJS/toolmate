@@ -14,7 +14,10 @@ export async function getPremiumUserChatMessage(sessionId: string, memorySize: n
     if (chatHistory.length > memorySize) {
         return chatHistory.slice(chatHistory.length - memorySize, chatHistory.length);
     }
-    return chatHistory;
+    return chatHistory.reduce((acc: any, chat) => {
+        acc.push(chat.message);
+        return acc
+    },[]);
 }
 export function categorizeChatSessions(sessions: ChatSession[]) {
     const response: {
