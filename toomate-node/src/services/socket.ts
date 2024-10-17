@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import { iChatname, INewUserMessage } from "../types/types.js";
 import { createnewUserChatInstace } from "../controller/_private/createNewUserChatInstance.controller.js";
+import { getRedisData } from "./redis.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -18,10 +19,7 @@ export async function handleSocketSerivce(socket: Socket) {
             sessionId: ObjectId,
         });
     });
-
-
-
-
+// free user 
     socket.on('message', async (message: {
         prompt: string,
         sessionId: string
@@ -31,19 +29,6 @@ export async function handleSocketSerivce(socket: Socket) {
         await GetAnswerFromPrompt(prompt, sessionId, socket);
         await produceMessage(prompt, sessionId, '', 'user');
     });
-
-
-
-
-    // logged in user or premium user
-
-    // socket services
-    // 1. create new user session
-    // 2. give name of the chat 
-    // 3. steam some response 
-    // 4. suggest some community
-    // 5.  suggest some products
-    // 6. stream response 
 
 
     // this service creates new session for user
@@ -56,9 +41,28 @@ export async function handleSocketSerivce(socket: Socket) {
     socket.on('userMessage', async (data: INewUserMessage) => {
         console.log("user message", data);
 
-        await produceNewMessage(data.message, data.sessionId, false, false, 'user',[],[]);
-        await findAndExecuteIntend(data.message, data.sessionId, socket);
+        const redisUserData = await getRedisData(data.userId);
+        if(redisUserData.success){
+            const plan = redisUserData.data.planAccess;
+            // plan indicated by their number 0 - free , 1 - essential , 2 - pro
+            const currentPlan = plan[0] == true ? 0 : (plan[1] == true ? 1 : 2)
+            switch(currentPlan){
+                case 0 : {
+
+                }
+                 
+                case 1 :{
+                    
+                }
+            }
+        }
+
+        await produceNewMessage(data.message, data.sessionId, false, false, 'user', [], []);
+        await findAndExecuteIntend(data.message, data.sessionId,data.userId, socket);
     })
+
+    // paid services
+
 
 
 

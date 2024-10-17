@@ -6,7 +6,8 @@ export interface iChatname {
 
 export interface INewUserMessage {
     sessionId: string,
-    message: string
+    message: string,
+    userId:string,
 }
 export interface ChatSession {
     sessionId: string;

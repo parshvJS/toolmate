@@ -61,7 +61,7 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
         });
 
         // set the data to redis
-        const redisSetData = await setRedisData(`USER-PAYMENT-${clerkUserId}`, JSON.stringify({
+        await setRedisData(`USER-PAYMENT-${clerkUserId}`, JSON.stringify({
             id: user._id,
             clerkUserId: user.clerkUserId,
             planAccess: paidUser.planAccess

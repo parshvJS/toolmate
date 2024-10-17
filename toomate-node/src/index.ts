@@ -13,6 +13,7 @@ import { admin } from './routes/admin/admin.js';
 import { community } from './routes/_private/community.js';
 import Redis from 'ioredis';
 import { startRedisConnection } from './services/redis.js';
+import { paidService } from './routes/paidService/paidService.js';
 
 const app = express();
 const PORT = 5000;
@@ -37,6 +38,7 @@ app.use('/webhook', clerkRoute);
 app.use('/api/v1', paidDashbaord);
 app.use('/api/v1', admin)
 app.use('/api/v1', community);
+app.use('/api/v1',paidService)
 app.get('/', (req, res) => {
 	res.send('Hello World');
 });

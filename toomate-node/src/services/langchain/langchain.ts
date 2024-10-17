@@ -93,6 +93,7 @@ export async function GetAnswerFromPrompt(
 export async function findAndExecuteIntend(
 	prompt: string,
 	sessionId: string,
+	userId: string,
 	socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) {
 	console.log("prompt", prompt);

@@ -66,7 +66,7 @@ const info: { title: string; href: string; description: string, icon: string }[]
     description: "Join our partner program to grow your business.",
     href: "/partner",
     icon: "/assets/mobileNavIcons/partner.svg"
-  },  
+  },
 ]
 
 
@@ -95,7 +95,7 @@ const navItems: NavItem[] = [
     icon: "/assets/mobileNavIcons/percentage.svg"
   },
 
- 
+
   {
     name: "Blog",
     href: "/blog",
@@ -106,7 +106,7 @@ const navItems: NavItem[] = [
     dropdown: info,
     icon: "/assets/mobileNavIcons/info.svg"
   }
- 
+
 ];
 
 export default function Navbar() {
