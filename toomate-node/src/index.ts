@@ -14,6 +14,7 @@ import { community } from './routes/_private/community.js';
 import Redis from 'ioredis';
 import { startRedisConnection } from './services/redis.js';
 import { paidService } from './routes/paidService/paidService.js';
+import adsense from './routes/adsense/adsense.js';
 
 const app = express();
 const PORT = 5000;
@@ -36,9 +37,10 @@ app.use('/webhook', clerkRoute);
 
 // Routes
 app.use('/api/v1', paidDashbaord);
-app.use('/api/v1', admin)
+app.use('/api/v1/admin', admin)
 app.use('/api/v1', community);
-app.use('/api/v1',paidService)
+// app.use('/api/v1', paidService)
+app.use('/api/v1/adsense', adsense)
 app.get('/', (req, res) => {
 	res.send('Hello World');
 });

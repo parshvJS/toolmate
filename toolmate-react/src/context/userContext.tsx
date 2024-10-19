@@ -13,6 +13,7 @@ interface UserData {
 }
 
 interface UserContextType {
+    userId: string |null | undefined;
     userData: UserData | undefined;
     historyData: iChatname[] | undefined;
     isLoading: boolean;
@@ -25,6 +26,7 @@ interface UserContextType {
 }
 
 const INITIAL_USER_DATA: UserContextType = {
+    userId: undefined,
     userData: undefined,
     historyData: undefined,
     isLoading: false,
@@ -204,6 +206,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
     };
 
     const value: UserContextType = {
+        userId,
         userData,
         historyData,
         isLoading,

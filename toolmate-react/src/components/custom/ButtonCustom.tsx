@@ -27,7 +27,7 @@ function ButtonCustom({
         large: "px-5 py-3 text-lg md:px-6 md:py-4",
     };
 
-    const commonClasses = `w-fit flex items-center justify-center gap-2 rounded-full transition-all ${sizeClasses[size]}`;
+    const commonClasses = `w-fit flex items-center justify-center gap-2 rounded-lg transition-all ${sizeClasses[size]}`;
 
     const buttonVariants = {
         initial: { scale: 1 },

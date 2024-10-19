@@ -14,6 +14,7 @@ import {
 import { getChatMessages, getPremiumUserChatMessage } from '../../utils/utilsFunction.js';
 import { tool } from "@langchain/core/tools";
 import { tools } from './tools.js';
+import { getRedisData, setRedisData } from '../redis.js';
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -94,7 +95,8 @@ export async function findAndExecuteIntend(
 	prompt: string,
 	sessionId: string,
 	userId: string,
-	socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
+	socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
+	plan: number
 ) {
 	console.log("prompt", prompt);
 	const chatHistory = await getPremiumUserChatMessage(
@@ -102,15 +104,43 @@ export async function findAndExecuteIntend(
 		Number(process.env.CONTEXT_LIMIT_CHAT) || 15
 	); // get chat history from database
 	console.log("chatHistory", chatHistory);
-	const getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]),you can stack the intend also :
-1.Normal advice (default, must have for each prompt)
-2.Community suggestion
-3.Product suggestion 
-4.Guidance for project 
-5.Budget Planning
-6.Project time estimation
-User prompt:{prompt}
-Return only the selected intent numbers in an array:`;
+	let getIntendPrompt = '';
+
+	if (plan == 1) {
+		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
+		1. general response
+		2. community recommendation
+		3. product recommendation
+		4. follow up question for more understanding
+		5. Guidance of project
+		User prompt: ${prompt}
+		i. your job is to indicate the intend of user from the list above
+		ii. 1.General Response should always be there in array by default 
+		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	}
+	else if (plan == 2) {
+		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
+		1. general response
+		2. community recommendation
+		3. product recommendation
+		4. follow up question for more understanding
+		5. Guidance of project
+		User prompt: ${prompt}
+		i. your job is to indicate the intend of user from the list above
+		ii. 1.General Response should always be there in array by default 
+		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	}
+	else {
+		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
+		1. general response
+		4. follow up question for more understanding
+		5. Guidance of project
+		User prompt: ${prompt}
+		i. your job is to indicate the intend of user from the list above
+		ii. 1.General Response should always be there in array by default 
+		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	}
+
 
 	const intendTemplate = PromptTemplate.fromTemplate(getIntendPrompt);
 
@@ -130,29 +160,9 @@ Return only the selected intent numbers in an array:`;
 	console.log('user intend', JSON.parse(user_intend));
 	const intend = JSON.parse(user_intend.replace(['`', ' '], ['', '']));
 
-	// go thought all intends of user
-	for (let i = 0; i < intend.length; i++) {
-		switch (intend[i]) {
-			case 1:
-				await streamResponse(sessionId, prompt, chatHistory, socket)
-				break;
-			case 2:
-				// get memory from session and database
-				// generate
-				break;
-			case 3:
-				// get memory from session and database
-				// generate
-				break;
-			case 4:
-				// get memory from session and database
-				// generate
-				break;
-			case 5:
-				// get memory from session and database
-				// generate
-				break;
-		}
+	switch (intend) {
+		// general response
+		case 1: { }
 	}
 
 }
@@ -252,3 +262,155 @@ export async function getChatName(prompt: string) {
 }
 
 
+export async function getUserIntend(prompt: string, plan: number): Promise<number[]> {
+	let getIntendPrompt = '';
+
+	if (plan == 1) {
+		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
+		1. general response
+		2. community recommendation
+		3. product recommendation
+		4. follow up question for more understanding
+		5. Guidance of project
+		User prompt: ${prompt}
+		i. your job is to indicate the intend of user from the list above
+		ii. 1.General Response should always be there in array by default 
+		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	}
+	else if (plan == 2) {
+		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
+		1. general response
+		2. community recommendation
+		3. product recommendation
+		4. follow up question for more understanding
+		5. Guidance of project
+		User prompt: ${prompt}
+		i. your job is to indicate the intend of user from the list above
+		ii. 1.General Response should always be there in array by default 
+		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	}
+	else {
+		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
+		1. general response
+		4. follow up question for more understanding
+		5. Guidance of project
+		User prompt: ${prompt}
+		i. your job is to indicate the intend of user from the list above
+		ii. 1.General Response should always be there in array by default 
+		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	}
+
+	const intendTemplate = PromptTemplate.fromTemplate(getIntendPrompt);
+
+	const intendLLMChain = intendTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfIntend = RunnableSequence.from([
+		intendLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	const userIntend = await runnableChainOfIntend.invoke({
+		prompt, // User prompt
+	});
+
+	console.log('user intend', JSON.parse(userIntend));
+	return JSON.parse(userIntend.replace(/[` ]/g, ''));
+}
+
+// intend list and user Id
+export async function executeIntend(prompt: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, socket: Socket) {
+	// no project memory
+	const redisChatData = await getRedisData(`USER-CHAT-${userId}`);
+	var chatHistory;
+	if (redisChatData.success) {
+		chatHistory = redisChatData.data;
+	} else {
+		await connectDB();
+		const DbChatHistory = await Chat.find({ sessionId: sessionId });
+		console.log(DbChatHistory, 'DbChatHistory');
+		const NLessNum = DbChatHistory.length > 30 ? DbChatHistory.length - 30 : 0;
+		chatHistory = DbChatHistory.slice(NLessNum, DbChatHistory.length);
+		await setRedisData(`USER-CHAT-${userId}`, JSON.stringify(chatHistory), 3600);
+	}
+	var newChat = {
+		sessionId: userId,
+		message: '',
+		role: 'ai',
+		isProductSuggested: false,
+		isCommunitySuggested: false,
+		communityId: [],
+		productId: []
+	};
+	if (plan == 1) {
+		for (let i = 0; i < intend.length; i++) {
+			switch (intend[i]) {
+				// general response
+				case 1: {
+					socket.emit('status', {
+						message: "Matey Is Typing..."
+					})
+					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, socket);
+					newChat['message'] = generalResponse;
+				}
+				// community recommendation
+				case 2: {
+					socket.emit('status', {
+						message: "Matey Is Finding Community For You..."
+					})
+					newChat['isCommunitySuggested'] = true;
+					const communityId = await HandleCommunityRecommendation(prompt, chatHistory, signal, socket);
+
+				}
+				// product recommendation
+				case 3: {
+					socket.emit('status', {
+						message: "Matey Is Finding Product For You..."
+					})
+					newChat['isProductSuggested'] = true;
+					const productId = await HandleProductRecommendation(prompt, chatHistory, signal, false, null, socket);
+				}
+				// follow up question for more understanding
+				case 4: {
+
+				}
+				// Guidance of project
+				case 5: {
+
+				}
+				default: { }
+			}
+		}
+	}
+}
+
+
+async function HandleGeneralResponse(prompt: string, chatHistory: [], signal: AbortSignal, socket: Socket) {
+	const streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
+	| User Prompt: ${prompt} 
+	Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "Context not available"} 
+	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
+	const stream = await llm.stream(streamPrompt);
+
+	let gatheredResponse = '';
+
+	for await (const chunk of stream) {
+		if (signal.aborted) {
+			break;
+		}
+		gatheredResponse += chunk.content; // Assuming 'content' is the property holding the text
+		socket.emit('message', { text: chunk.content });
+	}
+	socket.emit('terminate', { done: true });
+
+	return gatheredResponse;
+}
+
+async function HandleCommunityRecommendation(prompt: string, chatHistory: [], signal: AbortSignal, socket: Socket) {
+
+}
+
+async function HandleProductRecommendation(prompt: string, chatHistory: [], signal: AbortSignal, isBudgetAvailable: boolean, budget: number | null, socket: Socket) {
+
+}

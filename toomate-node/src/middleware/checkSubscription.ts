@@ -1,7 +1,7 @@
-import connectDB from "@/db/db.connect";
-import User from "@/models/user.model";
-import { UserPayment } from "@/models/userPayment.model";
-import { getRedisData, setRedisData } from "@/services/redis";
+import connectDB from "../db/db.connect.js";
+import User from "../models/user.model.js";
+import { UserPayment } from "../models/userPayment.model.js";
+import { getRedisData, setRedisData } from "../services/redis.js";
 import { NextFunction, Response } from "express";
 
 export async function checkSubscription(req: any, res: Response, next: NextFunction) {

@@ -102,7 +102,7 @@ const navItems: NavItem[] = [
     icon: "/assets/mobileNavIcons/blog.svg"
   },
   {
-    name: "Info",
+    name: "More",
     dropdown: info,
     icon: "/assets/mobileNavIcons/info.svg"
   }

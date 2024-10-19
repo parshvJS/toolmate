@@ -104,6 +104,41 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="hidden flex w-full">
+          {/* left */}
+          <div className="w-1/2">
+            <div>
+              <p className="text-transparent font-[540] leading-tight bg-clip-text bg-gradient-to-r from-black tracking-tight to-orange  md:text-[5rem]  text-6xl text-left">
+                Find The Right Tool  For
+                Every DIY Job!
+              </p>
+
+            </div>
+            {/* bottom */}
+            <div className="w-full flex gap-4">
+             
+              <div className="w-1/2 mt-4 ">
+                <p className="font-bold md:text-lg text-md w-full text-justify">
+                  Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
+                </p>
+                <div className="flex gap-2 mt-4 items-center md:items-start ">
+                  <Link to={"/preview"} className="flex flex-col gap-4 w-full">
+                    <div className="px-4 text-lg hover:scale-105 text-white py-2 cursor-pointer bg-gradient-to-r to-orange-yellow-0 from-orange transition-all duration-150 w-2/3 rounded-md ">
+                      Chat With Matey Now
+                    </div>
+                  </Link>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div className="opacity-75 bg-gradient-to-r w-1/2 min-h-full rounded-xl from-lightOrange to-orange flex-1">
+            sdfsd
+          </div>
+
+        </section>
+
         {/* demo video section */}
         <section className="w-full mt-10">
           {/* main/base */}
@@ -134,9 +169,9 @@ export default function Landing() {
         <div className="md:my-20 mt-1 p-2">
           {/* header */}
           <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
-            Discover how
-            <span className="text-orange"> Matey </span>
-            Makes <br />
+            Discover How
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange to-lightOrange"> Matey </span>
+            Makes
             DIY Easier
           </p>
           {/* Large Feature Card

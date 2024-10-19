@@ -61,7 +61,6 @@ async function getRedisData(key:string){
         }
     }
 }
-
 async function setRedisData(key: string, value: string, expiry: number) {
     try {
         const data = await redisInstance.set(key, value, 'EX', expiry);
@@ -73,6 +72,31 @@ async function setRedisData(key: string, value: string, expiry: number) {
     }
 }
 
+async function updateRedisData(key: string, newValue: string) {
+    try {
+        const exists = await redisInstance.exists(key);
+        if (exists) {
+            const data = await redisInstance.set(key, newValue);
+            console.log("Data updated in Redis");
+            return {
+                success: true,
+                data
+            };
+        } else {
+            console.log("Key does not exist in Redis");
+            return {
+                success: false,
+                message: "Key does not exist"
+            };
+        }
+    } catch (error: any) {
+        console.error('Error updating data in Redis:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+}
 
 
 

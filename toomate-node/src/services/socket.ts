@@ -1,11 +1,13 @@
 import { Socket } from "socket.io";
-import { findAndExecuteIntend, GetAnswerFromPrompt, getChatName } from "./langchain/langchain.js";
+import { executeIntend, findAndExecuteIntend, GetAnswerFromPrompt, getChatName, getUserIntend } from "./langchain/langchain.js";
 import { produceMessage, produceNewMessage } from "./kafka.js";
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import { iChatname, INewUserMessage } from "../types/types.js";
 import { createnewUserChatInstace } from "../controller/_private/createNewUserChatInstance.controller.js";
-import { getRedisData } from "./redis.js";
+import { getRedisData, setRedisData } from "./redis.js";
+import connectDB from "../db/db.connect.js";
+import { UserPayment } from "../models/userPayment.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -19,7 +21,7 @@ export async function handleSocketSerivce(socket: Socket) {
             sessionId: ObjectId,
         });
     });
-// free user 
+    // free user 
     socket.on('message', async (message: {
         prompt: string,
         sessionId: string
@@ -39,34 +41,55 @@ export async function handleSocketSerivce(socket: Socket) {
 
     // this service will stream some response
     socket.on('userMessage', async (data: INewUserMessage) => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        socket.on('stop', () => {
+            controller.abort();
+        });
         console.log("user message", data);
 
-        const redisUserData = await getRedisData(data.userId);
-        if(redisUserData.success){
+        const redisUserData = await getRedisData(`USER-PAYMENT-${data.userId}`);
+        var currentPlan = 0;
+        if (redisUserData.success) {
+            console.log(data.userId, 'user payment details found in redis');
             const plan = redisUserData.data.planAccess;
             // plan indicated by their number 0 - free , 1 - essential , 2 - pro
-            const currentPlan = plan[0] == true ? 0 : (plan[1] == true ? 1 : 2)
-            switch(currentPlan){
-                case 0 : {
+            currentPlan = plan[1] == true ? 1 : plan[2] == true ? 2 : 1;
+        }
+        else {
+            await connectDB();
+            console.log(data.userId, 'user payment details not found in redis');
+            const userPlan = await UserPayment.findOne({
+                userId: data.userId
+            });
+            if (!userPlan) {
+                console.log('User payment details not found');
+                socket.emit('error', {
+                    message: "User not found",
+                    success: false
+                })
+                return;
+            }
+            const plan = userPlan.planAccess;
+            // plan indicated by their number 0 - free , 1 - essential , 2 - pro
+            currentPlan = plan[1] == true ? 1 : plan[2] == true ? 2 : 0;
+            await setRedisData(`USER-PAYMENT-${data.userId}`, JSON.stringify(userPlan), 3600);
+        }
+        switch (currentPlan) {
+            case 1: {
+                const intendList = await getUserIntend(data.message, currentPlan);
+                const messageSteam = await executeIntend(data.message, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
+                // handle all the intend    
+            }
+            case 2: {
 
-                }
-                 
-                case 1 :{
-                    
-                }
+            }
+            default: {
+
             }
         }
-
-        await produceNewMessage(data.message, data.sessionId, false, false, 'user', [], []);
-        await findAndExecuteIntend(data.message, data.sessionId,data.userId, socket);
+        // await produceNewMessage(data.message, data.sessionId, false, false, 'user', [], []);
     })
-
-    // paid services
-
-
-
-
-
 
 
     socket.on('disconnect', () => {

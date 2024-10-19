@@ -30,22 +30,16 @@ const CommunitySchema = new mongoose.Schema(
     memberList: {
       type: [String],
     },
+    // user can input this field
     tags: {
       type: [String],
       default: [],
-    },
-    city: {
-      type: String,
-      default: '',
-    },
-    country: {
-      type: String,
-      default: '',
     },
     sponsored: {
       type: Boolean,
       default: false,
     },
+    // admin can input this field
     badges: {
       type: [String],
       default: [],
