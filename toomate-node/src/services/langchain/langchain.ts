@@ -15,6 +15,8 @@ import { getChatMessages, getPremiumUserChatMessage } from '../../utils/utilsFun
 import { tool } from "@langchain/core/tools";
 import { tools } from './tools.js';
 import { getRedisData, setRedisData } from '../redis.js';
+import ProductCatagory from '../../models/productCatagory.model.js';
+import Product from '../../models/adsense/product.model.js';
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -361,7 +363,6 @@ export async function executeIntend(prompt: string, sessionId: string, intend: n
 					})
 					newChat['isCommunitySuggested'] = true;
 					const communityId = await HandleCommunityRecommendation(prompt, chatHistory, signal, socket);
-
 				}
 				// product recommendation
 				case 3: {
@@ -409,8 +410,162 @@ async function HandleGeneralResponse(prompt: string, chatHistory: [], signal: Ab
 
 async function HandleCommunityRecommendation(prompt: string, chatHistory: [], signal: AbortSignal, socket: Socket) {
 
+} async function HandleProductRecommendation(
+	prompt: string,
+	chatHistory: [],
+	signal: AbortSignal,
+	isBudgetAvailable: boolean,
+	budget: number | null,
+	socket: Socket
+) {
+	if (signal.aborted) {
+		console.log('Operation aborted');
+		return;
+	}
+
+	// Handle non-budget product suggestion
+	if (!isBudgetAvailable) {
+		let productCategory;
+
+		try {
+			// Retrieve product category from Redis or database
+			const redisData = await getRedisData('PRODUCT-CATAGORY');
+			console.log('Redis data:', redisData);
+			if (signal.aborted) return;
+
+			if (redisData.success) {
+				productCategory = redisData.data;
+			} else {
+				// Fetch from MongoDB if Redis doesn't have the data
+				const DbProductCategory = await ProductCatagory.find();
+				console.log('DB Product Category:', DbProductCategory);
+				if (signal.aborted) return;
+
+				if (DbProductCategory.length > 0) {
+					// Cache the result in Redis for an hour (3600 seconds)
+					await setRedisData('PRODUCT-CATAGORY', JSON.stringify(DbProductCategory.map((curr) => ({
+						_id: curr._id,
+						catagoryName: curr.catagoryName,
+						avaragePrice: curr.avaragePrice
+					}))), 3600);
+				}
+				productCategory = DbProductCategory;
+			}
+
+			if (!productCategory || productCategory.length === 0) {
+				console.error('No product categories found.');
+				return;
+			}
+
+			// Extract relevant fields for the prompt (e.g., just category names)
+			const productCategoryNames = productCategory.map((cat: any) => cat.catagoryName);
+
+			// Construct prompt for LLM
+			const categoryPrompt = `Based on the user's prompt, suggest the most relevant product categories in a JSON array format from the given catalog of categories (e.g., ["category1", "category2"]). Category Catalog: ${JSON.stringify(productCategoryNames)}. User Prompt: ${prompt}. ${chatHistory.length > 0 ? ` Chat History: ${JSON.stringify(chatHistory)}` : ""} Product Categories (No Text, generate array directly):`;
+
+			// Use Langchain's PromptTemplate
+			const categoryTemplate = PromptTemplate.fromTemplate(categoryPrompt);
+
+			const categoryLLMChain = categoryTemplate
+				.pipe(llm)
+				.pipe(new StringOutputParser());
+
+			console.log("Running category chain");
+
+			const runnableChainOfCategory = RunnableSequence.from([
+				categoryLLMChain,
+				new RunnablePassthrough(),
+			]);
+
+			// Invoke the chain
+			const categoryResult = await runnableChainOfCategory.invoke({
+				prompt, // User's prompt
+			});
+
+			console.log("Raw category result:", categoryResult);
+
+			// Safely parse the category response without removing essential characters
+			let parsedCategory;
+			try {
+				parsedCategory = JSON.parse(categoryResult);
+			} catch (parseError) {
+				console.error('Error parsing category result:', parseError);
+				return;
+			}
+
+			// Match category names with IDs
+			const categoryIds = productCategory.reduce((acc: any, curr: any) => {
+				if (parsedCategory.includes(curr.catagoryName)) {
+					acc.push(curr._id);
+				}
+				return acc;
+			}, []);
+
+			socket.emit('status', {
+				message: "Matey Is Finding Product For You..."
+			});
+
+			// Query Redis for products or fetch from MongoDB
+			const redisProductData = await getRedisData(`PRODUCT-${parsedCategory}`);
+			let productDetails;
+			if (redisProductData.success) {
+				productDetails = redisProductData.data;
+			} else {
+				await connectDB();
+				console.log("Fetching product from database", categoryIds);
+				const DbProductDetails = await Product.find({ catagory: { $in: categoryIds } }).lean(); // Use lean to get plain JavaScript objects
+				console.log('DB Product Details:', DbProductDetails);
+				if (DbProductDetails.length > 0) {
+					await setRedisData(`PRODUCT-${parsedCategory}`, JSON.stringify(DbProductDetails), 3600);
+				}
+				productDetails = DbProductDetails;
+			}
+
+			const refinedProductDetails = productDetails.map((product: any) => ({
+				_id: product._id,
+				productName: product.name,
+				description: product.description,
+			})).slice(0, 30);
+
+			console.log('Refined product details:', refinedProductDetails);
+			const jsonProductDetails = JSON.stringify(refinedProductDetails);
+			console.log('JSON product details:', jsonProductDetails);
+			const productPrompt = `Based on the user's prompt, suggest the most relevant products from the given category from the catalog of products. If there are no suitable suggestions, return an empty array. Ensure the product suggestions are relevant and useful.| Maximum 4-5 suggestions | Only Pick most relavent products  | Product Catalog: ${jsonProductDetails} | User Prompt: ${prompt}. ${chatHistory.length > 0 ? ` | Chat History: ${JSON.stringify(chatHistory)} | ` : ""}. Product Suggestions (return only an array containing the id of products, no additional text):`;
+
+
+
+			const productTemplate = PromptTemplate.fromTemplate(productPrompt);
+
+			const productLLMChain = productTemplate
+				.pipe(llm)
+				.pipe(new StringOutputParser());
+
+			const runnableChainOfProduct = RunnableSequence.from([
+				productLLMChain,
+				new RunnablePassthrough(),
+			]);
+
+			const productResult = await runnableChainOfProduct.invoke({
+				prompt, // User's prompt
+
+			});
+
+			let parsedProduct;
+			try {
+				parsedProduct = JSON.parse(productResult);
+			} catch (parseError) {
+				console.error('Error parsing product result:', parseError);
+				return;
+			}
+
+			console.log('Product suggestions:', parsedProduct);
+
+			return parsedProduct;
+
+		} catch (error: any) {
+			console.error('Error during product recommendation:', error.message);
+		}
+	}
 }
 
-async function HandleProductRecommendation(prompt: string, chatHistory: [], signal: AbortSignal, isBudgetAvailable: boolean, budget: number | null, socket: Socket) {
 
-}

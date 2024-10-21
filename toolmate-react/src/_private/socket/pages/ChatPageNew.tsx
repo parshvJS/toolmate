@@ -17,7 +17,7 @@ export function ChatPageNew() {
             }) => {
                 localStorage.setItem('retrieveChat', "no")
                 console.log(data, "newSessionAcknowledge")
-                navigate(`/matey/${data.sessionId}?new= true`)
+                navigate(`/matey/${data.sessionId}?new=true`)
             })
 
         }

@@ -17,8 +17,10 @@ export async function getChatConversationHistory(req: Request, res: Response) {
                 message: "Please Enter all the required fields [ sessionId, userId, pagination ]",
             });
         }
-
+        console.log(sessionId, userId, pagination,"sessionId, userId, pagination");
         const userChatHistory = await UserChat.findOne({ sessionId }).lean();
+
+        console.log(userChatHistory);
         if (!userChatHistory) {
             return res.status(404).json({
                 success: false,

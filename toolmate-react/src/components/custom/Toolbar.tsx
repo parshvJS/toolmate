@@ -16,8 +16,7 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
         <div className="border-l-2 border-slate-300 h-screen"> {/* Use h-screen to take the full viewport height */}
             {
                 collapsed ? (
-                    <div className="h-full">
-                        {/* Content for collapsed state */}
+                    <div>
                     </div>
                 ) : (
                     <div className="h-full flex flex-col">

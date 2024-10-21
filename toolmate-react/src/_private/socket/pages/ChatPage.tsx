@@ -63,7 +63,8 @@ export function ChatPage() {
             const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
             if (!isNew && isFetchAllowed) {
                 setIsLoadingHistory(true);
-                const chatData = await fetchChatHistory(sessionId || "", userData?.id || "", pagination);
+                console.log("Fetching Chat History", sessionId, userData?.id, pagination);
+                const chatData = await fetchChatHistory(sessionId, userData?.id, pagination);
                 if (!chatData.success) {
                     toast({
                         title: "Error",
@@ -79,7 +80,7 @@ export function ChatPage() {
         }
 
         fetchHistory();
-    }, [sessionId, isNew, userData, pagination, toast]);
+    }, [sessionId]);
 
     useEffect(() => {
         if (currStreamingRes) {
