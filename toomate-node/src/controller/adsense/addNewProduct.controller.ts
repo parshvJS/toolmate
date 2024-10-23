@@ -16,7 +16,7 @@ export async function addNewProduct(req: Request, res: Response) {
             url,
             description,
             offerDescription,
-            catagory: catagoryId
+            catagory: catagoryId.map((id: string) => id)
         }
 
         const productDB = await Product.create(newProductItem);
@@ -26,8 +26,7 @@ export async function addNewProduct(req: Request, res: Response) {
         res.status(201).json({ 
             message: 'Product added successfully',
             success:true,
-            data: productDB
-            
+            data: productDB 
         });
     } catch (error: any) {
         console.log(error.message);

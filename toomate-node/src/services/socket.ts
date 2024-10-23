@@ -8,6 +8,7 @@ import { createnewUserChatInstace } from "../controller/_private/createNewUserCh
 import { getRedisData, setRedisData } from "./redis.js";
 import connectDB from "../db/db.connect.js";
 import { UserPayment } from "../models/userPayment.model.js";
+import { Chat } from "../models/chat.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -75,10 +76,23 @@ export async function handleSocketSerivce(socket: Socket) {
             currentPlan = plan[1] == true ? 1 : plan[2] == true ? 2 : 0;
             await setRedisData(`USER-PAYMENT-${data.userId}`, JSON.stringify(userPlan), 3600);
         }
+        // no project memory
+        const redisChatData = await getRedisData(`USER-CHAT-${data.userId}`);
+        var chatHistory;
+        if (redisChatData.success) {
+            chatHistory = redisChatData.data;
+        } else {
+            await connectDB();
+            const DbChatHistory = await Chat.find({ sessionId: data.sessionId });
+            console.log(DbChatHistory, 'DbChatHistory');
+            const NLessNum = DbChatHistory.length > 30 ? DbChatHistory.length - 30 : 0;
+            chatHistory = DbChatHistory.slice(NLessNum, DbChatHistory.length);
+            await setRedisData(`USER-CHAT-${data.userId}`, JSON.stringify(chatHistory), 3600);
+        }
         switch (currentPlan) {
             case 1: {
-                const intendList = await getUserIntend(data.message, currentPlan);
-                const messageSteam = await executeIntend(data.message, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
+                const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
+                const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
                 // handle all the intend    
             }
             case 2: {

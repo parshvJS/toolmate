@@ -7,7 +7,7 @@ dotenv.config();
 
 
 const kafka = new Kafka({
-	brokers: ['kafka-3c67e43a-jsparshv-af38.g.aivencloud.com:11772'],
+	brokers: ['kafka-12172946-nikunjsheth402-05ee.g.aivencloud.com:18021'],
 	ssl: {
 		ca: [fs.readFileSync(path.resolve('./ca.pem'), 'utf-8')],
 	},
@@ -15,7 +15,7 @@ const kafka = new Kafka({
 		//   username: process.env.KAFKA_USERNAME!,
 		//   password: process.env.KAFKA_PASSWORD!,
 		username: 'avnadmin',
-		password: 'AVNS_3M46VBBV8AJkB4jOJhD',
+		password: 'AVNS_0iVH-FOwfzmsIkG6h_v',
 		mechanism: 'plain',
 	},
 });

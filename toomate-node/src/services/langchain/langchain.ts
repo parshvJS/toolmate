@@ -11,7 +11,7 @@ import {
 	RunnablePassthrough,
 	RunnableSequence,
 } from '@langchain/core/runnables';
-import { getChatMessages, getPremiumUserChatMessage } from '../../utils/utilsFunction.js';
+import { getPremiumUserChatMessage } from '../../utils/utilsFunction.js';
 import { tool } from "@langchain/core/tools";
 import { tools } from './tools.js';
 import { getRedisData, setRedisData } from '../redis.js';
@@ -264,78 +264,99 @@ export async function getChatName(prompt: string) {
 }
 
 
-export async function getUserIntend(prompt: string, plan: number): Promise<number[]> {
+export async function getUserIntend(prompt: string, chatHistory: string, plan: number): Promise<number[]> {
 	let getIntendPrompt = '';
 
-	if (plan == 1) {
-		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
-		1. general response
-		2. community recommendation
-		3. product recommendation
-		4. follow up question for more understanding
-		5. Guidance of project
-		User prompt: ${prompt}
-		i. your job is to indicate the intend of user from the list above
-		ii. 1.General Response should always be there in array by default 
-		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	if (plan === 1) {
+		getIntendPrompt = `
+	Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]):
+	
+	2. Community recommendation (suggest if the user expresses difficulty or seeks peer support)
+	3. Product recommendation (prioritize if the user's prompt indicates a need for a tool or resource)
+	4. Follow-up question for more understanding (use this if the prompt is vague or needs clarification)
+	5. Guidance on the project (select this if the user is asking for advice or direction)
+	
+	**User Intent Analysis**:
+	1. Evaluate the user's mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations or guidance.
+	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
+	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
+	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
+	
+	**Chat History**: ${chatHistory}
+	**User Prompt**: ${prompt}
+	
+	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
+	- Weigh the relevance of each intent based on the context and user cues.
+	- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:`;
 	}
-	else if (plan == 2) {
-		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
-		1. general response
-		2. community recommendation
-		3. product recommendation
-		4. follow up question for more understanding
-		5. Guidance of project
-		User prompt: ${prompt}
-		i. your job is to indicate the intend of user from the list above
-		ii. 1.General Response should always be there in array by default 
-		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+	else if (plan === 2) {
+		getIntendPrompt = `
+	Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]):
+	
+	2. Community recommendation (suggest if the user expresses difficulty or seeks peer support)
+	3. Product recommendation (prioritize if the user's prompt indicates a need for a tool or resource)
+	4. Follow-up question for more understanding (use this if the prompt is vague or needs clarification)
+	5. Guidance on the project (select this if the user is asking for advice or direction)
+	
+	User Intent Analysis:
+	1. Evaluate the user's mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations or guidance.
+	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
+	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
+	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
+	
+	**Chat History**: ${chatHistory}
+	**User Prompt**: ${prompt}
+	
+	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
+	- Weigh the relevance of each intent based on the context and user cues.
+	- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:`;
 	}
 	else {
-		getIntendPrompt = `Based on the user's prompt, select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [1, 3]):
-		1. general response
-		4. follow up question for more understanding
-		5. Guidance of project
-		User prompt: ${prompt}
-		i. your job is to indicate the intend of user from the list above
-		ii. 1.General Response should always be there in array by default 
-		Return only the selected intent numbers in an array(response should contain only array that can be parsable to array):Array:`;
+		getIntendPrompt = `
+	Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]):
+	
+	2. Community recommendation (suggest if the user expresses difficulty or seeks peer support)
+	3. Product recommendation (prioritize if the user's prompt indicates a need for a tool or resource)
+	4. Follow-up question for more understanding (use this if the prompt is vague or needs clarification)
+	5. Guidance on the project (select this if the user is asking for advice or direction)
+	
+	**User Intent Analysis**:
+	1. Evaluate the user's mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations or guidance.
+	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
+	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
+	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
+	
+	**Chat History**: ${chatHistory}
+	**User Prompt**: ${prompt}
+	
+	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
+	- Weigh the relevance of each intent based on the context and user cues.
+	- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:`;
 	}
-
+	// Build the prompt chain for the LLM
 	const intendTemplate = PromptTemplate.fromTemplate(getIntendPrompt);
-
 	const intendLLMChain = intendTemplate
 		.pipe(llm)
 		.pipe(new StringOutputParser());
 
-	const runnableChainOfIntend = RunnableSequence.from([
-		intendLLMChain,
-		new RunnablePassthrough(),
-	]);
+	const runnableChainOfIntend = RunnableSequence.from([intendLLMChain, new RunnablePassthrough()]);
 
-	const userIntend = await runnableChainOfIntend.invoke({
-		prompt, // User prompt
-	});
+	// Invoke the LLM to get the response
+	const userIntend = await runnableChainOfIntend.invoke({ prompt });
 
-	console.log('user intend', JSON.parse(userIntend));
-	return JSON.parse(userIntend.replace(/[` ]/g, ''));
+	// Parse and clean up the output
+	let intentArray = JSON.parse(userIntend.trim());
+
+	// Ensure intent 1 is always present
+	intentArray = [1, ...intentArray];
+
+	console.log('user intend:', intentArray);
+	return intentArray;
 }
 
 // intend list and user Id
-export async function executeIntend(prompt: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, socket: Socket) {
-	// no project memory
-	const redisChatData = await getRedisData(`USER-CHAT-${userId}`);
-	var chatHistory;
-	if (redisChatData.success) {
-		chatHistory = redisChatData.data;
-	} else {
-		await connectDB();
-		const DbChatHistory = await Chat.find({ sessionId: sessionId });
-		console.log(DbChatHistory, 'DbChatHistory');
-		const NLessNum = DbChatHistory.length > 30 ? DbChatHistory.length - 30 : 0;
-		chatHistory = DbChatHistory.slice(NLessNum, DbChatHistory.length);
-		await setRedisData(`USER-CHAT-${userId}`, JSON.stringify(chatHistory), 3600);
-	}
+export async function executeIntend(prompt: string, chatHistory: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, socket: Socket) {
+
 	var newChat = {
 		sessionId: userId,
 		message: '',
@@ -387,10 +408,10 @@ export async function executeIntend(prompt: string, sessionId: string, intend: n
 }
 
 
-async function HandleGeneralResponse(prompt: string, chatHistory: [], signal: AbortSignal, socket: Socket) {
+async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, socket: Socket) {
 	const streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
 	| User Prompt: ${prompt} 
-	Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "Context not available"} 
+	Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistory : "Context not available"} 
 	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
 	const stream = await llm.stream(streamPrompt);
 
@@ -404,15 +425,19 @@ async function HandleGeneralResponse(prompt: string, chatHistory: [], signal: Ab
 		socket.emit('message', { text: chunk.content });
 	}
 	socket.emit('terminate', { done: true });
-
+	console.log("end of stream, response:", gatheredResponse);
 	return gatheredResponse;
 }
 
-async function HandleCommunityRecommendation(prompt: string, chatHistory: [], signal: AbortSignal, socket: Socket) {
+async function HandleCommunityRecommendation(prompt: string, chatHistory: string, signal: AbortSignal, socket: Socket) {
 
-} async function HandleProductRecommendation(
+}
+
+
+
+async function HandleProductRecommendation(
 	prompt: string,
-	chatHistory: [],
+	chatHistory: string,
 	signal: AbortSignal,
 	isBudgetAvailable: boolean,
 	budget: number | null,
@@ -436,6 +461,7 @@ async function HandleCommunityRecommendation(prompt: string, chatHistory: [], si
 			if (redisData.success) {
 				productCategory = redisData.data;
 			} else {
+				await connectDB();
 				// Fetch from MongoDB if Redis doesn't have the data
 				const DbProductCategory = await ProductCatagory.find();
 				console.log('DB Product Category:', DbProductCategory);
@@ -530,9 +556,11 @@ async function HandleCommunityRecommendation(prompt: string, chatHistory: [], si
 			console.log('Refined product details:', refinedProductDetails);
 			const jsonProductDetails = JSON.stringify(refinedProductDetails);
 			console.log('JSON product details:', jsonProductDetails);
-			const productPrompt = `Based on the user's prompt, suggest the most relevant products from the given category from the catalog of products. If there are no suitable suggestions, return an empty array. Ensure the product suggestions are relevant and useful.| Maximum 4-5 suggestions | Only Pick most relavent products  | Product Catalog: ${jsonProductDetails} | User Prompt: ${prompt}. ${chatHistory.length > 0 ? ` | Chat History: ${JSON.stringify(chatHistory)} | ` : ""}. Product Suggestions (return only an array containing the id of products, no additional text):`;
+			const productPrompt = `
+Suggest the most relevant products based on the user's prompt from the given product catalog. Ensure the products are highly relevant and useful | If product are not use full then dont pick that product| Max 4-5 suggestions | Product Catalog: {jsonProductDetails} | User Prompt: {prompt}
 
-
+Chat Context  {chatHistory} Return only an array of product IDs:
+`;
 
 			const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 
@@ -547,7 +575,8 @@ async function HandleCommunityRecommendation(prompt: string, chatHistory: [], si
 
 			const productResult = await runnableChainOfProduct.invoke({
 				prompt, // User's prompt
-
+				jsonProductDetails: jsonProductDetails,
+				chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
 			});
 
 			let parsedProduct;
