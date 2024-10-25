@@ -1,4 +1,4 @@
-import connectDB from "../../../db/db.connect.js";
+import connectDB from "../../../db/db.db.js";
 import { Community } from  "../../../models/community.model.js";
 import { Request, Response } from "express";
 

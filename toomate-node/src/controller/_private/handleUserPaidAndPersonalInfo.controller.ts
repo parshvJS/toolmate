@@ -1,4 +1,4 @@
-import connectDB from "../../db/db.connect.js";
+import connectDB from "../../db/db.db.js";
 import User from "../../models/user.model.js";
 import { UserPayment } from "../../models/userPayment.model.js";
 import { Request, Response } from "express";

@@ -1,51 +1,58 @@
 import DemoVideo from "@/components/custom/DemoVideo";
-import LargeFeatureCard from "@/components/custom/LargeFeatureCard";
 import CommunityExample from "@/components/custom/CommunityExample";
 import FeatureWindow from "@/components/custom/FeatureWindow";
 import Price from "@/components/custom/Price";
 import ButtonCustom from "@/components/custom/ButtonCustom";
 import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
+import { Cpu, Gem, Lightbulb } from "lucide-react";
+import { Slider } from "@/components/ui/slider"; // Importing Shadcn Slider
+import { MobileMock } from "@/components/custom/Mobile-mock";
+
+
+
+const largeFeatureCardsContent = [
+  {
+    icon: "/assets/icons/largeOrangeToolbox.svg",
+    
+    titleLable: "Tailored for Your Project",
+    title: "Find the Perfect Tool for Every Job",
+    desc: "Matey understands your unique DIY needs and suggests the right tools, from screwdrivers to power drills, ensuring you get the job done efficiently.",
+    ctaText: "Find Tools with Matey",
+    mateyImagePath: "/assets/matey/tools.svg",
+    leftGradient: true,
+  },
+  {
+    icon: "/assets/icons/priceTag.svg",
+    titleLable: "Tools That Fit Your Budget",
+    title: "Get the Best Tools at the Best Prices",
+    desc: "Matey offers the best tool suggestions within your budget, making sure you never break the bank, whether you’re a pro or a beginner DIYer.",
+    ctaText: "Budget-Friendly Tools",
+    mateyImagePath: "/assets/matey/thinking.svg",
+    leftGradient: false,
+  },
+  {
+    icon: "/assets/icons/helmet.svg",
+    titleLable: "Work Smarter, Work Safer",
+    title: "Always Equipped with the Right Safety Gear",
+    desc: "Matey ensures you work smarter and safer by recommending the best protective gear—like gloves, goggles, and dust masks—so you stay protected on every DIY project.",
+    ctaText: "Safeguard DIY Project",
+    mateyImagePath: "/assets/matey/confident.svg",
+    leftGradient: true,
+  },
+];
 
 export default function Landing() {
-  const largeFeatureCardsContent = [
-    {
-      icon: "/assets/icons/largeOrangeToolbox.svg",
-      titleLable: "Tailored for Your Project",
-      title: "Find the Perfect Tool for Every Job",
-      desc: "Matey understands your unique DIY needs and suggests the right tools, from screwdrivers to power drills, ensuring you get the job done efficiently.",
-      ctaText: "Find Tools with Matey",
-      mateyImagePath: "/assets/matey/tools.svg",
-      leftGradient: true,
-    },
-    {
-      icon: "/assets/icons/priceTag.svg",
-      titleLable: "Tools That Fit Your Budget",
-      title: "Get the Best Tools at the Best Prices",
-      desc: "Matey offers the best tool suggestions within your budget, making sure you never break the bank, whether you’re a pro or a beginner DIYer.",
-      ctaText: "Budget-Friendly Tools",
-      mateyImagePath: "/assets/matey/thinking.svg",
-      leftGradient: false,
-    },
-    {
-      icon: "/assets/icons/helmet.svg",
-      titleLable: "Work Smarter, Work Safer",
-      title: "Always Equipped with the Right Safety Gear",
-      desc: "Matey ensures you work smarter and safer by recommending the best protective gear—like gloves, goggles, and dust masks—so you stay protected on every DIY project.",
-      ctaText: "Safeguard DIY Project",
-      mateyImagePath: "/assets/matey/confident.svg",
-      leftGradient: true,
-    },
-  ];
+
 
   return (
     <div className="md:px-20 px-2">
       <div className="md:mt-28 mt-20">
         {/* hero section */}
-        <section className="flex justify-between md:flex-row flex-col md:p-6 p-2">
+        <section className="flex justify-between md:flex-row flex-col md:p-12 p-2 relative">
           {/* left side */}
-          <div className="text-center md:text-left md:w-2/3 place-content-center flex flex-col gap-8">
-            <p className="text-transparent leading-10 md;leading-normal bg-clip-text bg-gradient-to-r from-black  to-orange font-[1000] md:text-8xl  text-6xl text-left">
+          <div className="text-center md:text-left md:w-2/3 max-w-2/5 place-content-center flex flex-col gap-8">
+            <p className="text-transparent leading-10 md;leading-normal bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-6xl text-left">
               Find The Right<br /> Tool For
               Every <br /> DIY Job!
             </p>
@@ -85,22 +92,10 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="absolute inset-0 -z-10 flex justify-center items-start md:top-[-20rem]  top-[550px]">
-            <img
-              src="/assets/images/gradient-circle.svg"
-              alt="gradient-circle"
-            />
-          </div>
 
-          {/* right side */}
-          <div className="mt-10 md:mt-0 flex justify-center">
-            <img
-              src="/assets/matey/wavy.svg"
-              alt="matey wavy"
-              width={340}
-              height={300}
-              className="md:w-96 w-96"
-            />
+          <div className="p-2 w-full md:w-3/5 h-full flex justify-center items-start">
+            <div className="md:mt-0 md:top-8 r  absolute w-[650px] bottom-28 h-[650px]  -z-20 flex justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
+            <MobileMock />
           </div>
         </section>
 
@@ -108,7 +103,7 @@ export default function Landing() {
           {/* left */}
           <div className="w-1/2">
             <div>
-              <p className="text-transparent font-[540] leading-tight bg-clip-text bg-gradient-to-r from-black tracking-tight to-orange  md:text-[5rem]  text-6xl text-left">
+              <p className="text-transparent font-[540] leading-tight bg-clip-text bg-gradient-to-r from-black tracking-tight to-black  md:text-[5rem]  text-6xl text-left">
                 Find The Right Tool  For
                 Every DIY Job!
               </p>
@@ -116,7 +111,7 @@ export default function Landing() {
             </div>
             {/* bottom */}
             <div className="w-full flex gap-4">
-             
+
               <div className="w-1/2 mt-4 ">
                 <p className="font-bold md:text-lg text-md w-full text-justify">
                   Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
@@ -230,7 +225,7 @@ export default function Landing() {
                 <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
                   Find the Right Tools Fast
                 </p>
-                <p className="text-slate-300 text-xl font-bold mt-4 w-3/4">
+                <p className="text-slate-300 text-xl font-bold mt-4 w-3/4</p>">
                   Effortlessly discover the perfect tools tailored to your
                   unique projects.
                 </p>
@@ -257,10 +252,10 @@ export default function Landing() {
             <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
               {/* content */}
               <div>
-                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-w</p>hite">
                   Your Project, Your Tools, One Click
                 </p>
-                <p className="text-slate-300 text-xl font-semibold mt-4 w-3/4">
+                <p className="text-slate-300 text-xl font-semibold mt-4 w</p>-3/4">
                   Get a complete list of what you need, instantly.
                 </p>
               </div>

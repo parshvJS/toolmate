@@ -39,7 +39,7 @@ export function ChatPage() {
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
-    const {userId, userData, unshiftiChatname } = useContext(UserContext);
+    const { userId, userData, unshiftiChatname } = useContext(UserContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -99,7 +99,7 @@ export function ChatPage() {
 
             if (socket && userData) {
                 socket.emit("getChatName", { prompt: initialMessage, sessionId, userId: userData?.id });
-                socket.emit("userMessage", { sessionId, message: initialMessage,userId:userId });
+                socket.emit("userMessage", { sessionId, message: initialMessage, userId: userId });
 
                 socket.on('chatName', (data) => {
                     unshiftiChatname({ chatName: data.chatName, sessionId: data.sessionId, id: data.id });
@@ -131,6 +131,17 @@ export function ChatPage() {
     const handleUserPrompt = () => {
         setConversation([...conversation, { role: "user", message: mainInput }]);
         socket?.emit("userMessage", { sessionId, message: mainInput, userId: userId });
+        socket?.on('status', function (data) {
+            setIsNotificationOn(true);
+            setNotificationText(data.message);
+        });
+        socket?.on('statusOver', function () {
+            setIsNotificationOn(false);
+            setNotificationText("")
+        })
+        socket?.on('productId',function (data){
+            // query database for data  
+        })
     };
 
     if (isLoadingHistory && !isNew) {

@@ -1,6 +1,6 @@
-import connectDB from "../../db/db.connect";
-import AdminUser from "../../models/admin/adminUser.model";
-import User from "../../models/user.model";
+import connectDB from "../../db/db.db.js";
+import AdminUser from "../../models/admin/adminUser.model.js";
+import User from "../../models/user.model.js";
 import { Request, Response } from "express";
 
 export async function getAllUsers(req: Request, res: Response) {

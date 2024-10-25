@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { iChatname, INewUserMessage } from "../types/types.js";
 import { createnewUserChatInstace } from "../controller/_private/createNewUserChatInstance.controller.js";
 import { getRedisData, setRedisData } from "./redis.js";
-import connectDB from "../db/db.connect.js";
+import connectDB from "../db/db.db.js";
 import { UserPayment } from "../models/userPayment.model.js";
 import { Chat } from "../models/chat.model.js";
 
@@ -93,6 +93,7 @@ export async function handleSocketSerivce(socket: Socket) {
             case 1: {
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
                 const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
+                
                 // handle all the intend    
             }
             case 2: {

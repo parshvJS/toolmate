@@ -1,5 +1,5 @@
 import UserChat from "../../models/userChat.model.js";
-import connectDB from "../../db/db.connect.js";
+import connectDB from "../../db/db.db.js";
 import { Request, Response } from "express";
 import { categorizeChatSessions } from "../../utils/utilsFunction.js";
 

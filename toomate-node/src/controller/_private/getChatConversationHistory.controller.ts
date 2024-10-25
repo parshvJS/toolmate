@@ -1,5 +1,5 @@
 import { Document } from "mongoose";
-import connectDB from "../../db/db.connect.js";
+import connectDB from "../../db/db.db.js";
 import { Chat } from "../../models/chat.model.js";
 import UserChat from "../../models/userChat.model.js";
 import { Request, Response } from "express";

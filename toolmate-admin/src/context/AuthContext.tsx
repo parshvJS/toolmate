@@ -1,11 +1,9 @@
-import React, { createContext, useState, ReactNode } from 'react';
+import React, { createContext, useState, ReactNode, useEffect } from 'react';
 
 
 interface eachUser {
-    id: string;
-    name: string;
-    email: string;
-    role: [];
+    username: string;
+    role: ["all" | "add-product" | "edit-product" | "delete-product" | "view-product" | "add-user" | "edit-user" | "delete-user" | "view-user"];
 }
 interface AuthContextProps {
     userData: eachUser;
@@ -15,10 +13,8 @@ interface AuthContextProps {
 }
 
 const initialUserData: eachUser = {
-    id: '',
-    name: '',
-    email: '',
-    role: [],
+    username:"allan",
+    role: ["all"],
 };
 
 const intitialContext = {
@@ -33,7 +29,10 @@ const AuthContext = createContext<AuthContextProps>(intitialContext);
 const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [userData, setUserData] = useState<eachUser>(initialUserData);
     const [isAuth, setIsAuth] = useState<boolean>(false);
-
+    // testing
+    useEffect(()=>{
+        console.log(userData, "userData")
+    },[])
     return (
         <AuthContext.Provider value={{ userData, isAuth, setIsAuth, setUserData }}>
             {children}

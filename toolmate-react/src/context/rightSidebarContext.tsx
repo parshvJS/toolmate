@@ -32,78 +32,9 @@ interface RightSidebarContextProps {
 const INITIAL_RIGHT_SIDEBAR_CONTEXT: RightSidebarContextProps = {
   sliderValue: 500,
   isBudgetOn: false,
-  breakpoints: [
-    { value: 500, label: 'Low', tooltip: 'Budget-friendly products' },
-    { value: 1000, label: 'Medium', tooltip: 'Mid-range products' },
-    { value: 2000, label: 'High', tooltip: 'Premium products' }
-  ],
+  breakpoints: [],
   productSuggestions: [
-    {
-      "id": 1,
-      "name": "DIY Tools",
-      "data": [
-        {
-          "image": "https://picsum.photos/seed/1/300/200",
-          "title": "Power Drill",
-          "description": "A powerful cordless drill for all your DIY needs.",
-          "price": 120.00
-        },
-        {
-          "image": "https://picsum.photos/seed/2/300/200",
-          "title": "Hammer",
-          "description": "A durable hammer designed for heavy-duty tasks.",
-          "price": 20.00
-        },
-        {
-          "image": "https://picsum.photos/seed/3/300/200",
-          "title": "Screwdriver Set",
-          "description": "A complete set of screwdrivers for precision work.",
-          "price": 35.00
-        },
-        {
-          "image": "https://picsum.photos/seed/4/300/200",
-          "title": "Tape Measure",
-          "description": "A 25-foot tape measure with a durable lock mechanism.",
-          "price": 15.00
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "name": "DIY Materials",
-      "data": [
-        {
-          "image": "https://picsum.photos/seed/5/300/200",
-          "title": "Wood Planks",
-          "description": "High-quality wood planks for building and crafting.",
-          "price": 50.00
-        },
-        {
-          "image": "https://picsum.photos/seed/6/300/200",
-          "title": "Paint Set",
-          "description": "A set of acrylic paints with various color options.",
-          "price": 25.00
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "name": "DIY Gadgets",
-      "data": [
-        {
-          "image": "https://picsum.photos/seed/7/300/200",
-          "title": "Laser Level",
-          "description": "A high-precision laser level for accurate measurements.",
-          "price": 60.00
-        },
-        {
-          "image": "https://picsum.photos/seed/8/300/200",
-          "title": "3D Printer",
-          "description": "A beginner-friendly 3D printer for DIY enthusiasts.",
-          "price": 300.00
-        }
-      ]
-    }
+
   ]
   ,
   isSliderBreakPointEmpty: true,

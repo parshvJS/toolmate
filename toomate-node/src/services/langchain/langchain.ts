@@ -3,7 +3,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import dotenv from 'dotenv';
-import connectDB from '../../db/db.connect.js';
+import connectDB from '../../db/db.db.js';
 import { produceMessage, produceNewMessage } from '../kafka.js';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
@@ -392,6 +392,10 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					})
 					newChat['isProductSuggested'] = true;
 					const productId = await HandleProductRecommendation(prompt, chatHistory, signal, false, null, socket);
+					newChat['productId'] = productId;
+					socket.emit('productId', {
+						productId: productId
+					});
 				}
 				// follow up question for more understanding
 				case 4: {
@@ -404,12 +408,32 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 				default: { }
 			}
 		}
+
+		return newChat;
+
 	}
 }
 
 
 async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, socket: Socket) {
-	const streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
+	socket.emit('status', {
+		message: "Matey Is Typing..."
+	})
+
+	const streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the tool request. If the request for tools is high, provide a brief response referring to the relevant tool. Tools include:
+	1. Product
+	2. Community suggestions
+
+	User Prompt: ${prompt}
+	Chat History: ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "No available chat history procide without chat history"}
+	system : Your job is to give concise response to user as per the intensity of the tool request.
+	Your task is to:
+	1. Assess the intensity of the tool request.
+	2. If the intensity is high, generate a concise response referring to the relevant tool (e.g., "Here is a product suggestion related to ...", "Here is a community suggestion related to ..." etc.). then create dynamic response based on the intensity.
+	3. If the intensity is low, proceed with a normal response.
+
+	Response to user:`;
+	const streamPrompt1 = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
 	| User Prompt: ${prompt} 
 	Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistory : "Context not available"} 
 	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
@@ -528,7 +552,7 @@ async function HandleProductRecommendation(
 			}, []);
 
 			socket.emit('status', {
-				message: "Matey Is Finding Product For You..."
+				message: "Matey Is Picking Right Products For You..."
 			});
 
 			// Query Redis for products or fetch from MongoDB
@@ -557,7 +581,7 @@ async function HandleProductRecommendation(
 			const jsonProductDetails = JSON.stringify(refinedProductDetails);
 			console.log('JSON product details:', jsonProductDetails);
 			const productPrompt = `
-Suggest the most relevant products based on the user's prompt from the given product catalog. Ensure the products are highly relevant and useful | If product are not use full then dont pick that product| Max 4-5 suggestions | Product Catalog: {jsonProductDetails} | User Prompt: {prompt}
+Suggest the most relevant products based on the user's prompt from the given product catalog. Ensure the products are highly relevant and useful | Max 4-5 suggestions | Product Catalog: {jsonProductDetails} | User Prompt: {prompt}
 
 Chat Context  {chatHistory} Return only an array of product IDs:
 `;
@@ -588,7 +612,6 @@ Chat Context  {chatHistory} Return only an array of product IDs:
 			}
 
 			console.log('Product suggestions:', parsedProduct);
-
 			return parsedProduct;
 
 		} catch (error: any) {

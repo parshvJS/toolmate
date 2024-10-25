@@ -110,10 +110,8 @@ const navItems: NavItem[] = [
 ];
 
 export default function Navbar() {
-  const [isProductDropdownOpen, setIsProductDropdownOpen] =
-    React.useState(false);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = React.useState(false);
 
-  const { isLoaded, userId, sessionId } = useAuth()
 
   const location = useLocation();
   const currentRoute = location.pathname;
@@ -164,52 +162,24 @@ export default function Navbar() {
           </NavigationMenuList>
         </NavigationMenu>
         <div>
-          {
-            !isLoaded ? (
-              <div
-                className={`${buttonVariants({
-                  variant: "orangeGradient",
-                })}`}
-              >
-                <LoaderPinwheel className="animate-spin text-black" />
-              </div>
-            ) :
-              (
-
-                !userId ? (
-                  <div className="w-full flex  items-center">
-
-                    <Link
-                      to="/signup"
-                      className={`${buttonVariants({
-                        variant: "orangeGradient",
-                      })}`}
-                    >
-                      Sign Up
-                    </Link>
-
-                    <Link
-                      to={"/signin"}
-                      className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
-                    >
-                      Login
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="w-full flex h-full gap-2">
+          <div className="w-full flex  items-center">
+            <Link
+              to={"/signin"}
+              className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
+            >
+              Login
+            </Link>
+            <Link
+              to="/signup"
+              className={`${buttonVariants({
+                variant: "orangeGradient",
+              })}`}
+            >
+              Sign Up
+            </Link>
 
 
-                    <Link
-                      to="/dashboard"
-                      className={`hover:from-white hover:to-white hover:border-orange hover:text-orange bg-gradient-to-tr from-orange to-lightOrange w-full text-base text-black border-2 border-white rounded-md px-4 py-2 font-semibold items-center `}
-                    >
-                      Open Toolmate
-                    </Link>
-                  </div>
-                )
-              )
-
-          }
+          </div>
         </div>
       </div>
 
@@ -229,36 +199,12 @@ export default function Navbar() {
                 <SheetTitle className=" px-2 py-1 w-full">
 
                   <div>
-                    {
-                      isLoaded && !userId ? (
-                        <div className="w-full flex flex-col ">
-
-                          <Link
-                            to="/signup"
-                            className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
-                          >
-                            Sign Up
-                          </Link>
-
-                          <Link
-                            to={"/signin"}
-                            className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
-                          >
-                            Login
-                          </Link>
-                        </div>
-                      ) : (
-                        <div className="w-full flex flex-col ">
-
-                          <Link
-                            to="/dashboard"
-                            className={`bg-lightOrange text-base text-black border-2 border-slate-600 rounded-md px-4 py-2 font-semibold w-full`}
-                          >
-                            Dashboard
-                          </Link>
-                        </div>
-                      )
-                    }
+                    <Link
+                      to={"/signin"}
+                      className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
+                    >
+                      Login
+                    </Link>
                   </div>
 
                 </SheetTitle>

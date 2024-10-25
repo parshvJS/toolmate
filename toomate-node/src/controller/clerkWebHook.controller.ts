@@ -1,7 +1,7 @@
 import { Webhook } from 'svix';
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import connectDB from '../db/db.connect.js';
+import connectDB from '../db/db.db.js';
 import { createUser, deleteUser, updateUser } from '../db/userDataStore.db.js';
 dotenv.config();
 export async function handleClerkWebhook(req: Request, res: Response) {

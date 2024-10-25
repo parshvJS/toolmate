@@ -1,5 +1,5 @@
-import connectDB from "@/db/db.connect";
-import AdminUser from "@/models/admin/adminUser.model";
+import connectDB from "../../db/db.db";
+import AdminUser from "../../models/admin/adminUser.model";
 import { Request, Response } from "express";
 
 export async function createAuthUser(req: Request, res: Response) {

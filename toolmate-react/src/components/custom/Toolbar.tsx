@@ -7,11 +7,15 @@ import CustomSlider from "./Slider";
 import { useState } from "react";
 import { ProductSuggestion } from "./ProductSuggestion";
 import { Separator } from "@/components/ui/separator"
+import { useSocket } from "@/context/socketContext";
 
 
 export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCollapsed: React.Dispatch<React.SetStateAction<boolean>> }) {
     const [isMateyOpen, setIsMateyOpen] = useState(false);
     const [isToolSuggestionOpen, setIsToolSuggestionOpen] = useState(true);
+    const socket = useSocket();
+
+    
     return (
         <div className="border-l-2 border-slate-300 h-screen"> {/* Use h-screen to take the full viewport height */}
             {
@@ -22,19 +26,6 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
                     <div className="h-full flex flex-col">
                         {/* Ensure each child takes up 50% of the height */}
                         <div className={`${isMateyOpen ? "h-[60%]" : "flex-1"}`}>
-                            {/* <Tabs defaultValue="tool" className="p-4 h-full">
-                                <TabsList className="w-full bg-slate-200">
-                                    <TabsTrigger value="tool" className="data-[state=active]:bg-yellow w-1/2 my-2">Tool Suggestion</TabsTrigger>
-                                    <TabsTrigger value="price" className="data-[state=active]:bg-yellow w-1/2">Set Project Budget</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="tool" className="h-full">
-                                    <ProductSuggestion />
-                                </TabsContent>
-                                <TabsContent value="price">
-                                    <CustomSlider />
-                                </TabsContent>
-                            </Tabs> */}
-
 
                             <div className="m-1 flex gap-1">
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import paypal from 'paypal-rest-sdk';
-import connectDB from '../db/db.connect.js';
+import connectDB from '../db/db.db.js';
 import { PaymentPlan } from '../models/admin/paymentPlan.model.js';
 import { IPaymentPlan } from '../types/types.js';
 

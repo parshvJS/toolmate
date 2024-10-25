@@ -28,7 +28,7 @@ export function ProductSuggestion({
     const [productDropdown, setProductDropdown] = useState(false);
     return (
         <div>
-                        <Separator className='border border-slate-200 my-2' />
+            <Separator className='border border-slate-200 my-2' />
 
             <div className='flex w-full'>
                 <DropdownMenu open={productDropdown} onOpenChange={() => { setProductDropdown(!productDropdown) }}>

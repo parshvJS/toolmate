@@ -1,4 +1,4 @@
-import connectDB from "../../db/db.connect.js";
+import connectDB from "../../db/db.db.js";
 import Product from "../../models/adsense/product.model.js";
 import { Request, Response } from "express";
 
