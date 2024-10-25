@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
-import { ScrollArea } from "../ui/scroll-area";
 import { TableOfContents, Timer, Wrench } from "lucide-react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface Product {
     name: string;
@@ -81,7 +80,7 @@ export function MobileMock() {
 
         if (currentMessage.role === "ai") {
             setIsStreaming(true);
-            let charIndex = 0;
+            let charIndex = -1;
             while (charIndex < currentMessage.message.length) {
                 setStreamingText((prev) => prev + currentMessage.message[charIndex]);
                 charIndex++;
@@ -114,10 +113,12 @@ export function MobileMock() {
     }, [currChat]);
 
     return (
-        <div className="w-full h-full flex justify-start items-center mb-5 relative ">
+        <div className="w-full h-full flex justify-start items-center mb-5 relative">
             <div>
                 <img src="/assets/matey/bothThumbsUp.svg" alt="back" className="z-0 top-0 left-48 absolute rotate-12" />
             </div>
+
+          
             <motion.div
                 className="absolute bottom-28 z-20 -left-40 flex flex-col gap-4 justify-end items-end"
                 initial={{ opacity: 0, y: 20 }}
@@ -154,13 +155,13 @@ export function MobileMock() {
             </motion.div>
 
             <div ref={scrollAreaRef} className="z-10 ml-28 bg-white w-[330px] h-[550px] mb-10 overflow-scroll hide-scrollbar border-8 p-2 rounded-3xl ">
-                <div className="flex flex-col space-y-4 mt-3 mb-60">
+                <div className="flex flex-col space-y-4 mt-3 mb-40 ">
                     {currChat.map((chat, index) => (
                         <div
                             key={index}
                             className={`rounded-lg ${chat.role === "ai" ? "text-left" : "text-right bg-softYellow border-2 border-yellow"}`}
                         >
-                                <div className="flex gap-2">
+                            <div className="flex gap-2">
                                 {chat.role === "ai" ? (
                                     <div className="flex gap-2 items-start">
                                         <img src="/assets/icons/blur-ball.svg" className="min-w-9 -mt-2" />
@@ -204,7 +205,7 @@ export function MobileMock() {
                                     </div>
                                 </motion.div>
                             )}
-                          {chat.budgetSlider && (
+                            {chat.budgetSlider && (
                                 <motion.div
                                     className="mt-2 bg-paleYellow border-2 border-yellow rounded-lg p-2"
                                     initial={{ opacity: 0, y: 10 }}
@@ -224,7 +225,7 @@ export function MobileMock() {
                             )}
                         </div>
                     ))}
-                               {isStreaming && (
+                    {isStreaming && (
                         <div className="p-2 rounded-lg flex items-start gap-2 text-left">
                             <img src="/assets/icons/blur-ball.svg" className="min-w-9" />
                             <p>{streamingText}</p>
@@ -236,13 +237,13 @@ export function MobileMock() {
                 {currChat.some(chat => chat.isEnd) && (
                     <div className="flex justify-center mt-4 w-full">
                         <motion.button
-                            onClick={()=>navigate('/preview')}
+                            onClick={() => navigate('/preview')}
                             className="px-4 py-2 w-full bg-yellow hover:bg-softYellow text-black rounded-lg font-semibold hover:bg-yellow-600 transition-all"
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.3 }}
                         >
-                            Start A Chat With Matey 
+                            Start A Chat With Matey
                         </motion.button>
                     </div>
                 )}

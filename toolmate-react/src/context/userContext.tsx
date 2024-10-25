@@ -13,7 +13,7 @@ interface UserData {
 }
 
 interface UserContextType {
-    userId: string |null | undefined;
+    userId: string | null | undefined;
     userData: UserData | undefined;
     historyData: iChatname[] | undefined;
     isLoading: boolean;
@@ -22,7 +22,7 @@ interface UserContextType {
     newIdForCache: (id: string) => void;
     unshiftiChatname: (newItem: ChatItem) => void;
     retrieveCache: () => ChatItem[];
-    deleteCacheElement: (id:string) => void
+    deleteCacheElement: (id: string) => void
 }
 
 const INITIAL_USER_DATA: UserContextType = {
@@ -69,8 +69,8 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         const mainCache = JSON.parse(localStorage.getItem("mainCache") || "[]");
 
         const newTempCache = tempCache.filter((item: {
-            id:string,
-            usage:number
+            id: string,
+            usage: number
         }) => item.id !== id);
 
         const newMainCache = mainCache.filter((item: string) => item !== id);
@@ -137,8 +137,8 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         const resp = mainCache.map((id: string) => {
             const chatItem = historyData?.flatMap((item) => item.data).find((chat) => chat.id === id);
             return chatItem;
-        }).filter((item) => item !== undefined);
-        console.log(resp,"here")
+        }).filter((item: ChatItem | undefined): item is ChatItem => item !== undefined);
+        console.log(resp, "here")
         return resp
     }
 

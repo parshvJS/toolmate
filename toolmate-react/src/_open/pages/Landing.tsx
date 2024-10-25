@@ -5,8 +5,6 @@ import Price from "@/components/custom/Price";
 import ButtonCustom from "@/components/custom/ButtonCustom";
 import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
-import { Cpu, Gem, Lightbulb } from "lucide-react";
-import { Slider } from "@/components/ui/slider"; // Importing Shadcn Slider
 import { MobileMock } from "@/components/custom/Mobile-mock";
 
 
@@ -14,30 +12,29 @@ import { MobileMock } from "@/components/custom/Mobile-mock";
 const largeFeatureCardsContent = [
   {
     icon: "/assets/icons/largeOrangeToolbox.svg",
-    
     titleLable: "Tailored for Your Project",
     title: "Find the Perfect Tool for Every Job",
-    desc: "Matey understands your unique DIY needs and suggests the right tools, from screwdrivers to power drills, ensuring you get the job done efficiently.",
+    desc: "Matey suggests the right tools for your DIY needs, ensuring efficiency.",
     ctaText: "Find Tools with Matey",
-    mateyImagePath: "/assets/matey/tools.svg",
+    mateyImagePath: "/assets/images/temp.png",
     leftGradient: true,
   },
   {
     icon: "/assets/icons/priceTag.svg",
     titleLable: "Tools That Fit Your Budget",
     title: "Get the Best Tools at the Best Prices",
-    desc: "Matey offers the best tool suggestions within your budget, making sure you never break the bank, whether you’re a pro or a beginner DIYer.",
+    desc: "Matey offers budget-friendly tool suggestions for all DIYers.",
     ctaText: "Budget-Friendly Tools",
-    mateyImagePath: "/assets/matey/thinking.svg",
+    mateyImagePath: "/assets/images/temp2.png",
     leftGradient: false,
   },
   {
     icon: "/assets/icons/helmet.svg",
     titleLable: "Work Smarter, Work Safer",
     title: "Always Equipped with the Right Safety Gear",
-    desc: "Matey ensures you work smarter and safer by recommending the best protective gear—like gloves, goggles, and dust masks—so you stay protected on every DIY project.",
+    desc: "Matey recommends the best protective gear for safe DIY projects.",
     ctaText: "Safeguard DIY Project",
-    mateyImagePath: "/assets/matey/confident.svg",
+    mateyImagePath: "/assets/images/temp.png",
     leftGradient: true,
   },
 ];
@@ -94,7 +91,7 @@ export default function Landing() {
 
 
           <div className="p-2 w-full md:w-3/5 h-full flex justify-center items-start">
-            <div className="md:mt-0 md:top-8 r  absolute w-[650px] bottom-28 h-[650px]  -z-20 flex justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
+            <div className="md:mt-0 md:top-8 r  absolute w-[790px] bottom-28 h-[790px]  -z-20 flex justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
             <MobileMock />
           </div>
         </section>
@@ -161,7 +158,7 @@ export default function Landing() {
         </section>
 
         {/* mixed color text */}
-        <div className="md:my-20 mt-1 p-2">
+        <div className="md:my-20 mt-1 p-2 ">
           {/* header */}
           <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
             Discover How
@@ -174,35 +171,40 @@ export default function Landing() {
             <LargeFeatureCard key={index} {...cardContent} />
           ))} */}
 
-          <div className="flex flex-wrap justify-center w-full gap-2">
+          <div className="flex flex-wrap justify-center w-full h-full items-center gap-2">
+            <div className="w-11/12 flex gap-2 h-full">
+              {
+                largeFeatureCardsContent.map((cardContent) => (
+                  <div className="w-[calc(33%-0.5rem)] h-full flex flex-col justify-between border-2 border-slate-200  rounded-2xl shadow-slate-300   shadow-md">
+                    <div>
+                      <img src={cardContent.mateyImagePath} alt="" className="bg-white h-[450px] rounded-t-2xl border-b-2 border-slate-200 min-w-full overflow-hidden " />
+                    </div>
 
-            {
-              largeFeatureCardsContent.map((cardContent, index) => (
-                <div className="w-[calc(33%-0.5rem)] h-96 flex flex-col justify-between bg-paleYellow px-11 py-7 rounded-md">
-                  <div className="w-full flex justify-between">
-                    <p className="text-3xl w-2/3 text-left">{cardContent.title}</p>
-                    <div className=" rounded-md w-fit h-fit p-2">
-                      <img src={cardContent.icon} width={40} height={40} />
+                    <div className="px-6 py-7">
+                      <div className="w-full flex justify-between">
+                        <p className="text-3xl w-3/4 text-left font-semibold">{cardContent.title}</p>
+
+                      </div>
+
+                      <Link to={"/preview"} className="flex flex-col gap-4">
+                        <p className="text-md text-left">{cardContent.desc}</p>
+
+                        <div className="px-4 text-lg hover:scale-105 text-white py-2 cursor-pointer bg-gradient-to-r to-orange-yellow-0 from-orange transition-all duration-150 w-2/3 rounded-md ">
+                          {cardContent.ctaText}
+                        </div>
+                      </Link>
                     </div>
                   </div>
+                ))
+              }
 
-                  <Link to={"/preview"} className="flex flex-col gap-4">
-                    <p className="text-md text-left">{cardContent.desc}</p>
-
-                    <div className="px-4 text-lg hover:scale-105 text-white py-2 cursor-pointer bg-gradient-to-r to-orange-yellow-0 from-orange transition-all duration-150 w-2/3 rounded-md ">
-                      {cardContent.ctaText}
-                    </div>
-                  </Link>
-                </div>
-              ))
-            }
-
+            </div>
           </div>
         </div>
 
         {/* grid stock video section */}
-        {/* header */}
-        <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
+        header
+        <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4 h-full">
           How
           <span className="text-orange text-left"> Matey </span>
           Simplifies Your <br />

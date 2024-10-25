@@ -1,7 +1,14 @@
-<svg width="1161" height="1150" viewBox="0 0 1161 1150" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect x="-9" y="580" width="840.972" height="827.576" rx="56" transform="rotate(-45 -9 580)" fill="url(#paint0_linear_1096_232)"/>
+<svg width="863" height="841" viewBox="0 0 863 841" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_f_1099_235)">
+<rect x="60" y="423" width="529.375" height="520.943" rx="56" transform="rotate(-45 60 423)" fill="url(#paint0_linear_1099_235)"/>
+</g>
 <defs>
-<linearGradient id="paint0_linear_1096_232" x1="817.228" y1="565.256" x2="-183.136" y2="1516.02" gradientUnits="userSpaceOnUse">
+<filter id="filter0_f_1099_235" x="-64.6" y="-64.6" width="992.2" height="970.2" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="32.3" result="effect1_foregroundBlur_1099_235"/>
+</filter>
+<linearGradient id="paint0_linear_1099_235" x1="580.094" y1="413.719" x2="-49.6153" y2="1012.2" gradientUnits="userSpaceOnUse">
 <stop stop-color="#FF7C36"/>
 <stop offset="1" stop-color="#FF5900"/>
 </linearGradient>

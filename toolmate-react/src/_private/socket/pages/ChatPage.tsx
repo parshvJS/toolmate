@@ -170,7 +170,7 @@ export function ChatPage() {
 
     return (
         <div className={`flex flex-col h-screen p-6 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
-            <div className="flex-grow overflow-y-scroll max-w-4xl mt-10 pr-4 relative">
+            <div className="flex-grow overflow-y-scroll max-w-4xl mt-10 pr-4 relative w-full">
                 {conversation.map((data, index) => (
                     <div key={index}>
                         {data.role === "ai" ? (
