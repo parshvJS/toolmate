@@ -1,4 +1,4 @@
-import { createCatagory } from "../../controller/adsense/createcatagory.controller.js";
+import { createCatagory } from "../../controller/adsense/createCatagory.controller.js";
 import { addNewProduct } from "../../controller/adsense/addNewProduct.controller.js";
 import { Router } from "express";
 

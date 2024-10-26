@@ -44,8 +44,8 @@ const chatDemo: ChatMessage[] = [
         role: "ai",
         isToolSuggestion: true,
         products: [
+            { name: "Affordable Hanging Kit", price: 25, assets: "/assets/images/demo/product1.png" },
             { name: "Basic Cordless Drill", price: 45, assets: "/assets/images/demo/product2.png" },
-            { name: "Affordable Hanging Kit", price: 25, assets: "/assets/images/demo/product1.png" }
         ]
     },
     { message: "Thanks for the help!", role: "user" },
@@ -118,7 +118,7 @@ export function MobileMock() {
                 <img src="/assets/matey/bothThumbsUp.svg" alt="back" className="z-0 top-0 left-48 absolute rotate-12" />
             </div>
 
-          
+
             <motion.div
                 className="absolute bottom-28 z-20 -left-40 flex flex-col gap-4 justify-end items-end"
                 initial={{ opacity: 0, y: 20 }}
@@ -153,15 +153,15 @@ export function MobileMock() {
                     Save Time on Projects
                 </motion.div>
             </motion.div>
-
-            <div ref={scrollAreaRef} className="z-10 ml-28 bg-white w-[330px] h-[550px] mb-10 overflow-scroll hide-scrollbar border-8 p-2 rounded-3xl ">
+        <div className="w-[330px] h-[550px] mb-10 z-10 p-2 ml-28 rounded-3xl bg-gradient-to-t from-orange to-softYellow ">
+            <div ref={scrollAreaRef} className=" z-10  bg-white w-[315px] h-[535px] mb-10 overflow-scroll hide-scrollbar  p-2 rounded-3xl ">
                 <div className="flex flex-col space-y-4 mt-3 mb-40 ">
                     {currChat.map((chat, index) => (
                         <div
                             key={index}
-                            className={`rounded-lg ${chat.role === "ai" ? "text-left" : "text-right bg-softYellow border-2 border-yellow"}`}
+                            className={`rounded-lg ${chat.role === "ai" ? "text-left" : "text-right "}`}
                         >
-                            <div className="flex gap-2">
+                            <div className={`flex gap-2 w-full ${chat.role === "ai" ? "justify-start" : "justify-end"}`}>
                                 {chat.role === "ai" ? (
                                     <div className="flex gap-2 items-start">
                                         <img src="/assets/icons/blur-ball.svg" className="min-w-9 -mt-2" />
@@ -172,7 +172,7 @@ export function MobileMock() {
                                         initial={{ scale: 0.9, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ duration: 0.2 }}
-                                        className="p-1 bg-lightYellow rounded-lg"
+                                        className="p-1 bg-lightYellow rounded-lg w-fit  px-4 py-2  border-2  border-yellow "
                                     >
                                         {chat.message}
                                     </motion.p>
@@ -238,7 +238,7 @@ export function MobileMock() {
                     <div className="flex justify-center mt-4 w-full">
                         <motion.button
                             onClick={() => navigate('/preview')}
-                            className="px-4 py-2 w-full bg-yellow hover:bg-softYellow text-black rounded-lg font-semibold hover:bg-yellow-600 transition-all"
+                            className="px-4 py-2 w-fit bg-yellow hover:bg-softYellow text-black rounded-lg font-semibold transition-all"
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.3 }}
@@ -248,6 +248,9 @@ export function MobileMock() {
                     </div>
                 )}
             </div>
+
+        </div>
+           
         </div>
     );
 }

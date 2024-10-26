@@ -93,7 +93,6 @@ export async function handleSocketSerivce(socket: Socket) {
             case 1: {
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
                 const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
-                
                 // handle all the intend    
             }
             case 2: {

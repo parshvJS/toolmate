@@ -6,14 +6,13 @@ interface Breakpoint {
   tooltip: string;
 }
 
-interface ProductSuggestionItem {
+export interface ProductSuggestionItem {
   image: string;
   title: string;
   description: string;
   price: number;
 }
 interface ProductSuggestion {
-  id: number,
   name: string,
   data: ProductSuggestionItem[]
 }
@@ -33,10 +32,7 @@ const INITIAL_RIGHT_SIDEBAR_CONTEXT: RightSidebarContextProps = {
   sliderValue: 500,
   isBudgetOn: false,
   breakpoints: [],
-  productSuggestions: [
-
-  ]
-  ,
+  productSuggestions: [],
   isSliderBreakPointEmpty: true,
   productSuggestionEmpty: true,
   setSliderValue: () => { },
@@ -66,6 +62,9 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     console.log('RightSidebarProvider mounted')
   }, [])
+
+  
+  
   return (
     <RightSidebarContext.Provider
       value={{

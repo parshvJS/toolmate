@@ -71,27 +71,27 @@ export default function Landing() {
                   <img
                     src="/assets/icons/image.png"
                     alt="user"
-                    className="max-w-20"
-                    width={120}
+                    className="max-w-32"
+                    width={220}
                   />
                 </div>
-                <Separator
+                {/* <Separator
                   orientation="vertical"
                   className="border border-gray"
-                />
-                <div className="flex items-center flex-col text-left">
+                /> */}
+                {/* <div className="flex items-center flex-col text-left">
                   <p className="font-semibold text-left opacity-80 text-slate-500 text-md">
                     Trusted by People
                   </p>
                   <p className="font-mono md:text-2xl text-lg">100K+ Users</p>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
 
 
           <div className="p-2 w-full md:w-3/5 h-full flex justify-center items-start">
-            <div className="md:mt-0 md:top-8 r  absolute w-[790px] bottom-28 h-[790px]  -z-20 flex justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
+            <div className="md:mt-0  absolute w-[700px]  h-[700px] -top-9  -z-20 flex justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
             <MobileMock />
           </div>
         </section>
@@ -157,6 +157,10 @@ export default function Landing() {
           </div>
         </section>
 
+
+
+
+
         {/* mixed color text */}
         <div className="md:my-20 mt-1 p-2 ">
           {/* header */}
@@ -177,7 +181,7 @@ export default function Landing() {
                 largeFeatureCardsContent.map((cardContent) => (
                   <div className="w-[calc(33%-0.5rem)] h-full flex flex-col justify-between border-2 border-slate-200  rounded-2xl shadow-slate-300   shadow-md">
                     <div>
-                      <img src={cardContent.mateyImagePath} alt="" className="bg-white h-[450px] rounded-t-2xl border-b-2 border-slate-200 min-w-full overflow-hidden " />
+                      <img src={cardContent.mateyImagePath + "-"} alt="" className="bg-white h-[450px] rounded-t-2xl border-b-2 border-slate-200 min-w-full overflow-hidden " />
                     </div>
 
                     <div className="px-6 py-7">
@@ -203,7 +207,7 @@ export default function Landing() {
         </div>
 
         {/* grid stock video section */}
-        header
+
         <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4 h-full">
           How
           <span className="text-orange text-left"> Matey </span>

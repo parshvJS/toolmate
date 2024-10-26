@@ -11,12 +11,13 @@ import {
 	RunnablePassthrough,
 	RunnableSequence,
 } from '@langchain/core/runnables';
-import { getPremiumUserChatMessage } from '../../utils/utilsFunction.js';
+import { getPremiumUserChatMessage, wrapWordsInQuotes } from '../../utils/utilsFunction.js';
 import { tool } from "@langchain/core/tools";
 import { tools } from './tools.js';
 import { getRedisData, setRedisData } from '../redis.js';
 import ProductCatagory from '../../models/productCatagory.model.js';
 import Product from '../../models/adsense/product.model.js';
+import mongoose from 'mongoose';
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -359,7 +360,6 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 
 	var newChat = {
 		sessionId: userId,
-		message: '',
 		role: 'ai',
 		isProductSuggested: false,
 		isCommunitySuggested: false,
@@ -375,7 +375,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 						message: "Matey Is Typing..."
 					})
 					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, socket);
-					newChat['message'] = generalResponse;
+					break;
 				}
 				// community recommendation
 				case 2: {
@@ -384,18 +384,27 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					})
 					newChat['isCommunitySuggested'] = true;
 					const communityId = await HandleCommunityRecommendation(prompt, chatHistory, signal, socket);
+					break;
 				}
 				// product recommendation
 				case 3: {
 					socket.emit('status', {
 						message: "Matey Is Finding Product For You..."
 					})
-					newChat['isProductSuggested'] = true;
 					const productId = await HandleProductRecommendation(prompt, chatHistory, signal, false, null, socket);
+					if (!productId) {
+						socket.emit('noProducts', {
+							message: "No products found."
+						})
+						continue;
+					}
+					newChat['isProductSuggested'] = true;
 					newChat['productId'] = productId;
 					socket.emit('productId', {
 						productId: productId
 					});
+					console.log('Product ID:-------------------------------', productId);
+					break;
 				}
 				// follow up question for more understanding
 				case 4: {
@@ -408,7 +417,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 				default: { }
 			}
 		}
-
+		socket.emit('statusOver', {})
 		return newChat;
 
 	}
@@ -538,6 +547,14 @@ async function HandleProductRecommendation(
 			let parsedCategory;
 			try {
 				parsedCategory = JSON.parse(categoryResult);
+				if (signal.aborted) return;
+				if (parsedCategory.length === 0) {
+					console.error('No categories selected.');
+					socket.emit('noProducts', {
+						message: "No categories selected."
+					})
+					return;
+				}
 			} catch (parseError) {
 				console.error('Error parsing category result:', parseError);
 				return;
@@ -555,6 +572,7 @@ async function HandleProductRecommendation(
 				message: "Matey Is Picking Right Products For You..."
 			});
 
+			// TODO: make redis cacheing more clear and efficient
 			// Query Redis for products or fetch from MongoDB
 			const redisProductData = await getRedisData(`PRODUCT-${parsedCategory}`);
 			let productDetails;
@@ -563,8 +581,13 @@ async function HandleProductRecommendation(
 			} else {
 				await connectDB();
 				console.log("Fetching product from database", categoryIds);
-				const DbProductDetails = await Product.find({ catagory: { $in: categoryIds } }).lean(); // Use lean to get plain JavaScript objects
-				console.log('DB Product Details:', DbProductDetails);
+
+				// Convert categoryIds (strings) to ObjectIds using 'new mongoose.Types.ObjectId()'
+				const objectIdCategoryIds = categoryIds.map((id: string) => new mongoose.Types.ObjectId(id));
+
+				// Query for products with any of the specified category IDs
+				const DbProductDetails = await Product.find({ catagory: { $in: objectIdCategoryIds } }).lean(); 
+				
 				if (DbProductDetails.length > 0) {
 					await setRedisData(`PRODUCT-${parsedCategory}`, JSON.stringify(DbProductDetails), 3600);
 				}
@@ -580,11 +603,33 @@ async function HandleProductRecommendation(
 			console.log('Refined product details:', refinedProductDetails);
 			const jsonProductDetails = JSON.stringify(refinedProductDetails);
 			console.log('JSON product details:', jsonProductDetails);
-			const productPrompt = `
-Suggest the most relevant products based on the user's prompt from the given product catalog. Ensure the products are highly relevant and useful | Max 4-5 suggestions | Product Catalog: {jsonProductDetails} | User Prompt: {prompt}
+			// 			const productPrompt = `
+			// Suggest the most relevant products based on the user's prompt from the given product catalog. Ensure the products are highly relevant and useful | Max 4-5 suggestions | Product Catalog: {jsonProductDetails} | User Prompt: {prompt}
 
-Chat Context  {chatHistory} Return only an array of product IDs:
+			// Chat Context  {chatHistory} Return only an array of product IDs:
+			// `;
+			const productPrompt = `
+Based on the user's prompt, suggest the most relevant products from the provided product catalog. Ensure the products are highly relevant and useful, limiting each category to 4-5 suggestions. 
+
+Product Catalog: {jsonProductDetails} | User Prompt: {prompt} | Chat Context: {chatHistory}. 
+
+Provide the response in this format: this is just format use JSON in actual response: 
+[object(categoryName: string, products: array of product IDs), object(categoryName: string, products: array of product IDs)]. 
+
+Ensure that:
+- Categories only exist if there is at least one product in them.
+- Group products efficiently if there are fewer than 4 products in a category.
+- Generate groups way that each group must have aleast 1 product else dont include that group in response.
+- no comments or additional text in the response, only the array of objects.
+- productId should be from Product Catalog Only No Random Value
+- if there is no Product Catalog or in any other exeption case return empty array .
+
+Only return the array of objects, without any additional text. 
+
+Response: 
 `;
+
+
 
 			const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 
@@ -602,10 +647,18 @@ Chat Context  {chatHistory} Return only an array of product IDs:
 				jsonProductDetails: jsonProductDetails,
 				chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
 			});
-
+			console.log('Product suggestions:', productResult);
 			let parsedProduct;
 			try {
-				parsedProduct = JSON.parse(productResult);
+				parsedProduct = JSON.parse(wrapWordsInQuotes(String(productResult.replace('`', '').replace('JSON', '').replace('js', ''))));
+				if (signal.aborted) return;
+				if (parsedProduct.length === 0) {
+					console.error('No products selected.');
+					socket.emit('noProducts', {
+						message: "No products Selected For You By Matey"
+					})
+					return;
+				}
 			} catch (parseError) {
 				console.error('Error parsing product result:', parseError);
 				return;

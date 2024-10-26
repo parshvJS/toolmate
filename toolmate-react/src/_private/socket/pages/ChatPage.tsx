@@ -14,6 +14,9 @@ import { motion } from "framer-motion";
 import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
+import { ProductItem } from "@/types/types";
+import { ProductSuggestionItem, RightSidebarContext } from "@/context/rightSidebarContext";
+import { getImageUrl } from "@/lib/utils";
 
 interface Message {
     role: string;
@@ -40,6 +43,7 @@ export function ChatPage() {
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
     const { userId, userData, unshiftiChatname } = useContext(UserContext);
+    const { setProductSuggestions } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -123,6 +127,7 @@ export function ChatPage() {
         return () => {
             socket?.off("message", handleMessage);
             localStorage.setItem('retrieveChat', "yes");
+            setProductSuggestions([]);
         };
     }, [socket, isNew, userData, sessionId, searchParams, setSearchParams]);
 
@@ -139,8 +144,56 @@ export function ChatPage() {
             setIsNotificationOn(false);
             setNotificationText("")
         })
-        socket?.on('productId',function (data){
-            // query database for data  
+
+        // product suggestion for user
+        socket?.on('productId', async function (data: {
+            productId: ProductItem[]
+        }) {
+            console.log(data, "si ------------------------------")
+            const productData = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data.productId);
+
+            if (productData.status === 200) {
+                console.log(productData.data)
+                if (productData.data.data.length < 0) {
+                    setNotificationText("No Product Found");
+                    setIsNotificationOn(true);
+                }
+
+                const refinedData = [];
+
+                for (const item of productData.data.data) {
+                    refinedData.push({
+                        name: item.categoryName,
+                        data: item.products.map((product: {
+                            name: string,
+                            imageParams: string[],
+                            description: string,
+                            price: string,
+                            catagory: []
+                        }) => {
+                            const allImage = product.imageParams.map((image: string) => {
+                                return getImageUrl(image)
+                            })
+                            return {
+                                image: allImage,
+                                title: product.name,
+                                description: product.description,
+                                price: parseInt(product.price) || 0,
+                            };
+                        })
+                    });
+                }
+                console.log(refinedData, "refined data")
+                setProductSuggestions(refinedData);
+
+            }
+        })
+
+        socket.on('noProduct', function (data: {
+            message: string
+        }) {
+            console.log(data, "no product")
+            setNotificationText(data.message);
         })
     };
 

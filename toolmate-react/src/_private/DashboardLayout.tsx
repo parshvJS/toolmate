@@ -51,37 +51,16 @@ export default function DashboardLayout() {
                 )}
             >
                 {/* Sidebar */}
-                <Sidebar collabsable={collapsed}
+                <Sidebar
+                    collabsable={collapsed}
                     setCollabsable={setSidebarCollapsed}
-
                 />
 
 
 
                 {/* Collapse button */}
                 <div className="relative w-full h-full">
-                    <div>
-                        <button
-                            className="absolute top-1 left-1 z-50"
-                            onClick={() => setSidebarCollapsed(!collapsed)}
-                        >
-                            <TooltipProvider>
-                                <Tooltip delayDuration={90}>
-                                    <TooltipTrigger>
-                                        <div className="p-1 text-white bg-yellow hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
-                                            <Columns2 />
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                        <p>{collapsed ? "Open Sidebar " : "Close Sidebar"}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </button>
-
-
-                    </div>
-
+                
                     {/* Main content */}
                     <div className="scrollbar-hide">
                         <Outlet />

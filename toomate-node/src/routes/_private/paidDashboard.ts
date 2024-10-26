@@ -8,6 +8,7 @@ import { deleteChat } from '../../controller/_private/deleteChat.controller.js';
 import { bookmarkChat } from '../../controller/_private/bookmarkChat.controller.js';
 import { getPresignedUrl } from '../../controller/_private/getPresignedUrl.controller.js';
 import { getPresignedDeleteUrl } from '../../controller/_private/getPresignedUrlDelete.controller.js';
+import { getProductFromId } from '../../controller/_private/getProductsFromId.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -19,5 +20,6 @@ paidDashbaord.route("/deleteChat").post(deleteChat);
 paidDashbaord.route("/bookmarkChat").post(bookmarkChat);
 paidDashbaord.route("/get-s3-presigned-url").post(getPresignedUrl);
 paidDashbaord.route("/get-s3-presigned-delete-url").post(getPresignedDeleteUrl);
+paidDashbaord.route("/getProductFromId").post(getProductFromId);
 
 export {paidDashbaord}

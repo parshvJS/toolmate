@@ -6,8 +6,8 @@ export async function addNewProduct(req: Request, res: Response) {
     await connectDB();
 
     try {
-        const { name, imageParams, url, description, offerDescription, catagoryId } = req.body;
-        if (!name || !imageParams || !url || !description || !offerDescription || !catagoryId) {
+        const { name, imageParams, url, description, offerDescription, catagoryId,price } = req.body;
+        if (!name || !imageParams || !url || !description || !offerDescription || !catagoryId || !price) {
             return res.status(400).json({ message: 'All fields are required' });
         }
         const newProductItem = {
@@ -16,7 +16,8 @@ export async function addNewProduct(req: Request, res: Response) {
             url,
             description,
             offerDescription,
-            catagory: catagoryId.map((id: string) => id)
+            catagory: catagoryId.map((id: string) => id),
+            price
         }
 
         const productDB = await Product.create(newProductItem);

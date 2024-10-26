@@ -13,7 +13,7 @@ import {
 import { Skeleton } from "../ui/skeleton"
 import { UserContext } from "@/context/userContext"
 import { iChatname } from "@/types/types"
-import { AlertTriangle, Ellipsis, Pencil, Trash, Trash2 } from "lucide-react"
+import { AlertTriangle, Columns2, Ellipsis, PanelLeftDashed, Pencil, Trash, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import {
     DropdownMenu,
@@ -69,40 +69,6 @@ export default function ImprovedAnimatedSidebar({
     const [deleteDialog, setDeleteDialog] = useState(false)
 
     const { toast } = useToast()
-
-    // useEffect(() => {
-    //     if (!historyData || historyData.length === 0) return; // Exit if no data
-
-    //     // Filter out items that already exist in animatedHistory based on dateDiff
-    //     const newItems = historyData.filter(
-    //         (item) => !animatedHistory.some((existingItem) => existingItem.dateDiff === item.dateDiff)
-    //     );
-
-    //     // Check for duplicate sessionId in new items
-    //     const isDuplicate = animatedHistory.some((existingItem) =>
-    //         existingItem.data.some((chat) => chat.sessionId === sessionId)
-    //     );
-
-    //     if (newItems.length > 0 && !isDuplicate) {
-    //         setAnimatedHistory((prevAnimatedHistory) => [
-    //             ...prevAnimatedHistory,
-    //             ...newItems,
-    //         ]);
-    //     }
-    // }, [sessionId]); // Only depend on historyData and sessionId
-
-
-    // useEffect(() => {
-    //     console.log("animatedHistory", animatedHistory)
-    //     setAnimatedHistory((prev) => {
-    //         const uniqueHistory = prev.filter(
-    //             (item, index, self) =>
-    //                 index === self.findIndex((t) => t.dateDiff === item.dateDiff)
-    //         );
-    //         return uniqueHistory;
-    //     })
-    // },[])
-
     const filteredHistory = useMemo(() => {
         if (!historyData || historyData.length === 0) return [];
         return historyData.filter(
@@ -228,8 +194,24 @@ export default function ImprovedAnimatedSidebar({
     return (
         <div className={`bg-whiteYellow border-r-2 border-slate-300 h-screen flex flex-col ${collabsable ? "px-1" : "px-3"}`}>
             {/* Logo */}
-            <div className={`flex mt-5 items-center ${collabsable ? "justify-center" : "justify-start"}`}>
+            <div className={`flex  mt-5 items-center ${collabsable ? "justify-center" : "justify-between"}`}>
                 {!collabsable ? <DarkLogo /> : <LogoSmall />}
+                <div className={`hover:bg-softYellow rounded-md ${collabsable ? "hidden" : "flex"}`}>
+                    <TooltipProvider>
+                        <Tooltip delayDuration={0}>
+                            <TooltipTrigger>
+                                <div onClick={() => setCollabsable && setCollabsable(!collabsable)}>
+                                    <PanelLeftDashed className="m-1 w-6 h-6 font-thin" />
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-white">
+                                <p>{collabsable ? "Open Sidebar" : "Close Sidebar"}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+
+                </div>
             </div>
 
             <hr className="border border-l-stone-300 my-2" />
@@ -403,7 +385,28 @@ export default function ImprovedAnimatedSidebar({
                     </Tooltip>
                 </TooltipProvider>
             </div>
+            <hr className="border border-l-stone-300 my-2" />
 
+            {/* side bar opener */}
+            <div className={` justify-center rounded-md ${collabsable ? "flex" : "hidden"}`}>
+                <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                        <TooltipTrigger>
+                            <div
+                                className="flex p-1 items-center justify-center hover:bg-softYellow cursor-pointer rounded-lg"
+
+                                onClick={() => setCollabsable && setCollabsable(!collabsable)}>
+                                <PanelLeftDashed className="m-2" />
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="bg-paleYellow">
+                            <p>{collabsable ? "Open Sidebar" : "Close Sidebar"}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+
+
+            </div>
 
             {/* dialog for rename   */}
 

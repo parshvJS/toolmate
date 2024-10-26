@@ -15,7 +15,7 @@ export function Toolbar({ collapsed, setCollapsed }: { collapsed: boolean, setCo
     const [isToolSuggestionOpen, setIsToolSuggestionOpen] = useState(true);
     const socket = useSocket();
 
-    
+
     return (
         <div className="border-l-2 border-slate-300 h-screen"> {/* Use h-screen to take the full viewport height */}
             {

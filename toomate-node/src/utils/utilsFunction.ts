@@ -86,3 +86,14 @@ export function categorizeChatSessions(sessions: ChatSession[]) {
 
     return response;
 }
+
+export function wrapWordsInQuotes(input:any) {
+    return input.replace(/(\b\w+\b)(?=\s*:)/g, (match:any) => {
+      // Check if the match is already wrapped in quotes
+      if (!/^".*"$/.test(match)) {
+        return `"${match}"`; // Wrap in quotes if not already
+      }
+      return match; // Leave as is if already wrapped
+    });
+  }
+  

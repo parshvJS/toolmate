@@ -28,3 +28,8 @@ export interface ExpressionData {
     profileImageParams: string;
     bannerImageParams?: string;
   }
+
+  export interface ProductItem{
+    catagoryName:string;
+    products:string[]
+  }

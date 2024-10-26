@@ -46,7 +46,7 @@ export default function AddProductForm() {
     const [imageParams, setImageParams] = useState<string[]>([])
     const [open, setOpen] = useState(false)
     const [value, setValue] = useState<string[]>([])
-
+    const [price, setPrice] = useState<number>(0)
     const { toast } = useToast()
     console.log(categoryData, "categoryData")
     useEffect(() => {
@@ -115,7 +115,8 @@ export default function AddProductForm() {
                 url: productUrl,
                 description: productDescription,
                 offerDescription: offerDescription,
-                catagoryId: value
+                catagoryId: value,
+                price: price,
             });
             if (!(res.status == 200)) {
                 setCreateProductError(res.data.message)
@@ -126,6 +127,7 @@ export default function AddProductForm() {
             setProductDescription("");
             setProductUrl("");
             setOfferDescription("");
+            setPrice(0)
             setCreateProductError("");
         } catch (error: any) {
             setCreateProductError(error.response?.data?.message || "An error occurred while creating product");
@@ -262,6 +264,16 @@ export default function AddProductForm() {
                                         onChange={(e) => setOfferDescription(e.target.value)}
                                         className="w-full p-2 border rounded bg-white"
                                         placeholder="Enter offer description"
+                                    />
+                                </div>
+                                <div>
+                                    <label>Price</label>
+                                    <input
+                                        type="number"
+                                        value={price}
+                                        min={0}
+                                        onChange={(e) => setPrice(Number(e.target.value))}
+                                        className="w-full p-2 border rounded bg-white"
                                     />
                                 </div>
                                 <div>
