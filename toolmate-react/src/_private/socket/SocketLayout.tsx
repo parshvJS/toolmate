@@ -22,40 +22,22 @@ export function SocketLayout() {
     return (
         <SocketProvider>
             {/* <div className="grid grid-cols-[1fr_auto] h-screen"> */}
-                {/* Main Content */}
-                <div className="flex-grow relative w-full">
+            {/* Main Content */}
+            <div className="flex-grow relative w-full">
+                <div className="w-full flex">
+                    <div className="w-2/3 p-0">
 
-                    {/* <button
-                        className="absolute top-1 right-1 z-50"
-                        onClick={toggleSidebar}
-                    >
-                        <TooltipProvider>
-                            <Tooltip delayDuration={90}>
-                                <TooltipTrigger>
-                                    <div className="p-1 text-white bg-yellow/60 hover:bg-yellow/90 hover:backdrop-blur-md rounded-md">
-                                        <Columns2 />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="left">
-                                    <p>{collapsed ? "Open Toolbar " : "Close Toolbar"}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </button> */}
-                    <div className="w-full flex">
-                        <div className="w-2/3 p-0">
+                        <Outlet />
 
-                            <Outlet />
-
-                        </div>
-                        <div className={`${collapsed?"w-1/3":"w-1/4"  }`}>
-                            <ToolSpread />
-                        </div>
                     </div>
-
+                    <div className={`${collapsed ? "w-1/3" : "w-1/4"}`}>
+                        <ToolSpread />
+                    </div>
                 </div>
-                {/* Right Sidebar */}
-                {/* <div
+
+            </div>
+            {/* Right Sidebar */}
+            {/* <div
                     className={classNames("transition-all duration-300 ease-in-out overflow-hidden", {
                         "w-[64px]": collapsed,  // Collapsed width
                         "w-[380px]": !collapsed  // Expanded width

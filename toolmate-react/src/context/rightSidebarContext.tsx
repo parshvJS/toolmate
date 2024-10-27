@@ -12,7 +12,7 @@ export interface ProductSuggestionItem {
   description: string;
   price: number;
 }
-interface ProductSuggestion {
+export interface ProductSuggestion {
   name: string,
   data: ProductSuggestionItem[]
 }

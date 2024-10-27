@@ -92,6 +92,7 @@ export async function handleSocketSerivce(socket: Socket) {
         switch (currentPlan) {
             case 1: {
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
+                socket.emit('intendList', intendList);
                 const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
                 // handle all the intend    
             }

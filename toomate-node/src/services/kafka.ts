@@ -124,7 +124,7 @@ export async function startMessageConsumer() {
 
 
 export async function startNewMessageConsumer() {
-	
+
 	console.log('Consumer is running..');
 	const consumer: Consumer = kafka.consumer({ groupId: 'default' });
 	await consumer.connect();

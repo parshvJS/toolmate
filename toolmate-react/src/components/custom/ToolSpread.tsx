@@ -1,5 +1,5 @@
 import { RightSidebarContext } from "@/context/rightSidebarContext"
-import { Plus, ReceiptText, Scan, SquareDashedBottom } from "lucide-react"
+import { ListPlus, Plus, ReceiptText, Scan, Shapes, SquareDashedBottom } from "lucide-react"
 import { useContext, useState } from "react"
 import { motion } from "framer-motion"
 import { Separator } from "../ui/separator"
@@ -15,11 +15,8 @@ export function ToolSpread() {
             setCurrOpenIndex(-1)
             return
         }
-
         setCurrOpenIndex(index)
-
     }
-
 
     return (
         <>
@@ -36,7 +33,7 @@ export function ToolSpread() {
                 <div className={`${isSliderBreakPointEmpty ? "flex" : "block"} my-2 rounded-lg`}>
                     <div className="w-full h-32 bg-paleYellow flex flex-col gap-2 items-center rounded-lg">
                         <MateyExpression expression="laugh" />
-                        <p className="font-semibold w-3/4">Keep Chating ! Budget Slider Will Come Here!</p>
+                        <p className="font-semibold w-3/4">Keep Chating ! Matey Will Create personalized Budget Slider Soon !</p>
                     </div>
                 </div>
                 {/*  lable */}
@@ -55,11 +52,20 @@ export function ToolSpread() {
                     </div>
                 </div>
                 <div className="flex flex-col gap-2">
+                    <div className={`${productSuggestions.length == 0 ? "hidden" : "flex gap-2 justify-between"} p-2 cursor-pointer rounded-md w-full bg-lightYellow hover:bg-yellow transition-all border-2 border-yellow `}>
+                        <div className="flex gap-2">
+                            <Shapes className="w-6 h-6" />
+                            <p className="font-semibold">Your Collection</p>
+                        </div>
+                        <div>
+                            <ListPlus />
+                        </div>
+                    </div>
                     {
                         productSuggestions.map((product, index) => {
                             return (
                                 <div key={index}>
-                                    <div className="w-full border hover:bg-paleYellow cursor-pointer border-lightYellow flex justify-between p-3 rounded-md" onClick={() => handleElementClick(index)}>
+                                    <div className={`${currOpenIndex == index ? "bg-paleYellow" : ""} w-full border hover:bg-paleYellow cursor-pointer border-lightYellow flex justify-between p-3 rounded-md`} onClick={() => handleElementClick(index)}>
                                         <div className="flex gap-2 items-center">
                                             <SquareDashedBottom className="w-5 h-5" />
                                             <p className="font-semibold text-slate-700">{product.name}</p>
@@ -84,7 +90,7 @@ export function ToolSpread() {
 
                                                     product.data.map((item, itemIndex) => {
                                                         return (
-                                                            <div key={itemIndex} className="flex justify-between bg-paleYellow  hover:bg-mangoYellow transition-all duration-200 p-2 rounded-lg cursor-pointer gap-2 w-full ">
+                                                            <div key={itemIndex} className="flex justify-between bg-paleYellow  hover:bg-mangoYellow transition-all duration-200 p-2 rounded-lg cursor-pointer gap-2 w-full border-2 border-yellow">
                                                                 {/* /content */}
                                                                 <div className="flex flex-col h-full flex-1 justify-between  gap-1 w-3/5 items-start">
                                                                     <p className="font-bold capitalize">{item.title.length > 25 ? item.title.slice(0, 23) + "..." : item.title}</p>

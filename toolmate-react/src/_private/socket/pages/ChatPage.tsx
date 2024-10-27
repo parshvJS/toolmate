@@ -11,16 +11,18 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, Component, SeparatorVertical } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { ProductItem } from "@/types/types";
-import { ProductSuggestionItem, RightSidebarContext } from "@/context/rightSidebarContext";
+import { ProductSuggestion, ProductSuggestionItem, RightSidebarContext } from "@/context/rightSidebarContext";
 import { getImageUrl } from "@/lib/utils";
 
 interface Message {
     role: string;
     message: string;
+    productData?: ProductItem[];
+    workQueue?: string[];
 }
 
 async function fetchChatHistory(sessionId: string, userId: string, pagination: { page: number, limit: number }) {
@@ -43,7 +45,7 @@ export function ChatPage() {
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
     const { userId, userData, unshiftiChatname } = useContext(UserContext);
-    const { setProductSuggestions } = useContext(RightSidebarContext);
+    const { setProductSuggestions, productSuggestions } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -90,11 +92,15 @@ export function ChatPage() {
         if (currStreamingRes) {
             setConversation((prev) =>
                 prev[prev.length - 1]?.role === "ai"
-                    ? [...prev.slice(0, -1), { role: "ai", message: currStreamingRes }]
+                    ? [...prev.slice(0, -1), { ...prev[prev.length - 1], message: currStreamingRes }]
                     : [...prev, { role: "ai", message: currStreamingRes }]
             );
         }
     }, [currStreamingRes]);
+
+    useEffect(() => {
+        console.log(conversation, "conversation")
+    }, [conversation])
 
     useEffect(() => {
         if (isNew) {
@@ -145,6 +151,29 @@ export function ChatPage() {
             setNotificationText("")
         })
 
+        socket?.on('intendList', function (data: number[]) {
+            console.log(data, "intend list")
+            setConversation((prev) => {
+                const lastMessage = prev[prev.length - 1];
+                console.log(lastMessage, "last message")
+                const workerQueue = data.map((item) => {
+                    switch (item) {
+                        case 2:
+                            return "Suggested community support";
+                        case 3:
+                            return "Recommended useful products";
+                        case 4:
+                            return "Asked clarifying questions";
+                        case 5:
+                            return "Provided project guidance as needed";
+                    }
+                })
+                if (lastMessage.role === "ai") {
+                    return [...prev.slice(0, -1), { ...lastMessage, workQueue: workerQueue }];
+                }
+                return [...prev, { role: "ai", message: "", workQueue: workerQueue }];
+            })
+        })
         // product suggestion for user
         socket?.on('productId', async function (data: {
             productId: ProductItem[]
@@ -159,7 +188,7 @@ export function ChatPage() {
                     setIsNotificationOn(true);
                 }
 
-                const refinedData = [];
+                const refinedData: ProductSuggestion[] = [];
 
                 for (const item of productData.data.data) {
                     refinedData.push({
@@ -186,10 +215,18 @@ export function ChatPage() {
                 console.log(refinedData, "refined data")
                 setProductSuggestions(refinedData);
 
+                // Add product data to conversation
+                setConversation((prev) => {
+                    const lastMessage = prev[prev.length - 1];
+                    if (lastMessage.role === "ai") {
+                        return [...prev.slice(0, -1), { ...lastMessage, productData: refinedData as unknown as ProductItem[] }];
+                    }
+                    return [...prev, { role: "ai", message: "", productData: refinedData as unknown as ProductItem[] }];
+                });
             }
         })
 
-        socket.on('noProduct', function (data: {
+        socket?.on('noProduct', function (data: {
             message: string
         }) {
             console.log(data, "no product")
@@ -223,11 +260,18 @@ export function ChatPage() {
 
     return (
         <div className={`flex flex-col h-screen py-4 pl-4 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
-            <div className="flex-grow overflow-y-scroll max-w-4xl  pr-4 relative w-full">
+            <div className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4  pr-4 relative w-full">
                 {conversation.map((data, index) => (
                     <div key={index}>
                         {data.role === "ai" ? (
-                            <Aichat message={data.message.replace("Typing...", "")} />
+                            <div>
+                                <Aichat
+                                    workerQueue={data.workQueue}
+                                    message={data.message.replace("Typing...", "")}
+                                    productData={data.productData}
+                                />
+
+                            </div>
                         ) : (
                             <div className="w-full flex justify-end">
                                 <div className="flex w-fit bg-yellow rounded-md px-3 py-2">
