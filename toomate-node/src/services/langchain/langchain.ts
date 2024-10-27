@@ -374,7 +374,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					socket.emit('status', {
 						message: "Matey Is Typing..."
 					})
-					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, socket);
+					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal,intend.includes(3),intend.includes(2), socket);
 					break;
 				}
 				// community recommendation
@@ -424,28 +424,46 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 }
 
 
-async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, socket: Socket) {
+async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal,isProductSuggestion:boolean,isCommunitySuggestin:boolean, socket: Socket) {
 	socket.emit('status', {
 		message: "Matey Is Typing..."
 	})
-
-	const streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the tool request. If the request for tools is high, provide a brief response referring to the relevant tool. Tools include:
-	1. Product
-	2. Community suggestions
-
-	User Prompt: ${prompt}
-	Chat History: ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "No available chat history procide without chat history"}
-	system : Your job is to give concise response to user as per the intensity of the tool request.
-	Your task is to:
-	1. Assess the intensity of the tool request.
-	2. If the intensity is high, generate a concise response referring to the relevant tool (e.g., "Here is a product suggestion related to ...", "Here is a community suggestion related to ..." etc.). then create dynamic response based on the intensity.
-	3. If the intensity is low, proceed with a normal response.
-
-	Response to user:`;
-	const streamPrompt1 = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
-	| User Prompt: ${prompt} 
-	Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistory : "Context not available"} 
-	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
+	let streamPrompt;
+	if(isProductSuggestion){
+		streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the tool request. If the request for tools is high, provide a brief response referring to the relevant tool. Tools include:
+		1. Product
+		2. Community suggestions
+	
+		User Prompt: ${prompt}
+		Chat History: ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "No available chat history procide without chat history"}
+		system : Your job is to give concise response to user as per the intensity of the tool request.
+		Your task is to:
+		1. Assess the intensity of the tool request.
+		2. If the intensity is high, generate a concise response referring to the relevant tool (e.g., "Here is a product suggestion related to ...", "Here is a community suggestion related to ..." etc.). then create dynamic response based on the intensity.
+		3. If the intensity is low, proceed with a normal response.
+	
+		Response to user:`;
+	}
+	else if(isCommunitySuggestin){
+		streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the community request. If the request for community is high, provide a brief response referring to the relevant communitys.
+	
+		User Prompt: ${prompt}
+		Chat History: ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "No available chat history procide without chat history"}
+		system : Your job is to give concise response to user as per the intensity of the community request.
+		Your task is to:
+		1. Assess the intensity of the community request.
+		2. If the intensity is high, generate a concise response referring to the relevant community (e.g., "Here is a community suggestion related to ...", "Here is a community suggestion related to ..." etc.). then create dynamic response based on the intensity.
+		3. If the intensity is low, proceed with a normal response.
+	
+		Response to user:`;
+	}
+	else{
+		streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
+		| User Prompt: ${prompt} 
+		Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistory : "Context not available"} 
+		Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
+	}
+	
 	const stream = await llm.stream(streamPrompt);
 
 	let gatheredResponse = '';
@@ -622,8 +640,7 @@ Ensure that:
 - Generate groups way that each group must have aleast 1 product else dont include that group in response.
 - no comments or additional text in the response, only the array of objects.
 - productId should be from Product Catalog Only No Random Value
-- if there is no Product Catalog or in any other exeption case return empty array .
-
+- never try to generate random productId, always use productId from Product Catalog Only
 Only return the array of objects, without any additional text. 
 
 Response: 

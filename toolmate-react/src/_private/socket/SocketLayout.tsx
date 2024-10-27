@@ -10,6 +10,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Toolbar } from "@/components/custom/Toolbar";
+import { ToolSpread } from "@/components/custom/ToolSpread";
 export function SocketLayout() {
     const [collapsed, setSidebarCollapsed] = useState(false);
 
@@ -20,11 +21,11 @@ export function SocketLayout() {
 
     return (
         <SocketProvider>
-            <div className="grid grid-cols-[1fr_auto] h-screen">
+            {/* <div className="grid grid-cols-[1fr_auto] h-screen"> */}
                 {/* Main Content */}
-                <div className="flex-grow relative">
+                <div className="flex-grow relative w-full">
 
-                    <button
+                    {/* <button
                         className="absolute top-1 right-1 z-50"
                         onClick={toggleSidebar}
                     >
@@ -40,15 +41,21 @@ export function SocketLayout() {
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-                    </button>
+                    </button> */}
+                    <div className="w-full flex">
+                        <div className="w-2/3 p-0">
 
-                    <div>
-                        <Outlet />
+                            <Outlet />
+
+                        </div>
+                        <div className={`${collapsed?"w-1/3":"w-1/4"  }`}>
+                            <ToolSpread />
+                        </div>
                     </div>
-                </div>
 
+                </div>
                 {/* Right Sidebar */}
-                <div
+                {/* <div
                     className={classNames("transition-all duration-300 ease-in-out overflow-hidden", {
                         "w-[64px]": collapsed,  // Collapsed width
                         "w-[380px]": !collapsed  // Expanded width
@@ -58,8 +65,8 @@ export function SocketLayout() {
                         collapsed={collapsed}
                         setCollapsed={setSidebarCollapsed}
                     />
-                </div>
-            </div>
+                </div> */}
+            {/* </div> */}
         </SocketProvider>
     );
 }
