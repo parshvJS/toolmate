@@ -8,6 +8,8 @@ export interface INewUserMessage {
     sessionId: string,
     message: string,
     userId:string,
+    isBudgetSliderPresent?: boolean,
+    budgetSliderValue?: number,
 }
 export interface ChatSession {
     sessionId: string;

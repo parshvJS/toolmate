@@ -11,10 +11,10 @@ export default function Dashboard() {
     const [mainInput, setMainInput] = useState("");
     const [stateOfButton, setStateOfButton] = useState(-1);
     const { retrieveCache, historyData } = useContext(UserContext);
-
+    const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
+    const [error, setError] = useState("");
     const [cache, setCache] = useState<ChatItem[]>([]);
     const navigate = useNavigate();
-    // main message function 
 
 
     useEffect(() => {

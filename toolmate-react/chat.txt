@@ -1,27 +1,3 @@
-1. tool categorization : yes as i have shown you we are doing tool categorization for user to efficiently retrieve the products,this will be done
+curl.exe --location --request POST "https://authorisation.api.bunnings.com.au/connect/token" --header "Content-Type: application/x-www-form-urlencoded" --data-urlencode "client_id=2BAHh17C8fy2hnKJP8ojMfbRqGG4G0KbfTqZTDgH3olhqqlx" --data-urlencode "client_secret=nHTn7Q3F4Ixg4FyB777kmeB6MNgIa5gRfpPkEKPYGoYXYebUZALz0vrFwvNnJzrk" --data-urlencode "grant_type=client_credentials"
 
-2. Auto-Update and Enrichment : I dont think Bunnings or any other api let us copy their data to our database directly they dont provide api to get all data ,rather what we can do is we query their api in real time while user is chatting, they have api to search product we will use that api ,search products ,tell ai to personalize it and return to user.
-
-3.  Localized Suggestions: :let's ask user for location access and when user use matey then we pass location of user also and query bunnings which are nearest and show user to get that product from near by.
-- on top of it i was thinking to add label that shows user about product source (e.g. near location , ai generated , online marketplace etc.)
-
-4. Collaborative Tool Library: as we already have list of tools user have and user don't we can use that data and ask user to tick the tools it have and next time we look up to that data before recommending product for efficient product suggestion
-
-5.Predictive Tool Recommendations : yes this is great feature ,what i am thinking is let's add section in dashboard where we show 2-3 new project idea as per users taste of project from previous chats and create new project ideas thought ai. 
-
-6.Partnership with Manufacturers : when we create ad sense part of toolmate we create feature where adsense partner can come and add their apis and our system will dynamically start using those apis. by that we dont need to manually add new provider to code rather create interface to dynamically add any partner.
-- for that partner should have their product related api ,partner need to choose field he want to use for ai to analyze(catagory.name,offers etc.) 
-- with that partner can also add products manually by adding info of product manually
-- i think this 2 feature 1. api integration 2. manual product solves the problem of product data  this 2 will be there in AdSense dashboard
-
-- on top of that admin dashboard will have feature to review partner usage 
-- i think this solves all problems of partners part of toolmate
-- i was also thinking approach where partner provide apis that have all products they have listed and our system starts copying in our database but i think that would over engineer the solution but just a thought so shared!
-
-i think below mentioned feature will not be feasible to develop 
-1. Admin Interface for Tool Review: as we are generating ai products in real time as per our database product catalog ,apis ,if we add layer where admin first approve the product then only return to user we create scalability and user experience issues .
-
-2. version control : i have understood this feature at some level that as newer model of product comes then we give option to user for choosing between version of product as per his needs. We can build that but let's first go to features mentioned below and work on this feature after this job is done ,do you agree ?
-
-
-i hope my solutions make sense , please share your thoughts and also features you have finalized to build from above message so i add those in queue 😄
+curl.exe -X POST "https://item.api.bunnings.com.au/item/search/AU" -H 'accept: application/json' -H 'authorization: Bearer AAb5ciTQi5Iw6fpo7kUA2MGNY9PE' -H 'content-type: application/json' -d '{"query":"string","filters":{},"sortBy":"A"}' 

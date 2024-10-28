@@ -356,7 +356,7 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 }
 
 // intend list and user Id
-export async function executeIntend(prompt: string, chatHistory: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, socket: Socket) {
+export async function executeIntend(prompt: string, chatHistory: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, isBudgetSliderValue: boolean, budgetSliderValue: number, socket: Socket) {
 
 	var newChat = {
 		sessionId: userId,
@@ -366,7 +366,8 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 		communityId: [],
 		productId: []
 	};
-	if (plan == 1) {
+	// TODO: Remove this below condition and code all features for pro plan currently plan 2
+	if (plan == 1 || plan == 2) {
 		for (let i = 0; i < intend.length; i++) {
 			switch (intend[i]) {
 				// general response
@@ -374,7 +375,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					socket.emit('status', {
 						message: "Matey Is Typing..."
 					})
-					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal,intend.includes(3),intend.includes(2), socket);
+					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, intend.includes(3), intend.includes(2), socket);
 					break;
 				}
 				// community recommendation
@@ -391,7 +392,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					socket.emit('status', {
 						message: "Matey Is Finding Product For You..."
 					})
-					const productId = await HandleProductRecommendation(prompt, chatHistory, signal, false, null, socket);
+					const productId = await HandleProductRecommendation(prompt, chatHistory, signal, isBudgetSliderValue, budgetSliderValue, socket);
 					if (!productId) {
 						socket.emit('noProducts', {
 							message: "No products found."
@@ -417,19 +418,18 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 				default: { }
 			}
 		}
-		socket.emit('statusOver', {})
 		return newChat;
 
 	}
 }
 
 
-async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal,isProductSuggestion:boolean,isCommunitySuggestin:boolean, socket: Socket) {
+async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, isProductSuggestion: boolean, isCommunitySuggestin: boolean, socket: Socket) {
 	socket.emit('status', {
 		message: "Matey Is Typing..."
 	})
 	let streamPrompt;
-	if(isProductSuggestion){
+	if (isProductSuggestion) {
 		streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the tool request. If the request for tools is high, provide a brief response referring to the relevant tool. Tools include:
 		1. Product
 		2. Community suggestions
@@ -444,7 +444,7 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	
 		Response to user:`;
 	}
-	else if(isCommunitySuggestin){
+	else if (isCommunitySuggestin) {
 		streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the community request. If the request for community is high, provide a brief response referring to the relevant communitys.
 	
 		User Prompt: ${prompt}
@@ -457,13 +457,13 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	
 		Response to user:`;
 	}
-	else{
+	else {
 		streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
 		| User Prompt: ${prompt} 
 		Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistory : "Context not available"} 
 		Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
 	}
-	
+
 	const stream = await llm.stream(streamPrompt);
 
 	let gatheredResponse = '';
@@ -538,7 +538,7 @@ async function HandleProductRecommendation(
 			const productCategoryNames = productCategory.map((cat: any) => cat.catagoryName);
 
 			// Construct prompt for LLM
-			const categoryPrompt = `Based on the user's prompt, suggest the most relevant product categories in a JSON array format from the given catalog of categories (e.g., ["category1", "category2"]). Category Catalog: ${JSON.stringify(productCategoryNames)}. User Prompt: ${prompt}. ${chatHistory.length > 0 ? ` Chat History: ${JSON.stringify(chatHistory)}` : ""} Product Categories (No Text, generate array directly):`;
+			const categoryPrompt = `Based on the user's prompt, suggest the most relevant product categories in a JSON array format from the given catalog of categories (e.g., ["category1", "category2"]). Category Catalog: {productCategoryNames}. User Prompt: {prompt}. {chatHistory} Product Categories (No Text, generate array directly):`;
 
 			// Use Langchain's PromptTemplate
 			const categoryTemplate = PromptTemplate.fromTemplate(categoryPrompt);
@@ -557,6 +557,9 @@ async function HandleProductRecommendation(
 			// Invoke the chain
 			const categoryResult = await runnableChainOfCategory.invoke({
 				prompt, // User's prompt
+				productCategoryNames: JSON.stringify(productCategoryNames),
+				chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
+
 			});
 
 			console.log("Raw category result:", categoryResult);
@@ -604,8 +607,8 @@ async function HandleProductRecommendation(
 				const objectIdCategoryIds = categoryIds.map((id: string) => new mongoose.Types.ObjectId(id));
 
 				// Query for products with any of the specified category IDs
-				const DbProductDetails = await Product.find({ catagory: { $in: objectIdCategoryIds } }).lean(); 
-				
+				const DbProductDetails = await Product.find({ catagory: { $in: objectIdCategoryIds } }).lean();
+
 				if (DbProductDetails.length > 0) {
 					await setRedisData(`PRODUCT-${parsedCategory}`, JSON.stringify(DbProductDetails), 3600);
 				}
@@ -690,4 +693,92 @@ Response:
 	}
 }
 
+
+// budget selection
+export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
+	socket.emit("status", {
+		message: "Matey Is Creating Budget Slider..."
+	})
+
+	const checkContextPrompt = `Based on the user's chat history, determine if a budget slider is needed to provide more accurate product recommendations. 
+	Analysis criteria:
+	1. check if user has mentioned any budget or price range in the chat history.
+	2. check if user have enought context to provide budget slider.
+
+	output format: true/false
+	there should be no additional text in the response, only the boolean value of true or false.
+	Chat History: {chatHistory}. Is Budget Slider Needed?:`;
+
+	const checkContextTemplate = PromptTemplate.fromTemplate(checkContextPrompt);
+
+	const checkContextLLMChain = checkContextTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfCheckContext = RunnableSequence.from([
+		checkContextLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	const needOfBudgetSlider = await runnableChainOfCheckContext.invoke({
+		chatHistory: JSON.stringify(chatHistory)
+	});
+
+	console.log('Need of budget slider:', needOfBudgetSlider);
+
+	const parsedNeedOfBudgetSlider = Boolean(needOfBudgetSlider);
+	console.log('Parsed need of budget slider:', parsedNeedOfBudgetSlider);
+
+	if (parsedNeedOfBudgetSlider) {
+		const createBudgetSlider = `
+    Based on the user's project and chat context, generate a budget slider in JSON array format that provides relevant budget options for optimal product recommendations. 
+
+    The budget slider should adhere to the following JSON structure:
+   [
+				object("value": number, "label": "string", "tooltip": "string"),
+				object("value": number, "label": "string", "tooltip": "string"),
+				object("value": number, "label": "string", "tooltip": "string")
+			]
+    Guidelines:
+    - Create 4 to 6 objects within the array, each tailored to the user's specific context and project requirements.
+    - "value": Define a numeric budget value meaningful to the user's project needs.
+    - "label": Provide a descriptive label summarizing the budget level (e.g., "Economy", "Mid-Range", "Premium").
+    - "tooltip": Offer a brief description of the quality and brand type expected at each budget level, including examples if possible.
+	- all data should be authantic and real based on chat try to find different brands and mention them in tooltip if possible else just mention quality and brand type user will get on certain budget.
+	- main goal of tooltip and label is to make user aware of what kind of product user will get on certain budget.
+
+    Chat Context: {chatHistory}
+
+    Format Requirements:
+    - Output only the JSON array, with no extra text or explanation.
+`;
+
+
+		const createBudgetSliderTemplate = PromptTemplate.fromTemplate(createBudgetSlider);
+
+		const createBudgetSliderLLMChain = createBudgetSliderTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
+
+		const runnableChainOfCreateBudgetSlider = RunnableSequence.from([
+			createBudgetSliderLLMChain,
+			new RunnablePassthrough(),
+		]);
+
+
+		const budgetSlider = await runnableChainOfCreateBudgetSlider.invoke({
+			chatHistory: JSON.stringify(chatHistory)
+		});
+
+		try {
+			const parsedBudgetSlider = JSON.parse(budgetSlider);
+			console.log('Parsed budget slider:', parsedBudgetSlider);
+			socket.emit('budgetSlider', parsedBudgetSlider);
+		} catch (error: any) {
+			console.error('Error during budget slider creation:', error.message);
+
+		}
+		console.log('Budget slider:', budgetSlider);
+	}
+}
 

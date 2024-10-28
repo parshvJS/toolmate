@@ -4,6 +4,7 @@ import { useContext, useState } from "react"
 import { motion } from "framer-motion"
 import { Separator } from "../ui/separator"
 import MateyExpression from "./MateyExpression"
+import CustomSlider  from "@/components/custom/Slider"
 
 export function ToolSpread() {
     const { productSuggestions, isSliderBreakPointEmpty } = useContext(RightSidebarContext)
@@ -30,11 +31,15 @@ export function ToolSpread() {
                     </div>
                     <Separator className="border border-slate-700" />
                 </div>
-                <div className={`${isSliderBreakPointEmpty ? "flex" : "block"} my-2 rounded-lg`}>
+                <div className={`${isSliderBreakPointEmpty ? "block" : "hidden"} my-2 rounded-lg`}>
                     <div className="w-full h-32 bg-paleYellow flex flex-col gap-2 items-center rounded-lg">
                         <MateyExpression expression="laugh" />
-                        <p className="font-semibold w-3/4">Keep Chating ! Matey Will Create personalized Budget Slider Soon !</p>
+                        <p className=" w-3/4">Keep Chating ! Matey Will Create personalized Budget Slider So !</p>
                     </div>
+                </div>
+
+                <div className={`${isSliderBreakPointEmpty ? "hidden":"block"}`}>
+                    <CustomSlider />
                 </div>
                 {/*  lable */}
                 <div className="flex rounded-lg mb-2 gap-2 flex-col">
@@ -48,7 +53,7 @@ export function ToolSpread() {
                 <div className={`${productSuggestions.length == 0 ? "flex" : "hidden"} my-2 rounded-lg`}>
                     <div className="w-full h-32 bg-paleYellow flex flex-col gap-2 items-center rounded-lg">
                         <MateyExpression expression="1thumb" />
-                        <p className="font-semibold w-3/4">Keep Chatting Matey Will Add Materials And Products Here!</p>
+                        <p className=" w-3/4">Keep Chatting Matey Will Add Materials And Products Here!</p>
                     </div>
                 </div>
                 <div className="flex flex-col gap-2">

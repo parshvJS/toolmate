@@ -8,7 +8,7 @@ import { RightSidebarContext } from "@/context/rightSidebarContext";
 import MateyExpression from "./MateyExpression";
 
 
-export default function TradingVolumeSlider() {
+export default function CustomSlider() {
     const {
         sliderValue,
         setSliderValue,
@@ -71,11 +71,8 @@ export default function TradingVolumeSlider() {
     }
 
     return (
-        <div className="w-full p-4">
-            <div>
-                <ToolbarLabel name="Customize Your Budget" icon={<Tag />} />
-            </div>
-            <div className="relative pt-1 mt-5">
+        <div className="w-full ">
+            <div className="relative pt-1">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: showTooltip ? 1 : 0, scale: showTooltip ? 1 : 0.9 }}

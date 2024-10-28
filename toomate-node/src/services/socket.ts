@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { executeIntend, findAndExecuteIntend, GetAnswerFromPrompt, getChatName, getUserIntend } from "./langchain/langchain.js";
+import { executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getUserIntend } from "./langchain/langchain.js";
 import { produceMessage, produceNewMessage } from "./kafka.js";
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -93,10 +93,33 @@ export async function handleSocketSerivce(socket: Socket) {
             case 1: {
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
                 socket.emit('intendList', intendList);
-                const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, socket);
+                const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, false, 0, socket);
+
+                // budget slider
+                socket.emit('statusOver', {})
+
                 // handle all the intend    
             }
             case 2: {
+                const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
+                socket.emit('intendList', intendList);
+                if (data.budgetSliderValue) {
+                    const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, true, data.budgetSliderValue, socket);
+                }
+                else {
+                    const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, false, 0, socket);
+                }
+
+                // budget slider
+                const isBudgetSliderPresent = data.isBudgetSliderPresent;
+                if (!isBudgetSliderPresent) {
+                    if (chatHistory.length > 3) {
+
+                        const isBudgetSliderNeeded = await FindNeedOfBudgetSlider(chatHistory, socket);
+                    }
+                }
+                socket.emit('statusOver', {})
+
 
             }
             default: {

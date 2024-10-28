@@ -44,8 +44,8 @@ export function ChatPage() {
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
-    const { userId, userData, unshiftiChatname } = useContext(UserContext);
-    const { setProductSuggestions, productSuggestions } = useContext(RightSidebarContext);
+    const { userId, userData, unshiftiChatname, } = useContext(UserContext);
+    const { setProductSuggestions, productSuggestions,breakpoints,setBreakpoints,sliderValue,isBudgetOn } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -134,6 +134,8 @@ export function ChatPage() {
             socket?.off("message", handleMessage);
             localStorage.setItem('retrieveChat', "yes");
             setProductSuggestions([]);
+            setBreakpoints([])
+
         };
     }, [socket, isNew, userData, sessionId, searchParams, setSearchParams]);
 
@@ -141,7 +143,27 @@ export function ChatPage() {
 
     const handleUserPrompt = () => {
         setConversation([...conversation, { role: "user", message: mainInput }]);
-        socket?.emit("userMessage", { sessionId, message: mainInput, userId: userId });
+        let userMessage;
+
+        if(userData?.planAccess[1]){
+            userMessage = {
+                sessionId,
+                message: mainInput,
+                userId: userId,
+            };
+        }
+        else if (userData?.planAccess[2]) {
+            userMessage = {
+                sessionId,
+                message: mainInput,
+                userId: userId,
+                isBudgetSliderPresent: breakpoints.length > 0,
+                budgetSliderValue: sliderValue,
+            };
+        }
+
+
+        socket?.emit("userMessage", userMessage);
         socket?.on('status', function (data) {
             setIsNotificationOn(true);
             setNotificationText(data.message);
@@ -149,6 +171,10 @@ export function ChatPage() {
         socket?.on('statusOver', function () {
             setIsNotificationOn(false);
             setNotificationText("")
+        })
+
+        socket?.on('budgetSlider',function (data){
+            setBreakpoints(data);
         })
 
         socket?.on('intendList', function (data: number[]) {

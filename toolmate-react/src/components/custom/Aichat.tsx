@@ -82,14 +82,14 @@ export default function Aichat(
             </Markdown>
           )}
           <div className="flex gap-0 flex-col">
-            <AnimatePresence>
 
+            <AnimatePresence>
               {productData && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
+                  exit={{ opacity: 0, y: 50 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
                   className="flex flex-col gap-2 bg-slate-100 my-2 rounded-lg w-fit p-4"
                 >
                   {/* label */}
@@ -100,21 +100,20 @@ export default function Aichat(
                   <div className="gap-2 w-full flex">
                     <AnimatePresence>
                       {productData.map((product, index) => (
-                        <div key={index}>
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2, delay: index * 0.1 }}
-                            className="flex h-full flex-col items-start justify-between gap-2 rounded-lg bg-slate-200 hover:bg-slate-300 transition-all duration-200 cursor-pointer p-3 md:w-40"
-                          >
-                            <div className="text-left">
-                              <p className="font-semibold items-start text-left">{product.name}</p>
-                              <p className="font-medium">{product.data.length == 1 ? `${product.data.length} Tool` : `${product.data.length} Tools` }</p>
-                            </div>
-                            <Component className="mt-6 h-5 w-5" />
-                          </motion.div>
-                        </div>
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 50 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 50 }}
+                          transition={{ duration: 0.3, delay: index * 0.2, ease: "easeOut" }}
+                          className="flex h-full flex-col items-start justify-between gap-2 rounded-lg bg-slate-200 hover:bg-slate-300 transition-all duration-200 cursor-pointer p-3 md:w-40"
+                        >
+                          <div className="text-left">
+                            <p className="font-semibold items-start text-left">{product.name}</p>
+                            <p className="font-medium">{product.data.length == 1 ? `${product.data.length} Tool` : `${product.data.length} Tools`}</p>
+                          </div>
+                          <Component className="mt-6 h-5 w-5" />
+                        </motion.div>
                       ))}
                     </AnimatePresence>
                   </div>
@@ -126,18 +125,17 @@ export default function Aichat(
               )}
             </AnimatePresence>
 
-
             <div className="flex gap-2">
               <AnimatePresence>
                 {showWorkerQueue && workerQueue?.map((item, index) => (
                   item && (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, y: -10 }}
+                      initial={{ opacity: 0, y: 50 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="px-2 py-1 rounded-md flex justify-start bg-slate-100  w-fit"
+                      exit={{ opacity: 0, y: 50 }}
+                      transition={{ duration: 0.3, delay: index * 0.2, ease: "easeOut" }}
+                      className="px-2 py-1 rounded-md flex justify-start bg-slate-100 w-fit"
                     >
                       <div className="text-slate-500">
                         {item}

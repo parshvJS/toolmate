@@ -153,7 +153,7 @@ export function MobileMock() {
                     Save Time on Projects
                 </motion.div>
             </motion.div>
-        <div className="w-[330px] h-[550px] mb-10 z-10 p-2 ml-28 rounded-3xl bg-gradient-to-t from-orange to-softYellow ">
+        <div className="w-[330px] h-[550px] mb-10 z-10 p-2 ml-28 rounded-3xl bg-gradient-to-t from-slate-300 to-softYellow ">
             <div ref={scrollAreaRef} className=" z-10  bg-white w-[315px] h-[535px] mb-10 overflow-scroll hide-scrollbar  p-2 rounded-3xl ">
                 <div className="flex flex-col space-y-4 mt-3 mb-40 ">
                     {currChat.map((chat, index) => (
