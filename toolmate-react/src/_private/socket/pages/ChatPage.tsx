@@ -11,12 +11,14 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, Component, SeparatorVertical } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { ProductItem } from "@/types/types";
-import { ProductSuggestion, ProductSuggestionItem, RightSidebarContext } from "@/context/rightSidebarContext";
+import { ProductSuggestion, RightSidebarContext } from "@/context/rightSidebarContext";
 import { getImageUrl } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@radix-ui/react-separator";
 
 interface Message {
     role: string;
@@ -25,7 +27,7 @@ interface Message {
     workQueue?: string[];
 }
 
-async function fetchChatHistory(sessionId: string, userId: string, pagination: { page: number, limit: number }) {
+async function fetchChatHistory(sessionId: string | undefined, userId: string | undefined, pagination: { page: number, limit: number }) {
     try {
         const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getChatConversationHistory`, {
             sessionId,
@@ -39,13 +41,26 @@ async function fetchChatHistory(sessionId: string, userId: string, pagination: {
     }
 }
 
+
+async function fetchCurrentMateyMemoryStatus(sessionId:string | undefined){
+    try {
+        const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getChatMemoryStatus`, {
+            sessionId,
+        });
+        return { success: true, data: response.data.data };
+    } catch (error) {
+        console.error("Error fetching chat memory status", error);
+        return { success: false, message: "Can't Load Your Chat Memory Status" };
+    }
+
+}
 export function ChatPage() {
     const [conversation, setConversation] = useState<Message[]>([]);
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
-    const { userId, userData, unshiftiChatname, } = useContext(UserContext);
-    const { setProductSuggestions, productSuggestions,breakpoints,setBreakpoints,sliderValue,isBudgetOn } = useContext(RightSidebarContext);
+    const { userId, userData, unshiftiChatname } = useContext(UserContext);
+    const { setProductSuggestions, setBreakpoints, sliderValue,breakpoints } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -57,11 +72,106 @@ export function ChatPage() {
     const [pagination, setPagination] = useState({ page: 1, limit: 10 });
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [isError, setIsError] = useState(false);
+    const [isMateyMemory, setIsMateyMemory] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
     const { toast } = useToast();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const handleSocketEvents = () => {
+        const handleMessage = (data: { text: string }) => {
+            setCurrStreamingRes((prev) => prev + data.text);
+        };
+
+        const handleChatName = (data: any) => {
+            unshiftiChatname({ chatName: data.chatName, sessionId: data.sessionId, id: data.id });
+        };
+
+        const handleStatus = (data: any) => {
+            setIsNotificationOn(true);
+            setNotificationText(data.message);
+        };
+
+        const handleStatusOver = () => {
+            setIsNotificationOn(false);
+            setNotificationText("");
+        };
+
+        const handleBudgetSlider = (data: any) => {
+            setBreakpoints(data);
+        };
+
+        const handleIntendList = (data: number[]) => {
+            const workerQueue = data.map((item) => {
+                switch (item) {
+                    case 2: return "Suggested community support";
+                    case 3: return "Recommended useful products";
+                    case 4: return "Asked clarifying questions";
+                    case 5: return "Provided project guidance as needed";
+                }
+            });
+            setConversation((prev) => {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage.role === "ai") {
+                    return [...prev.slice(0, -1), { ...lastMessage, workQueue: workerQueue }];
+                }
+                return [...prev, { role: "ai", message: "", workQueue: workerQueue }];
+            });
+        };
+
+        const handleProductId = async (data: { productId: ProductItem[] }) => {
+            const productData = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data.productId);
+            if (productData.status === 200) {
+                const refinedData: ProductSuggestion[] = productData.data.data.map((item: any) => ({
+                    name: item.categoryName,
+                    data: item.products.map((product: any) => ({
+                        image: getImageUrl(product.imageParams[0]),
+                        title: product.name,
+                        description: product.description,
+                        price: parseInt(product.price) || 0,
+                    }))
+                }));
+                setProductSuggestions(refinedData);
+                setConversation((prev) => {
+                    const lastMessage = prev[prev.length - 1];
+                    if (lastMessage.role === "ai") {
+                        return [...prev.slice(0, -1), { ...lastMessage, productData: refinedData as unknown as ProductItem[] }];
+                    }
+                    return [...prev, { role: "ai", message: "", productData: refinedData as unknown as ProductItem[] }];
+                });
+            }
+        };
+
+        const handleNoProduct = (data: { message: string }) => {
+            setNotificationText(data.message);
+        };
+
+        socket?.on("message", handleMessage);
+        socket?.on("chatName", handleChatName);
+        socket?.on("status", handleStatus);
+        socket?.on("statusOver", handleStatusOver);
+        socket?.on("budgetSlider", handleBudgetSlider);
+        socket?.on("intendList", handleIntendList);
+        socket?.on("productId", handleProductId);
+        socket?.on("noProduct", handleNoProduct);
+        socket?.on("terminate", () => {
+            setStateOfButton(-1);
+            setCurrStreamingRes("");
+        });
+
+        return () => {
+            socket?.off("message", handleMessage);
+            socket?.off("chatName", handleChatName);
+            socket?.off("status", handleStatus);
+            socket?.off("statusOver", handleStatusOver);
+            socket?.off("budgetSlider", handleBudgetSlider);
+            socket?.off("intendList", handleIntendList);
+            socket?.off("productId", handleProductId);
+            socket?.off("noProduct", handleNoProduct);
+        };
     };
 
     useEffect(() => {
@@ -69,8 +179,18 @@ export function ChatPage() {
             const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
             if (!isNew && isFetchAllowed) {
                 setIsLoadingHistory(true);
-                console.log("Fetching Chat History", sessionId, userData?.id, pagination);
                 const chatData = await fetchChatHistory(sessionId, userData?.id, pagination);
+                const memoryData = await fetchCurrentMateyMemoryStatus(sessionId);
+                if (!memoryData.success) {
+                    toast({
+                        title: "Error",
+                        description: memoryData.message,
+                        variant: "destructive",
+                    });
+                    setIsError(true);
+                } else {
+                    setIsMateyMemory(memoryData.data.isMateyMemoryOn);
+                }
                 if (!chatData.success) {
                     toast({
                         title: "Error",
@@ -99,166 +219,61 @@ export function ChatPage() {
     }, [currStreamingRes]);
 
     useEffect(() => {
-        console.log(conversation, "conversation")
-    }, [conversation])
-
-    useEffect(() => {
         if (isNew) {
             const initialMessage = localStorage.getItem('userPrompt') || "Hey Matey!";
             setConversation((prev) => [...prev, { role: "user", message: initialMessage }]);
 
             if (socket && userData) {
                 socket.emit("getChatName", { prompt: initialMessage, sessionId, userId: userData?.id });
-                socket.emit("userMessage", { sessionId, message: initialMessage, userId: userId });
-
-                socket.on('chatName', (data) => {
-                    unshiftiChatname({ chatName: data.chatName, sessionId: data.sessionId, id: data.id });
-                });
+                socket.emit("userMessage", { sessionId, message: initialMessage, userId });
             }
             searchParams.delete("new");
             setSearchParams(searchParams);
             localStorage.removeItem('userPrompt');
         }
 
-        const handleMessage = (data: { text: string }) => {
-            setCurrStreamingRes((prev) => prev + data.text);
-        };
-
-        socket?.on("message", handleMessage);
-        socket?.on("terminate", () => {
-            setStateOfButton(-1);
-            setCurrStreamingRes("");
-        });
+        const cleanup = handleSocketEvents();
 
         return () => {
-            socket?.off("message", handleMessage);
+            cleanup();
             localStorage.setItem('retrieveChat', "yes");
             setProductSuggestions([]);
-            setBreakpoints([])
-
+            setBreakpoints([]);
         };
     }, [socket, isNew, userData, sessionId, searchParams, setSearchParams]);
 
     useEffect(scrollToBottom, [conversation]);
 
     const handleUserPrompt = () => {
+        console.log("sending user message");
         setConversation([...conversation, { role: "user", message: mainInput }]);
-        let userMessage;
-
-        if(userData?.planAccess[1]){
-            userMessage = {
-                sessionId,
-                message: mainInput,
-                userId: userId,
-            };
-        }
-        else if (userData?.planAccess[2]) {
-            userMessage = {
-                sessionId,
-                message: mainInput,
-                userId: userId,
-                isBudgetSliderPresent: breakpoints.length > 0,
-                budgetSliderValue: sliderValue,
-            };
-        }
-
+        const userMessage = {
+            sessionId,
+            message: mainInput,
+            userId,
+            isBudgetSliderPresent: userData?.planAccess[2] ? breakpoints.length > 0 : undefined,
+            budgetSliderValue: userData?.planAccess[2] ? sliderValue : undefined,
+        };
 
         socket?.emit("userMessage", userMessage);
-        socket?.on('status', function (data) {
-            setIsNotificationOn(true);
-            setNotificationText(data.message);
-        });
-        socket?.on('statusOver', function () {
-            setIsNotificationOn(false);
-            setNotificationText("")
-        })
-
-        socket?.on('budgetSlider',function (data){
-            setBreakpoints(data);
-        })
-
-        socket?.on('intendList', function (data: number[]) {
-            console.log(data, "intend list")
-            setConversation((prev) => {
-                const lastMessage = prev[prev.length - 1];
-                console.log(lastMessage, "last message")
-                const workerQueue = data.map((item) => {
-                    switch (item) {
-                        case 2:
-                            return "Suggested community support";
-                        case 3:
-                            return "Recommended useful products";
-                        case 4:
-                            return "Asked clarifying questions";
-                        case 5:
-                            return "Provided project guidance as needed";
-                    }
-                })
-                if (lastMessage.role === "ai") {
-                    return [...prev.slice(0, -1), { ...lastMessage, workQueue: workerQueue }];
-                }
-                return [...prev, { role: "ai", message: "", workQueue: workerQueue }];
-            })
-        })
-        // product suggestion for user
-        socket?.on('productId', async function (data: {
-            productId: ProductItem[]
-        }) {
-            console.log(data, "si ------------------------------")
-            const productData = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data.productId);
-
-            if (productData.status === 200) {
-                console.log(productData.data)
-                if (productData.data.data.length < 0) {
-                    setNotificationText("No Product Found");
-                    setIsNotificationOn(true);
-                }
-
-                const refinedData: ProductSuggestion[] = [];
-
-                for (const item of productData.data.data) {
-                    refinedData.push({
-                        name: item.categoryName,
-                        data: item.products.map((product: {
-                            name: string,
-                            imageParams: string[],
-                            description: string,
-                            price: string,
-                            catagory: []
-                        }) => {
-                            const allImage = product.imageParams.map((image: string) => {
-                                return getImageUrl(image)
-                            })
-                            return {
-                                image: allImage[0],
-                                title: product.name,
-                                description: product.description,
-                                price: parseInt(product.price) || 0,
-                            };
-                        })
-                    });
-                }
-                console.log(refinedData, "refined data")
-                setProductSuggestions(refinedData);
-
-                // Add product data to conversation
-                setConversation((prev) => {
-                    const lastMessage = prev[prev.length - 1];
-                    if (lastMessage.role === "ai") {
-                        return [...prev.slice(0, -1), { ...lastMessage, productData: refinedData as unknown as ProductItem[] }];
-                    }
-                    return [...prev, { role: "ai", message: "", productData: refinedData as unknown as ProductItem[] }];
-                });
-            }
-        })
-
-        socket?.on('noProduct', function (data: {
-            message: string
-        }) {
-            console.log(data, "no product")
-            setNotificationText(data.message);
-        })
     };
+
+    const handleMateyMemory = async () =>{
+        console.log("changing memory status");
+        setIsMateyMemory((prev) => !prev);
+        const res = await  axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/changeMemoryStatus`, {
+            userStatus: !isMateyMemory,
+            sessionId
+        });
+
+        if(res.status === 200){
+            toast({
+                title: "Success",
+                description: res.data.message,
+                variant: "success",
+            });
+        }
+    }
 
     if (isLoadingHistory && !isNew) {
         return (
@@ -286,18 +301,15 @@ export function ChatPage() {
 
     return (
         <div className={`flex flex-col h-screen py-4 pl-4 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
-            <div className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4  pr-4 relative w-full">
+            <div className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4 pr-4 relative w-full">
                 {conversation.map((data, index) => (
                     <div key={index}>
                         {data.role === "ai" ? (
-                            <div>
-                                <Aichat
-                                    workerQueue={data.workQueue}
-                                    message={data.message.replace("Typing...", "")}
-                                    productData={data.productData}
-                                />
-
-                            </div>
+                            <Aichat
+                                workerQueue={data.workQueue}
+                                message={data.message.replace("Typing...", "")}
+                                productData={data.productData}
+                            />
                         ) : (
                             <div className="w-full flex justify-end">
                                 <div className="flex w-fit bg-yellow rounded-md px-3 py-2">
@@ -333,6 +345,30 @@ export function ChatPage() {
                     <div className="flex justify-between items-center p-2 border-t-2 border-lightOrange h-14">
                         <MateyExpression expression={mateyExpression} />
                         <div className="flex gap-4 items-center">
+                            <TooltipProvider>
+                                <Tooltip delayDuration={0}>
+                                    <TooltipTrigger>
+                                        <Switch
+                                            checked={isMateyMemory}
+                                            onCheckedChange={() => handleMateyMemory()}
+                                            defaultChecked={true}
+                                            className="data-[state=checked]:bg-lightOrange data-[state=unchecked]:bg-slate-400"
+                                        />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="border-2 border-orange shadow-lg">
+                                        <div className="flex flex-col gap-2">
+                                            <p className="font-semibold text-lightOrange text-left">Add to Matey Memory - {isMateyMemory ? "On" : "Off"}</p>
+                                            <Separator orientation="vertical" className="border border-lightOrange w-full" />
+                                            <div className="max-w-sm text-left flex flex-col gap-2">
+                                                <p className="font-semibold">
+                                                    When On, Matey will remember this conversation to give better suggestions in future chats.
+                                                </p>
+                                                <p>{isMateyMemory ? "Turn Off if you don't want Matey to remember this chat" : "Turn On if you do want Matey to remember this chat"}</p>
+                                            </div>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                             <TooltipProvider>
                                 <Tooltip delayDuration={10}>
                                     <TooltipTrigger>
@@ -374,3 +410,7 @@ export function ChatPage() {
         </div>
     );
 }
+
+
+
+

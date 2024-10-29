@@ -18,6 +18,7 @@ import { getRedisData, setRedisData } from '../redis.js';
 import ProductCatagory from '../../models/productCatagory.model.js';
 import Product from '../../models/adsense/product.model.js';
 import mongoose from 'mongoose';
+import User from '@/models/user.model.js';
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -510,7 +511,7 @@ async function HandleProductRecommendation(
 			if (signal.aborted) return;
 
 			if (redisData.success) {
-				productCategory = redisData.data;
+				productCategory = JSON.parse(redisData.data);
 			} else {
 				await connectDB();
 				// Fetch from MongoDB if Redis doesn't have the data
@@ -782,3 +783,260 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
 	}
 }
 
+
+
+
+
+// chat summury
+
+
+async function summurizeAndStoreChatHistory(userId: string, userChat: []) {
+	await connectDB();
+
+	try {
+
+		const filteredChat = await filterChatHistory(userChat);
+		if (filteredChat.length === 0) {
+			return false;
+		}
+
+		const userStatePrompt = `Analyze the user's statements to identify any items, skills, knowledge, or resources they possess. Return an array of strings in this format: ["context1", "context2"].
+
+		Example: 
+		User Statement: 'I have a drill machine. How do I make a vertical hole?' 
+		Expected Output: ["Possesses drill machine", "Has skill in drilling", "Knowledgeable about making vertical holes"]
+		
+		User Chat With AI: {userChat}
+		
+		- Response must be in JSON-parsable array format.
+		- No additional text or explanations.
+		- Return only the array of strings.
+		- No comments or unnecessary text should be included.
+		- Max Length  0-5 Top Contexts
+		`;
+
+		const userPreferencePrompt = `Analyze the user's statements to identify personal choices, preferred tools, formats, or styles. Return an array of strings in this format: ["preference1", "preference2"].
+		
+		
+		User Chat With AI: {userChat}
+		
+		- Response must be in JSON-parsable array format.
+		- No additional text or explanations.
+		- Return only the array of strings.
+		- No comments or unnecessary text should be included.
+		`;
+
+		const brainGapPrompt = `Identify any statements that indicate the user's lack of knowledge, uncertainty, or need for guidance. Return an array of strings in this format: ["knowledge_gap1", "knowledge_gap2"].
+		
+		Example: 
+		User Statement: 'I'm not sure how to use an automatic drill to make holes.' 
+		Expected Output: ["Uncertain about using an automatic drill to make holes"]
+		
+		User Chat With AI: {userChat}
+		
+		- Response must be in JSON-parsable array format.
+		- No additional text or explanations.
+		- Return only the array of strings.
+		- No comments or unnecessary text should be included.
+		`;
+
+		const endConclusionPrompt = `At the end of the conversation, generate a detailed summary of the user's journey. Reflect on their goals, what they learned, and key points discussed. Return the summary in an array format: ["detailed_summary"].
+		
+		Example Output: 
+		["User learned how to effectively use an automatic drill for vertical holes, gaining insights into technique and safety. They showed a preference for detailed guidance and demonstrated increased confidence in their skills."]
+		
+		User Chat With AI: {userChat}
+		
+		- Response must be in JSON-parsable array format.
+		- No additional text or explanations.
+		- Return only the array of strings.
+		- No comments or unnecessary text should be included.
+		- use  Elliptical construction or sentence fragment to efficiently use working for summury
+		`;
+
+		const userStateTemplate = PromptTemplate.fromTemplate(userStatePrompt);
+		const userPreferenceTemplate = PromptTemplate.fromTemplate(userPreferencePrompt);
+		const brainGapTemplate = PromptTemplate.fromTemplate(brainGapPrompt);
+		const endConclusionTemplate = PromptTemplate.fromTemplate(endConclusionPrompt);
+
+		const userStateLLMChain = userStateTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
+
+		const userPreferenceLLMChain = userPreferenceTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
+
+		const brainGapLLMChain = brainGapTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
+
+		const endConclusionLLMChain = endConclusionTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
+
+		const runnableChainOfUserState = RunnableSequence.from([
+			userStateLLMChain,
+			new RunnablePassthrough(),
+		])
+
+		const runnableChainOfUserPreference = RunnableSequence.from([
+			userPreferenceLLMChain,
+			new RunnablePassthrough(),
+		])
+
+		const runnableChainOfBrainGap = RunnableSequence.from([
+			brainGapLLMChain,
+			new RunnablePassthrough(),
+		])
+
+		const runnableChainOfEndConclusion = RunnableSequence.from([
+			endConclusionLLMChain,
+			new RunnablePassthrough(),
+		])
+
+		const userState = await runnableChainOfUserState.invoke({
+			userChat: JSON.stringify(filteredChat)
+		})
+
+		const userPreference = await runnableChainOfUserPreference.invoke({
+			userChat: JSON.stringify(filteredChat)
+		})
+
+		const brainGap = await runnableChainOfBrainGap.invoke({
+			userChat: JSON.stringify(filteredChat)
+		})
+
+		const endConclusion = await runnableChainOfEndConclusion.invoke({
+			userChat: JSON.stringify(filteredChat)
+		})
+
+		try {
+			const userStateParsed = JSON.parse(userState);
+
+		const userPreferenceParsed = JSON.parse(userPreference);
+
+		const brainGapParsed = JSON.parse(brainGap);
+
+		const endConclusionParsed = JSON.parse(endConclusion);
+		} catch (error:any) {
+			console.log("Error")
+
+			
+		}
+
+		const userContext = await User.findById(userId);
+		if(userContext){
+			
+			userContext.globalContext_UserState()
+		}
+		else{
+			return false
+		}
+
+
+	} catch (error: any) {
+		return false
+
+	}
+}
+
+// this function get all the chat history and filter out the chat history
+async function filterChatHistory(userChat: []) {
+	let index = 0;
+	const userChatIndexed = userChat.map((chat: any) => {
+		const newChat = {
+			index,
+			message: chat.message,
+			role: chat.role
+		}
+		index++;
+		return newChat
+	})
+
+	const allUserChats = userChatIndexed.map((chat: any) => {
+		if (chat.role === 'user') {
+			return {
+				index: chat.index,
+				message: chat.message
+			}
+		}
+	});
+
+
+
+	if (allUserChats.length === 0) {
+		return [];
+	}
+
+
+	const getUseFullUserPrompt = `You Will Be Given All Chat Of User Based On questions and query user have asked chain all the neccessary Chats and return all chat that are neccessary for chat summury. 
+	
+	- keep in mind that this is only user side chat ,AI Side chat are excluded.
+
+	- You have to return response in Type of Object of Array  array 
+	[
+		Object(index:number,message:string),
+		Object(index:number,message:string),
+		Object(index:number,message:string),
+
+	] And So On
+
+	user Side Chat : {userChat}
+
+
+	- Only Return Chat In JSON Parsable Array Format
+	- No Additional Text in Response, Only Array of Objects
+	- directly return array of objects
+	- there should be no comments or any other unnecessary text in the response, only the array of objects.
+	`
+
+	const getUseFullUserPromptTemplate = PromptTemplate.fromTemplate(getUseFullUserPrompt);
+
+	const getUseFullUserPromptLLMChain = getUseFullUserPromptTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+
+	const runnableChainOfGetUseFullUserPrompt = RunnableSequence.from([
+
+		getUseFullUserPromptLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	const filteredChat = await runnableChainOfGetUseFullUserPrompt.invoke({
+		userChat: JSON.stringify(allUserChats)
+	});
+
+	console.log('Filtered Chat:', filteredChat);
+
+	try {
+		const parsedFilteredChat = JSON.parse(filteredChat);
+		console.log('Parsed filtered chat:', parsedFilteredChat);
+
+		const filteredUserChat = parsedFilteredChat.map((chat: any) => {
+
+			const K = 4;
+			const currIndex = chat.index;
+			const newFilteredChat = [];
+			const startIndex = Math.max(0, currIndex - K);
+			for (let i = startIndex; i < currIndex; i++) {
+				newFilteredChat.push(userChatIndexed[i]);
+			}
+
+			newFilteredChat.push(chat)
+
+			for (let i = (chat.index + 1); i < (currIndex + K); i++) {
+				newFilteredChat.push(userChatIndexed[i])
+			}
+			return newFilteredChat
+		})
+
+		return filteredUserChat;
+	} catch (error: any) {
+		console.error('Error filtering chat:', error);
+		return [];
+
+	}
+
+}

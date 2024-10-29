@@ -25,12 +25,10 @@ export function SocketLayout() {
             {/* Main Content */}
             <div className="flex-grow relative w-full">
                 <div className="w-full flex">
-                    <div className="w-2/3 p-0">
-
+                    <div className="w-3/5 p-0">
                         <Outlet />
-
                     </div>
-                    <div className={`${collapsed ? "w-1/3" : "w-1/4"}`}>
+                    <div className={`w-1/3`}>
                         <ToolSpread />
                     </div>
                 </div>

@@ -13,6 +13,10 @@ const userChatSchema = new mongoose.Schema({
     chatName:{
         type: String,
         default:""
+    },
+    isMateyMemoryOn:{
+        type: Boolean,
+        default:true
     }
 },{timestamps:true});
 

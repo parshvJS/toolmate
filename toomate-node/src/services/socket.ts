@@ -77,7 +77,7 @@ export async function handleSocketSerivce(socket: Socket) {
             await setRedisData(`USER-PAYMENT-${data.userId}`, JSON.stringify(userPlan), 3600);
         }
         // no project memory
-        const redisChatData = await getRedisData(`USER-CHAT-${data.userId}`);
+        const redisChatData = await getRedisData(`USER-CHAT-${data.sessionId}`);
         var chatHistory;
         if (redisChatData.success) {
             chatHistory = redisChatData.data;
@@ -87,7 +87,7 @@ export async function handleSocketSerivce(socket: Socket) {
             console.log(DbChatHistory, 'DbChatHistory');
             const NLessNum = DbChatHistory.length > 30 ? DbChatHistory.length - 30 : 0;
             chatHistory = DbChatHistory.slice(NLessNum, DbChatHistory.length);
-            await setRedisData(`USER-CHAT-${data.userId}`, JSON.stringify(chatHistory), 3600);
+            await setRedisData(`USER-CHAT-${data.sessionId}`, JSON.stringify(chatHistory), 3600);
         }
         switch (currentPlan) {
             case 1: {

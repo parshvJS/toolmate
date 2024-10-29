@@ -9,6 +9,8 @@ import { bookmarkChat } from '../../controller/_private/bookmarkChat.controller.
 import { getPresignedUrl } from '../../controller/_private/getPresignedUrl.controller.js';
 import { getPresignedDeleteUrl } from '../../controller/_private/getPresignedUrlDelete.controller.js';
 import { getProductFromId } from '../../controller/_private/getProductsFromId.controller.js';
+import { changeChatMemoryStatus } from '../../controller/_private/changeChatMemoryStatus.controller.js';
+import { getChatMemoryStatus } from '../../controller/_private/getChatMemoryStatus.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -21,5 +23,6 @@ paidDashbaord.route("/bookmarkChat").post(bookmarkChat);
 paidDashbaord.route("/get-s3-presigned-url").post(getPresignedUrl);
 paidDashbaord.route("/get-s3-presigned-delete-url").post(getPresignedDeleteUrl);
 paidDashbaord.route("/getProductFromId").post(getProductFromId);
-
+paidDashbaord.route("/changeMemoryStatus").post(changeChatMemoryStatus);
+paidDashbaord.route("/getChatMemoryStatus").post(getChatMemoryStatus);
 export {paidDashbaord}

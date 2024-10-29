@@ -7,6 +7,8 @@ export interface IUser extends Document {
   lastName?: string;
   imageUrl?: string;
   clerkUserId?: string;
+
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,9 +45,22 @@ const UserSchema = new mongoose.Schema({
     type: [String],
     default: "active" // can be [active,warned,suspended,blocked]
   },
-  globalContext: {
+
+  globalContext_UserState: {
     type: [String],
-    default: [] // this will containt different memory for the particular user that can be used in creating next response for more personalized suggestions
+    default: []
+  },
+  globalContext_UserPreference: {
+    type: [String],
+    default: [""]
+  },
+  globalContext_Braingap: {
+    type: [String],
+    default: [""]
+  },
+  globalContext_UserChatMemory: {
+    type: [String],
+    default: [""]
   },
   toolInvetory: {
     type: [{
@@ -59,13 +74,13 @@ const UserSchema = new mongoose.Schema({
       count: Number
     }]
   },
-  bookmarked:{
-    type:[mongoose.Schema.Types.ObjectId],
-    ref:'UserChat',
-    default:[]
+  bookmarked: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'UserChat',
+    default: []
   }
 
-},{timestamps: true});
+}, { timestamps: true });
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 

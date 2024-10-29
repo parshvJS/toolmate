@@ -45,7 +45,11 @@ app.get('/', (req, res) => {
 	res.send('Hello World');
 });
 
+// services 
 
+
+
+console.log("redis connection started");
 // Start Kafka consumer
 startNewMessageConsumer();
 startMessageConsumer();

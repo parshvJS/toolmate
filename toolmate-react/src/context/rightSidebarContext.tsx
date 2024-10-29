@@ -63,8 +63,8 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     console.log('RightSidebarProvider mounted')
   }, [])
 
-  
-  
+
+
   return (
     <RightSidebarContext.Provider
       value={{
