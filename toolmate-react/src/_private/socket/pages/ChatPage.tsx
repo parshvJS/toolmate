@@ -42,7 +42,7 @@ async function fetchChatHistory(sessionId: string | undefined, userId: string | 
 }
 
 
-async function fetchCurrentMateyMemoryStatus(sessionId:string | undefined){
+async function fetchCurrentMateyMemoryStatus(sessionId: string | undefined) {
     try {
         const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getChatMemoryStatus`, {
             sessionId,
@@ -60,7 +60,7 @@ export function ChatPage() {
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
     const { userId, userData, unshiftiChatname } = useContext(UserContext);
-    const { setProductSuggestions, setBreakpoints, sliderValue,breakpoints } = useContext(RightSidebarContext);
+    const { setProductSuggestions, setBreakpoints, sliderValue, breakpoints } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -82,9 +82,11 @@ export function ChatPage() {
     };
 
     const handleSocketEvents = () => {
+
         const handleMessage = (data: { text: string }) => {
             setCurrStreamingRes((prev) => prev + data.text);
         };
+        console.log("Socket connected:", socket?.id);
 
         const handleChatName = (data: any) => {
             unshiftiChatname({ chatName: data.chatName, sessionId: data.sessionId, id: data.id });
@@ -225,6 +227,7 @@ export function ChatPage() {
 
             if (socket && userData) {
                 socket.emit("getChatName", { prompt: initialMessage, sessionId, userId: userData?.id });
+                console.log("senting user message ------------------", { sessionId, message: initialMessage, userId });
                 socket.emit("userMessage", { sessionId, message: initialMessage, userId });
             }
             searchParams.delete("new");
@@ -245,7 +248,6 @@ export function ChatPage() {
     useEffect(scrollToBottom, [conversation]);
 
     const handleUserPrompt = () => {
-        console.log("sending user message");
         setConversation([...conversation, { role: "user", message: mainInput }]);
         const userMessage = {
             sessionId,
@@ -254,19 +256,20 @@ export function ChatPage() {
             isBudgetSliderPresent: userData?.planAccess[2] ? breakpoints.length > 0 : undefined,
             budgetSliderValue: userData?.planAccess[2] ? sliderValue : undefined,
         };
-
+        console.log("senting user message -", userMessage);
         socket?.emit("userMessage", userMessage);
+
     };
 
-    const handleMateyMemory = async () =>{
+    const handleMateyMemory = async () => {
         console.log("changing memory status");
         setIsMateyMemory((prev) => !prev);
-        const res = await  axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/changeMemoryStatus`, {
+        const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/changeMemoryStatus`, {
             userStatus: !isMateyMemory,
             sessionId
         });
 
-        if(res.status === 200){
+        if (res.status === 200) {
             toast({
                 title: "Success",
                 description: res.data.message,

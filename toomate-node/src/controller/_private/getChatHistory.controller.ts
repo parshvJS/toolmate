@@ -5,7 +5,7 @@ import { categorizeChatSessions } from "../../utils/utilsFunction.js";
 
 export async function getChatHistory(req: Request, res: Response) {
     await connectDB();
-
+    console.log("getChatHistory called");
     try {
         const { userId } = await req.body;
         if (!userId) {

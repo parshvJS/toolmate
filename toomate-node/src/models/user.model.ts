@@ -1,4 +1,4 @@
-import mongoose, { Document, Model } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IUser extends Document {
   id: string;
@@ -7,15 +7,15 @@ export interface IUser extends Document {
   lastName?: string;
   imageUrl?: string;
   clerkUserId?: string;
-
-  
+  status: string[];
+  toolInventory: { toolId: string; count: number }[];
+  wishList: { toolId: string; count: number }[];
+  bookmarked: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const UserSchema = new mongoose.Schema({
-
-  // clerk
+const UserSchema = new mongoose.Schema<IUser>({
   id: {
     type: String,
     default: () => new mongoose.Types.ObjectId().toString(),
@@ -39,49 +39,36 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-
-  // custom 
   status: {
     type: [String],
-    default: "active" // can be [active,warned,suspended,blocked]
+    default: ["active"], // can be [active, warned, suspended, blocked]
   },
-
-  globalContext_UserState: {
-    type: [String],
-    default: []
-  },
-  globalContext_UserPreference: {
-    type: [String],
-    default: [""]
-  },
-  globalContext_Braingap: {
-    type: [String],
-    default: [""]
-  },
-  globalContext_UserChatMemory: {
-    type: [String],
-    default: [""]
-  },
-  toolInvetory: {
-    type: [{
-      toolId: String,
-      count: Number
-    }],
+  toolInventory: {
+    type: [
+      {
+        toolId: { type: String, required: true },
+        count: { type: Number, required: true },
+      },
+    ],
+    default: [],
   },
   wishList: {
-    type: [{
-      toolId: String,
-      count: Number
-    }]
+    type: [
+      {
+        toolId: { type: String, required: true },
+        count: { type: Number, required: true },
+      },
+    ],
+    default: [],
   },
   bookmarked: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: 'UserChat',
-    default: []
-  }
-
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'UserChat' }],
+    default: [],
+  },
 }, { timestamps: true });
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 
 export default User;
+
+

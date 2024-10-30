@@ -7,6 +7,7 @@ import { getRedisData, setRedisData } from "../../services/redis.js";
 export async function handleUserPaidAndPersonalInfo(req: Request, res: Response) {
     try {
         const { clerkUserId } = req.body;
+        console.log("handleUserPaidAndPersonalInfo called", clerkUserId);
         if (!clerkUserId) {
             return res.status(400).json({
                 success: false,

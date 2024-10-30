@@ -3,6 +3,7 @@ import { Chat } from '../models/chat.model.js';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import connectDB from '../db/db.db.js';
 dotenv.config();
 
 
@@ -134,6 +135,7 @@ export async function startNewMessageConsumer() {
 		autoCommit: true,
 		eachMessage: async ({ message, pause }) => {
 			try {
+				await connectDB();
 				// Parse the message
 				const {
 					message: msg,
@@ -164,6 +166,7 @@ export async function startNewMessageConsumer() {
 					productId,
 					role,
 				});
+				console.log("data got inserted");
 			} catch (err) {
 				console.error('Error processing message:', err);
 				pause(); // Pause processing

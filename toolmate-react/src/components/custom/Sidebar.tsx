@@ -13,7 +13,7 @@ import {
 import { Skeleton } from "../ui/skeleton"
 import { UserContext } from "@/context/userContext"
 import { iChatname } from "@/types/types"
-import { AlertTriangle, Columns2, Ellipsis, PanelLeftDashed, Pencil, Trash, Trash2 } from "lucide-react"
+import { AlertTriangle, Columns2, Ellipsis, PanelLeftDashed, Pencil, Send, Trash, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import {
     DropdownMenu,
@@ -28,12 +28,15 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
 import { DialogDescription } from "@radix-ui/react-dialog"
+import MateyInput from "./MateyInput"
+import { Textarea } from "../ui/textarea"
 
 const navItem = [
     {
@@ -67,7 +70,8 @@ export default function ImprovedAnimatedSidebar({
     const [isDeleting, setIsDeleting] = useState(false)
     const [deleteId, setDeleteId] = useState("")
     const [deleteDialog, setDeleteDialog] = useState(false)
-
+    const [mainInput, setMainInput] = useState("");
+    const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
     const { toast } = useToast()
     const filteredHistory = useMemo(() => {
         if (!historyData || historyData.length === 0) return [];
@@ -190,6 +194,14 @@ export default function ImprovedAnimatedSidebar({
         }
     }
 
+    async function handleUserPrompt() {
+        if (mainInput === "") return;
+        setNewChatDialogOpen(false)
+        console.log("handleUserPrompt called")
+        console.log(mainInput, "is here")
+        localStorage.setItem("userPrompt", mainInput);
+        navigate("/c");
+    }
 
     return (
         <div className={`bg-whiteYellow border-r-2 border-slate-300 h-screen flex flex-col ${collabsable ? "px-1" : "px-3"}`}>
@@ -233,11 +245,47 @@ export default function ImprovedAnimatedSidebar({
             </TooltipProvider>
 
             {/* New Chat Button (Expanded View) */}
-            <div className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out`}>
-                <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
-                <p className="font-semibold">New Chat</p>
-            </div>
 
+
+            <Dialog open={newChatDialogOpen} onOpenChange={setNewChatDialogOpen}>
+                <DialogTrigger>
+                    <div
+                        className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out`}>
+                        <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
+                        <p className="font-semibold">New Chat</p>
+                    </div>
+                </DialogTrigger>
+                <DialogContent className="[&>button]:hidden">
+                    <DialogHeader>
+                        <DialogDescription>
+                            <div className="flex gap-1 flex-col">
+                                {/* title */}
+                                <h4 className="text-orange text-xl">Create New Chat </h4>
+
+                                {/* input */}
+                                <div className="w-full flex flex-col gap-2">
+                                    <Textarea
+                                        value={mainInput}
+                                        onChange={(e) => setMainInput(e.target.value)}
+                                        placeholder="Start a new chat"
+                                        className="w-full bg-slate-200 rounded-md border-2 border-orange ring-0 focus:ring-0 active:ring-0 focus:border-orange  text-gray-800 placeholder-gray-400"
+                                        rows={3}
+                                    />
+
+                                    {/* submit */}
+                                    <div
+                                        onClick={handleUserPrompt}
+                                        className="bg-lightOrange hover:bg-orange cursor-pointer rounded-md text-black w-fit p-2  ">
+                                        <Send className="w-6 h-6" />
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </DialogDescription>
+                    </DialogHeader>
+                </DialogContent>
+            </Dialog>
 
 
             <hr className="border border-l-stone-300 my-2" />
@@ -422,7 +470,7 @@ export default function ImprovedAnimatedSidebar({
                             >
                                 <DialogHeader>
                                     <DialogTitle className="text-2xl font-semibold text-gray-800">
-                                        Rename Item
+                                        Rename Chat
                                     </DialogTitle>
                                 </DialogHeader>
                                 <div className="flex flex-col space-y-4 mt-4">

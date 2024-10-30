@@ -5,14 +5,14 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import { iChatname, INewUserMessage } from "../types/types.js";
 import { createnewUserChatInstace } from "../controller/_private/createNewUserChatInstance.controller.js";
-import { getRedisData, setRedisData } from "./redis.js";
+import { appendArrayItemInRedis, getRedisData, setRedisData } from "./redis.js";
 import connectDB from "../db/db.db.js";
 import { UserPayment } from "../models/userPayment.model.js";
 import { Chat } from "../models/chat.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
-    console.log('Client connected');
+    console.log('Client connected', socket.id, '----------------------------------');
 
     //   this event will create session in database | check current user paid plan and server as per their plan
     socket.on('createSession', async (message) => {
@@ -42,18 +42,19 @@ export async function handleSocketSerivce(socket: Socket) {
 
     // this service will stream some response
     socket.on('userMessage', async (data: INewUserMessage) => {
+        console.log("user message", data);
         const controller = new AbortController();
         const { signal } = controller;
         socket.on('stop', () => {
             controller.abort();
         });
-        console.log("user message", data);
+        await produceNewMessage(data.message || "", data.sessionId, false, false, "user", [], []);
 
         const redisUserData = await getRedisData(`USER-PAYMENT-${data.userId}`);
         var currentPlan = 0;
         if (redisUserData.success) {
             console.log(data.userId, 'user payment details found in redis');
-            const plan = redisUserData.data.planAccess;
+            const plan = JSON.parse(redisUserData.data).planAccess;
             // plan indicated by their number 0 - free , 1 - essential , 2 - pro
             currentPlan = plan[1] == true ? 1 : plan[2] == true ? 2 : 1;
         }
@@ -94,11 +95,16 @@ export async function handleSocketSerivce(socket: Socket) {
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
                 socket.emit('intendList', intendList);
                 const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, false, 0, socket);
-
+                if (messageSteam) {
+                    await produceNewMessage(messageSteam?.message || "", data.sessionId, messageSteam.isProductSuggested, messageSteam.isCommunitySuggested, "ai", messageSteam.communityId, messageSteam.productId);
+                    await appendArrayItemInRedis(`USER-CHAT-${data.sessionId}`, messageSteam);
+                    console.log('messageSteam done', messageSteam);
+                }
                 // budget slider
                 socket.emit('statusOver', {})
 
                 // handle all the intend    
+                break;
             }
             case 2: {
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
@@ -119,7 +125,7 @@ export async function handleSocketSerivce(socket: Socket) {
                     }
                 }
                 socket.emit('statusOver', {})
-
+                break;
 
             }
             default: {

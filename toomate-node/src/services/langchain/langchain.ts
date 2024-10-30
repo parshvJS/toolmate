@@ -18,7 +18,10 @@ import { getRedisData, setRedisData } from '../redis.js';
 import ProductCatagory from '../../models/productCatagory.model.js';
 import Product from '../../models/adsense/product.model.js';
 import mongoose from 'mongoose';
-import User from '@/models/user.model.js';
+import User from '../../models/user.model.js';
+import UserMemory from '../../models/userMemory.model.js';
+import { encode } from 'gpt-tokenizer';
+
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
@@ -347,7 +350,14 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	const userIntend = await runnableChainOfIntend.invoke({ prompt });
 
 	// Parse and clean up the output
-	let intentArray = JSON.parse(userIntend.trim());
+	let intentArray;
+	try {
+		intentArray= JSON.parse(userIntend.trim());
+	} catch (error:any) {
+		console.error('Error parsing user intent:', error.message);
+		intentArray = [5];
+		
+	}
 
 	// Ensure intent 1 is always present
 	intentArray = [1, ...intentArray];
@@ -362,6 +372,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 	var newChat = {
 		sessionId: userId,
 		role: 'ai',
+		message: '',
 		isProductSuggested: false,
 		isCommunitySuggested: false,
 		communityId: [],
@@ -377,6 +388,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 						message: "Matey Is Typing..."
 					})
 					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, intend.includes(3), intend.includes(2), socket);
+					newChat['message'] = generalResponse;
 					break;
 				}
 				// community recommendation
@@ -788,157 +800,145 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
 
 
 // chat summury
-
-
-async function summurizeAndStoreChatHistory(userId: string, userChat: []) {
+export async function summarizeAndStoreChatHistory(userId: string, userChat: any): Promise<boolean> {
+	console.log('Summarizing and storing chat history for user:', userId, userChat);
 	await connectDB();
 
 	try {
-
 		const filteredChat = await filterChatHistory(userChat);
-		if (filteredChat.length === 0) {
-			return false;
+		if (!filteredChat.length) return false;
+
+		// Define prompts as an array for streamlined iteration
+		const prompts = [
+			{
+				template: `Analyze the user's statements to identify any items, skills, knowledge, or resources they possess. Return an array of strings in this format: ["context1", "context2"].
+	  
+		  Example: 
+		  User Statement: 'I have a drill machine. How do I make a vertical hole?' 
+		  Expected Output: ["Possesses drill machine", "Has skill in drilling", "Knowledgeable about making vertical holes"]
+	  
+		  User Chat With AI: {userChat}
+		  
+		  - Response must be in JSON-parsable array format.
+		  - No additional text or explanations.
+		  - Return only the array of strings.
+		  - No comments or unnecessary text should be included.
+		  - Max Length: 0-5 array items`,
+				key: 'globalContext_UserState',
+			},
+			{
+				template: `Analyze the user's statements to identify personal choices, preferred tools, formats, or styles. Return an array of strings in this format: ["preference1", "preference2"].
+	  
+		  Example:
+		  User Statement: 'I prefer using step-by-step guides for drilling techniques.'
+		  Expected Output: ["Prefers step-by-step guides", "Chooses drilling techniques"]
+	  
+		  User Chat With AI: {userChat}
+	  
+		  - Response must be in JSON-parsable array format.
+		  - No additional text or explanations.
+		  - Return only the array of strings.
+		  - No comments or unnecessary text should be included.
+		  - Max Length: 0-5 array items`,
+				key: 'globalContext_UserPreference',
+			},
+			{
+				template: `Identify any statements that indicate the user's lack of knowledge, uncertainty, or need for guidance. Return an array of strings in this format: ["knowledge_gap1", "knowledge_gap2"].
+	  
+		  Example: 
+		  User Statement: 'I'm not sure how to use an automatic drill to make holes.' 
+		  Expected Output: ["Uncertain about using an automatic drill to make holes"]
+	  
+		  User Chat With AI: {userChat}
+	  
+		  - Response must be in JSON-parsable array format.
+		  - No additional text or explanations.
+		  - Return only the array of strings.
+		  - No comments or unnecessary text should be included.
+		  - Max Length: 0-5 array items`,
+				key: 'globalContext_Braingap',
+			},
+			{
+				template: `At the end of the conversation, generate a detailed summary of the user's journey. Reflect on their goals, what they learned, and key points discussed. Return the summary in an array format: ["detailed_summary"].
+	  
+		  Example Output: 
+		  ["User learned how to effectively use an automatic drill for vertical holes, gaining insights into technique and safety. They showed a preference for detailed guidance and demonstrated increased confidence in their skills."]
+	  
+		  User Chat With AI: {userChat}
+	  
+		  - Response must be in JSON-parsable array format.
+		  - No additional text or explanations.
+		  - Return only the array of strings.
+		  - No comments or unnecessary text should be included.
+		  - Use concise and focused language for an effective summary.
+		  - Max Length: 0-5 array items`,
+				key: 'globalContext_UserChatMemory',
+			},
+		];
+
+		console.log('Filtered chat:', filteredChat);
+		// Helper function to parse and invoke prompt chains
+		async function invokePrompt(template: string) {
+			const promptTemplate = PromptTemplate.fromTemplate(template);
+			const llmChain = promptTemplate.pipe(llm).pipe(new StringOutputParser());
+			const runnableChain = RunnableSequence.from([llmChain, new RunnablePassthrough()]);
+			const result = await runnableChain.invoke({ userChat: JSON.stringify(filteredChat) });
+			console.log(`Result for template ${template}:`, result);
+			return JSON.parse(result);
 		}
 
-		const userStatePrompt = `Analyze the user's statements to identify any items, skills, knowledge, or resources they possess. Return an array of strings in this format: ["context1", "context2"].
+		// Process each prompt in parallel and get results
+		const results = await Promise.all(prompts.map(({ template }) => invokePrompt(template)));
+		console.log('Results from all prompts:', results);
 
-		Example: 
-		User Statement: 'I have a drill machine. How do I make a vertical hole?' 
-		Expected Output: ["Possesses drill machine", "Has skill in drilling", "Knowledgeable about making vertical holes"]
-		
-		User Chat With AI: {userChat}
-		
-		- Response must be in JSON-parsable array format.
-		- No additional text or explanations.
-		- Return only the array of strings.
-		- No comments or unnecessary text should be included.
-		- Max Length  0-5 Top Contexts
-		`;
+		// Fetch user context and update with new parsed data
+		const userContext: any = await UserMemory.findOne({ userId: userId });
+		console.log('Fetched user context:', userContext);
+		if (userContext) {
+			// Update each context type, checking limits and removing excess
+			prompts.forEach((prompt, index) => {
+				let contextArray = userContext[prompt.key] || [];
+				contextArray = updateContextWithLimits(contextArray, results[index]);
+				userContext[prompt.key] = contextArray;
+			});
 
-		const userPreferencePrompt = `Analyze the user's statements to identify personal choices, preferred tools, formats, or styles. Return an array of strings in this format: ["preference1", "preference2"].
-		
-		
-		User Chat With AI: {userChat}
-		
-		- Response must be in JSON-parsable array format.
-		- No additional text or explanations.
-		- Return only the array of strings.
-		- No comments or unnecessary text should be included.
-		`;
-
-		const brainGapPrompt = `Identify any statements that indicate the user's lack of knowledge, uncertainty, or need for guidance. Return an array of strings in this format: ["knowledge_gap1", "knowledge_gap2"].
-		
-		Example: 
-		User Statement: 'I'm not sure how to use an automatic drill to make holes.' 
-		Expected Output: ["Uncertain about using an automatic drill to make holes"]
-		
-		User Chat With AI: {userChat}
-		
-		- Response must be in JSON-parsable array format.
-		- No additional text or explanations.
-		- Return only the array of strings.
-		- No comments or unnecessary text should be included.
-		`;
-
-		const endConclusionPrompt = `At the end of the conversation, generate a detailed summary of the user's journey. Reflect on their goals, what they learned, and key points discussed. Return the summary in an array format: ["detailed_summary"].
-		
-		Example Output: 
-		["User learned how to effectively use an automatic drill for vertical holes, gaining insights into technique and safety. They showed a preference for detailed guidance and demonstrated increased confidence in their skills."]
-		
-		User Chat With AI: {userChat}
-		
-		- Response must be in JSON-parsable array format.
-		- No additional text or explanations.
-		- Return only the array of strings.
-		- No comments or unnecessary text should be included.
-		- use  Elliptical construction or sentence fragment to efficiently use working for summury
-		`;
-
-		const userStateTemplate = PromptTemplate.fromTemplate(userStatePrompt);
-		const userPreferenceTemplate = PromptTemplate.fromTemplate(userPreferencePrompt);
-		const brainGapTemplate = PromptTemplate.fromTemplate(brainGapPrompt);
-		const endConclusionTemplate = PromptTemplate.fromTemplate(endConclusionPrompt);
-
-		const userStateLLMChain = userStateTemplate
-			.pipe(llm)
-			.pipe(new StringOutputParser());
-
-		const userPreferenceLLMChain = userPreferenceTemplate
-			.pipe(llm)
-			.pipe(new StringOutputParser());
-
-		const brainGapLLMChain = brainGapTemplate
-			.pipe(llm)
-			.pipe(new StringOutputParser());
-
-		const endConclusionLLMChain = endConclusionTemplate
-			.pipe(llm)
-			.pipe(new StringOutputParser());
-
-		const runnableChainOfUserState = RunnableSequence.from([
-			userStateLLMChain,
-			new RunnablePassthrough(),
-		])
-
-		const runnableChainOfUserPreference = RunnableSequence.from([
-			userPreferenceLLMChain,
-			new RunnablePassthrough(),
-		])
-
-		const runnableChainOfBrainGap = RunnableSequence.from([
-			brainGapLLMChain,
-			new RunnablePassthrough(),
-		])
-
-		const runnableChainOfEndConclusion = RunnableSequence.from([
-			endConclusionLLMChain,
-			new RunnablePassthrough(),
-		])
-
-		const userState = await runnableChainOfUserState.invoke({
-			userChat: JSON.stringify(filteredChat)
-		})
-
-		const userPreference = await runnableChainOfUserPreference.invoke({
-			userChat: JSON.stringify(filteredChat)
-		})
-
-		const brainGap = await runnableChainOfBrainGap.invoke({
-			userChat: JSON.stringify(filteredChat)
-		})
-
-		const endConclusion = await runnableChainOfEndConclusion.invoke({
-			userChat: JSON.stringify(filteredChat)
-		})
-
-		try {
-			const userStateParsed = JSON.parse(userState);
-
-		const userPreferenceParsed = JSON.parse(userPreference);
-
-		const brainGapParsed = JSON.parse(brainGap);
-
-		const endConclusionParsed = JSON.parse(endConclusion);
-		} catch (error:any) {
-			console.log("Error")
-
-			
+			const saved = await userContext.save();
+			console.log('Updated user context saved:', saved);
+			return Boolean(saved);
+		} else {
+			// Create new user context if none exists
+			const newUserContext = new UserMemory({
+				userId: userId,
+				globalContext_UserState: results[0],
+				globalContext_UserPreference: results[1],
+				globalContext_Braingap: results[2],
+				globalContext_UserChatMemory: results[3],
+			});
+			const saved = await newUserContext.save();
+			console.log('New user context saved:', saved);
+			return Boolean(saved);
 		}
-
-		const userContext = await User.findById(userId);
-		if(userContext){
-			
-			userContext.globalContext_UserState()
-		}
-		else{
-			return false
-		}
-
-
-	} catch (error: any) {
-		return false
-
+	} catch (error) {
+		console.error("Error saving chat summary:", error);
+		return false;
 	}
+}
+
+// Helper function to check and maintain token limit or array 
+// Helper function to check and maintain token limit or array length
+function updateContextWithLimits(contextArray: string[], newEntries: string[]): string[] {
+	const maxLength = 5;
+	contextArray = [...contextArray, ...newEntries];
+	while (isTokenSizeExceedingLimit(contextArray.join(' ')) || contextArray.length > maxLength) {
+		contextArray.shift(); // Remove oldest entry if limit is exceeded
+	}
+	console.log('Updated context array:', contextArray);
+	return contextArray;
+}
+
+function isTokenSizeExceedingLimit(text: string, limit = 2500): boolean {
+	const tokens = encode(text); // Get the token array
+	return tokens.length > limit; // Compare token count to limit
 }
 
 // this function get all the chat history and filter out the chat history

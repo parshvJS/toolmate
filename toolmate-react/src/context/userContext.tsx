@@ -1,4 +1,4 @@
-import { createContext, ReactNode } from 'react';
+import { createContext, ReactNode, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { env } from "@/lib/environment";
@@ -52,7 +52,9 @@ function UserContextProvider({ children }: { children: ReactNode }) {
             const response = await axios.post<{ data: UserData }>(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
                 clerkUserId: userId,
             });
-            return response.data.data;
+
+            const res = JSON.parse(String(response.data.data));
+            return res;
         },
         enabled: !!userId,                  // Only run the query if userId exists
         refetchOnWindowFocus: false,         // No refetch on window focus
@@ -132,13 +134,13 @@ function UserContextProvider({ children }: { children: ReactNode }) {
                 if (item.data) {
                     return item.data
                 }
-            }).slice(0, 6);
+            }).slice(6).reverse();
         }
         const resp = mainCache.map((id: string) => {
             const chatItem = historyData?.flatMap((item) => item.data).find((chat) => chat.id === id);
             return chatItem;
-        }).filter((item: ChatItem | undefined): item is ChatItem => item !== undefined);
-        console.log(resp, "here")
+        }).filter((item: ChatItem | undefined): item is ChatItem => item !== undefined).slice(0, 6);
+        console.log(resp, "here cahce")
         return resp
     }
 
@@ -149,6 +151,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
             if (!userData?.id) {
                 throw new Error("User ID is not available");
             }
+            console.log(userData.id, "userData.id");
             const response = await axios.post<{ data: iChatname[] }>(`${env.domain}/api/v1/getChatHistory`, {
                 userId: userData.id,
             });
@@ -162,7 +165,11 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         staleTime: Infinity,                 // Data is always considered fresh
     });
 
+    useEffect(() => {
+        console.log(historyData, "historyData");
+        console.log(userData, "userData");
 
+    }, [historyData, userData])
     const mutation = useMutation<iChatname[], Error, iChatname[], { previousHistory: iChatname[] | undefined }>({
         mutationFn: (newHistory: iChatname[]) => {
             console.log("mutation called");
