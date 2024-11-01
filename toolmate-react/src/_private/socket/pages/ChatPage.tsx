@@ -11,7 +11,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { ProductItem } from "@/types/types";
@@ -73,6 +73,7 @@ export function ChatPage() {
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [isError, setIsError] = useState(false);
     const [isMateyMemory, setIsMateyMemory] = useState(true);
+
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     const { toast } = useToast();
@@ -85,6 +86,21 @@ export function ChatPage() {
 
         const handleMessage = (data: { text: string }) => {
             setCurrStreamingRes((prev) => prev + data.text);
+        };
+
+
+        const handleEmoMessage = (data: { text: string, isContinue: boolean }) => {
+            console.log("emo message", data)
+            if (data.isContinue) {
+                console.log("hitting conntinue")
+                setConversation((prev) => {
+                    console.log([...prev.slice(0, -1), { ...prev[prev.length - 1], message: data.text }])
+                    return [...prev.slice(0, -1), { ...prev[prev.length - 1], message: prev[prev.length - 1].message + data.text }]
+                })
+            }
+            else {
+                setConversation((prev) => [...prev, { role: "ai", message: data.text }])
+            }
         };
         console.log("Socket connected:", socket?.id);
 
@@ -159,6 +175,7 @@ export function ChatPage() {
         socket?.on("intendList", handleIntendList);
         socket?.on("productId", handleProductId);
         socket?.on("noProduct", handleNoProduct);
+        socket?.on("emoMessage", handleEmoMessage)
         socket?.on("terminate", () => {
             setStateOfButton(-1);
             setCurrStreamingRes("");
@@ -173,6 +190,7 @@ export function ChatPage() {
             socket?.off("intendList", handleIntendList);
             socket?.off("productId", handleProductId);
             socket?.off("noProduct", handleNoProduct);
+            socket?.off("emoMessage", handleEmoMessage)
         };
     };
 
@@ -211,6 +229,19 @@ export function ChatPage() {
     }, [sessionId]);
 
     useEffect(() => {
+        appendToChat(false, false)
+    }, [currStreamingRes]);
+    function appendToChat(isSecondServerMessage: boolean, isSecondContinue: boolean) {
+        if (isSecondContinue) {
+            setConversation((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], message: currStreamingRes }])
+            return;
+        }
+        if (isSecondServerMessage) {
+            setConversation((prev) =>
+                [...prev, { role: "ai", message: currStreamingRes }]
+            );
+            return;
+        }
         if (currStreamingRes) {
             setConversation((prev) =>
                 prev[prev.length - 1]?.role === "ai"
@@ -218,8 +249,8 @@ export function ChatPage() {
                     : [...prev, { role: "ai", message: currStreamingRes }]
             );
         }
-    }, [currStreamingRes]);
 
+    }
     useEffect(() => {
         if (isNew) {
             const initialMessage = localStorage.getItem('userPrompt') || "Hey Matey!";
@@ -248,6 +279,9 @@ export function ChatPage() {
     useEffect(scrollToBottom, [conversation]);
 
     const handleUserPrompt = () => {
+        if (mainInput === "") return;
+        if(stateOfButton === 0) return;
+        setStateOfButton(0);
         setConversation([...conversation, { role: "user", message: mainInput }]);
         const userMessage = {
             sessionId,
@@ -276,6 +310,13 @@ export function ChatPage() {
                 variant: "success",
             });
         }
+    }
+
+    const handleMessageStop = async () => {
+        setStateOfButton(1);
+        socket?.emit("stop", {
+            sessionId,
+        });
     }
 
     if (isLoadingHistory && !isNew) {
@@ -398,10 +439,11 @@ export function ChatPage() {
                             <button
                                 onClick={handleUserPrompt}
                                 disabled={stateOfButton === 0}
-                                className="bg-orange p-2 rounded-full shadow-md text-white hover:shadow-xl"
-                            >
+                                className={`bg-orange p-2 ${mainInput.length == 0 ? "bg-orange/50 hover:bg-orange/50 cursor-not-allowed" : ""} hover:bg-orange/80 rounded-xl shadow-md text-white hover:shadow-xl`}                            >
                                 {stateOfButton === 0 ? (
-                                    <LoaderPinwheel className="animate-spin" />
+                                    <div onClick={handleMessageStop}>
+                                        <CircleStop />
+                                    </div>
                                 ) : (
                                     <Send />
                                 )}

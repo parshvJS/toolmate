@@ -9,6 +9,7 @@ import { appendArrayItemInRedis, getRedisData, setRedisData } from "./redis.js";
 import connectDB from "../db/db.db.js";
 import { UserPayment } from "../models/userPayment.model.js";
 import { Chat } from "../models/chat.model.js";
+import User from "../models/user.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -42,14 +43,19 @@ export async function handleSocketSerivce(socket: Socket) {
 
     // this service will stream some response
     socket.on('userMessage', async (data: INewUserMessage) => {
-        console.log("user message", data);
         const controller = new AbortController();
         const { signal } = controller;
         socket.on('stop', () => {
+            console.log('stop signal received-------------------------------------------------------------------');
             controller.abort();
         });
+        console.log("storange module----------------------------------", data);
         await produceNewMessage(data.message || "", data.sessionId, false, false, "user", [], []);
-
+        console.log('message produced,redis start');
+        await appendArrayItemInRedis(`USER-CHAT-${data.sessionId}`, {
+            message: data.message,
+            type: 'user',
+        })
         const redisUserData = await getRedisData(`USER-PAYMENT-${data.userId}`);
         var currentPlan = 0;
         if (redisUserData.success) {
@@ -61,8 +67,17 @@ export async function handleSocketSerivce(socket: Socket) {
         else {
             await connectDB();
             console.log(data.userId, 'user payment details not found in redis');
+            const user = await User.findOne({ clerkUserId: data.userId });
+            if (!user) {
+                console.log('User not found');
+                socket.emit('error', {
+                    message: "User not found",
+                    success: false
+                })
+                return;
+            }
             const userPlan = await UserPayment.findOne({
-                userId: data.userId
+                userId: user._id
             });
             if (!userPlan) {
                 console.log('User payment details not found');
@@ -88,15 +103,18 @@ export async function handleSocketSerivce(socket: Socket) {
             console.log(DbChatHistory, 'DbChatHistory');
             const NLessNum = DbChatHistory.length > 30 ? DbChatHistory.length - 30 : 0;
             chatHistory = DbChatHistory.slice(NLessNum, DbChatHistory.length);
-            await setRedisData(`USER-CHAT-${data.sessionId}`, JSON.stringify(chatHistory), 3600);
+            await setRedisData(`USER-CHAT-${data.sessionId}`, chatHistory, 3600);
         }
         switch (currentPlan) {
             case 1: {
+                console.log("Processing...")
                 const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
                 socket.emit('intendList', intendList);
+                console.log('intendList done', intendList);
                 const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, false, 0, socket);
                 if (messageSteam) {
                     await produceNewMessage(messageSteam?.message || "", data.sessionId, messageSteam.isProductSuggested, messageSteam.isCommunitySuggested, "ai", messageSteam.communityId, messageSteam.productId);
+                    console.log('messageSteam done--------------------------', messageSteam);
                     await appendArrayItemInRedis(`USER-CHAT-${data.sessionId}`, messageSteam);
                     console.log('messageSteam done', messageSteam);
                 }
@@ -120,7 +138,6 @@ export async function handleSocketSerivce(socket: Socket) {
                 const isBudgetSliderPresent = data.isBudgetSliderPresent;
                 if (!isBudgetSliderPresent) {
                     if (chatHistory.length > 3) {
-
                         const isBudgetSliderNeeded = await FindNeedOfBudgetSlider(chatHistory, socket);
                     }
                 }

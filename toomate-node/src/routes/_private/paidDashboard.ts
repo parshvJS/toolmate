@@ -1,5 +1,5 @@
-import {Router} from 'express'
-import {handleUserPaidAndPersonalInfo} from '../../controller/_private/handleUserPaidAndPersonalInfo.controller.js'
+import { Router } from 'express'
+import { handleUserPaidAndPersonalInfo } from '../../controller/_private/handleUserPaidAndPersonalInfo.controller.js'
 import { getChatHistory } from '../../controller/_private/getChatHistory.controller.js';
 import { updateChatHistory } from '../../controller/_private/updateChatHistory.controller.js';
 import { getChatConversationHistory } from '../../controller/_private/getChatConversationHistory.controller.js';
@@ -11,6 +11,11 @@ import { getPresignedDeleteUrl } from '../../controller/_private/getPresignedUrl
 import { getProductFromId } from '../../controller/_private/getProductsFromId.controller.js';
 import { changeChatMemoryStatus } from '../../controller/_private/changeChatMemoryStatus.controller.js';
 import { getChatMemoryStatus } from '../../controller/_private/getChatMemoryStatus.controller.js';
+import { TooltipGeneration } from '../../controller/_private/TooltipGeneration.controller.js';
+import { addToUsertoolInventory } from '../../controller/_private/addToUserToolInventory.controller.js';
+import { deleteFromUsertoolInventory } from '../../controller/_private/deleteFromUsertoolInventory.controller.js';
+import { getUserToolInventory } from '../../controller/_private/getUserToolInventory.controller.js';
+import { editToUserToolInventory } from '../../controller/_private/editToUserToolInventory.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -25,4 +30,9 @@ paidDashbaord.route("/get-s3-presigned-delete-url").post(getPresignedDeleteUrl);
 paidDashbaord.route("/getProductFromId").post(getProductFromId);
 paidDashbaord.route("/changeMemoryStatus").post(changeChatMemoryStatus);
 paidDashbaord.route("/getChatMemoryStatus").post(getChatMemoryStatus);
-export {paidDashbaord}
+paidDashbaord.route('/getToolTip').post(TooltipGeneration);
+paidDashbaord.route('/createNewToolItem').post(addToUsertoolInventory);
+paidDashbaord.route('/deleteToolItem').post(deleteFromUsertoolInventory);
+paidDashbaord.route('/getUserToolItem').post(getUserToolInventory);
+paidDashbaord.route('/editToolItem').post(editToUserToolInventory);
+export { paidDashbaord }

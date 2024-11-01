@@ -271,50 +271,66 @@ export async function getChatName(prompt: string) {
 
 export async function getUserIntend(prompt: string, chatHistory: string, plan: number): Promise<number[]> {
 	let getIntendPrompt = '';
-
+	console.log('plan:', plan, 'prompt:', prompt, 'chatHistory:', chatHistory);
 	if (plan === 1) {
-		getIntendPrompt = `
-	Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]):
-	
-	2. Community recommendation (suggest if the user expresses difficulty or seeks peer support)
-	3. Product recommendation (prioritize if the user's prompt indicates a need for a tool or resource)
-	4. Follow-up question for more understanding (use this if the prompt is vague or needs clarification)
-	5. Guidance on the project (select this if the user is asking for advice or direction)
-	
-	**User Intent Analysis**:
-	1. Evaluate the user's mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations or guidance.
-	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
-	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
-	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
-	
-	**Chat History**: ${chatHistory}
-	**User Prompt**: ${prompt}
-	
-	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
-	- Weigh the relevance of each intent based on the context and user cues.
-	- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:`;
+		getIntendPrompt = `Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]).
+
+		System Prompt :
+		  - Your Are AI Chat bot whose Name is Matey
+		  - You are a DIY and creative enthusiast
+		  - You’re here to help users with their DIY and creative projects, adding friendly, playful encouragement along the way
+		
+		Intent Selection Criteria:
+		  2. Community Recommendation (Suggest this if the user expresses difficulty or seeks peer support)
+		  3. Product Recommendation (Prioritize this if the user’s prompt indicates a need for a specific tool or resource)
+		  4. Follow-up Question for More Understanding (Use this if the prompt is vague or needs clarification)
+		  5. Guidance on the Project (Select this if the user is asking for advice or direction)
+		  6. Emotional Playfulness with Matey(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response.
+		
+		User Intent Analysis:
+		1. Evaluate the user’s mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations, guidance, or playfulness with Matey (Intent 6) for encouragement.
+		2. Assess previous interactions: If they recently discussed a tool or project, consider product recommendations that relate to that topic.
+		3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
+		4. Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
+		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. Highly add this  
+		
+		**Chat History**: {chatHistory}
+		**User Prompt**: {prompt}
+		
+		Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
+		- Weigh the relevance of each intent based on the context and user cues.
+		- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:
+		`;
 	}
 	else if (plan === 2) {
-		getIntendPrompt = `
-	Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]):
-	
-	2. Community recommendation (suggest if the user expresses difficulty or seeks peer support)
-	3. Product recommendation (prioritize if the user's prompt indicates a need for a tool or resource)
-	4. Follow-up question for more understanding (use this if the prompt is vague or needs clarification)
-	5. Guidance on the project (select this if the user is asking for advice or direction)
-	
-	User Intent Analysis:
-	1. Evaluate the user's mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations or guidance.
-	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
-	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
-	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
-	
-	**Chat History**: ${chatHistory}
-	**User Prompt**: ${prompt}
-	
-	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
-	- Weigh the relevance of each intent based on the context and user cues.
-	- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:`;
+		getIntendPrompt = `Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]).
+
+		System:
+		  - Your Name is Matey
+		  - You are a DIY and creative enthusiast
+		  - You’re here to help users with their DIY and creative projects, adding friendly, playful encouragement along the way
+		
+		Intent Selection Criteria:
+		  2. Community Recommendation (Suggest this if the user expresses difficulty or seeks peer support)
+		  3. Product Recommendation (Prioritize this if the user’s prompt indicates a need for a specific tool or resource)
+		  4. Follow-up Question for More Understanding (Use this if the prompt is vague or needs clarification)
+		  5. Guidance on the Project (Select this if the user is asking for advice or direction)
+		  6. **Emotional Playfulness with Matey** *(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response.
+		
+		User Intent Analysis:
+		1. Evaluate the user’s mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations, guidance, or playfulness with Matey (Intent 6) for encouragement.
+		2. Assess previous interactions: If they recently discussed a tool or project, consider product recommendations that relate to that topic.
+		3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
+		4. Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
+		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. 
+		
+		**Chat History**: {chatHistory}
+		**User Prompt**: {prompt}
+		
+		Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
+		- Weigh the relevance of each intent based on the context and user cues.
+		- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:
+		`;
 	}
 	else {
 		getIntendPrompt = `
@@ -331,8 +347,8 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
 	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
 	
-	**Chat History**: ${chatHistory}
-	**User Prompt**: ${prompt}
+	**Chat History**: {chatHistory}
+	**User Prompt**: {prompt}
 	
 	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
 	- Weigh the relevance of each intent based on the context and user cues.
@@ -347,16 +363,16 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	const runnableChainOfIntend = RunnableSequence.from([intendLLMChain, new RunnablePassthrough()]);
 
 	// Invoke the LLM to get the response
-	const userIntend = await runnableChainOfIntend.invoke({ prompt });
+	const userIntend = await runnableChainOfIntend.invoke({ prompt, chatHistory });
 
 	// Parse and clean up the output
 	let intentArray;
 	try {
-		intentArray= JSON.parse(userIntend.trim());
-	} catch (error:any) {
+		intentArray = JSON.parse(userIntend.trim());
+	} catch (error: any) {
 		console.error('Error parsing user intent:', error.message);
 		intentArray = [5];
-		
+
 	}
 
 	// Ensure intent 1 is always present
@@ -368,7 +384,7 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 
 // intend list and user Id
 export async function executeIntend(prompt: string, chatHistory: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, isBudgetSliderValue: boolean, budgetSliderValue: number, socket: Socket) {
-
+	console.log('Intend:---------', intend);
 	var newChat = {
 		sessionId: userId,
 		role: 'ai',
@@ -428,6 +444,11 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 				case 5: {
 
 				}
+				// Emotional Playfullness with Matey
+				case 6: {
+					await emotionalChatMessage(prompt, socket)
+				}
+
 				default: { }
 			}
 		}
@@ -759,7 +780,7 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
     - "tooltip": Offer a brief description of the quality and brand type expected at each budget level, including examples if possible.
 	- all data should be authantic and real based on chat try to find different brands and mention them in tooltip if possible else just mention quality and brand type user will get on certain budget.
 	- main goal of tooltip and label is to make user aware of what kind of product user will get on certain budget.
-
+ - as per chat analize the budget fit for user and then create meaning full values
     Chat Context: {chatHistory}
 
     Format Requirements:
@@ -796,7 +817,43 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
 }
 
 
+// chat emotion
+export async function emotionalChatMessage(prompt: string, socket: Socket) {
+	const emotionalPrompt = `
+	Analyze the user's input to determine their intent and emotional state. Respond as Matey with a brief and playful message that incorporates the following elements:
 
+	Humor: Use a light-hearted remark or anecdote relevant to the user's challenge.
+
+	Example: If they mention a tough problem, say something like, 'Tough one, eh? Reminds me of when my dad tried to fix a leak under the sink—turned it into a fountain!'
+	Personal Touch: Include a relevant DIY story or lesson that connects to the user’s experience.
+
+	Example: For a painting issue, share: 'My brother once painted a room without taping—ended up with paint everywhere!'
+	Practical Tip: Offer a quick, actionable piece of advice tailored to their query.
+
+	Example: Suggest, 'Before we dive in, don’t forget your safety gear—better safe than sorry!'
+	Matey’s Habits and Quirks: Weave in one of Matey's habits, such as:
+
+	A safety reminder: 'Right, grab your gloves and goggles, mate!'
+	A fun fact: 'Did you know the first tape measure was invented in 1868?'
+	Encouragement and Signature Phrases: Use Matey's friendly phrases to uplift the user.
+
+	Example: End with, 'Look at you go! She’ll be right—just takes a little elbow grease!'
+	Ensure the final response is a small, casual message that’s quick to read and emotionally playful.
+
+	User Prompt:${prompt}`
+	const stream = await llm.stream(emotionalPrompt);
+	let gatheredResponse = '';
+	let isFirstChunk = true;
+
+	for await (const chunk of stream) {
+		socket.emit('emoMessage', { text: chunk.content, isContinue: !isFirstChunk });
+		isFirstChunk = false;
+		gatheredResponse += chunk.content;
+	}
+	socket.emit('terminate', { done: true });
+	console.log("end of stream, response:", gatheredResponse);
+	return gatheredResponse;
+}
 
 
 // chat summury
@@ -1039,4 +1096,47 @@ async function filterChatHistory(userChat: []) {
 
 	}
 
+}
+
+// tooltip of the day
+
+export async function generateUsefulFact(userState: string, userPreference: string, userBraingap: string, userChatMemory: string): Promise<string> {
+	const factPrompt = `
+	Generate a practical and broadly useful DIY tip based on the user's context. If the user's context is available, integrate the following details to make the tip more relevant:
+	
+	- **User State:** Describe current tools, materials, or any recent DIY projects the user is involved in.
+	- **User Preference:** Take into account any DIY styles, materials, or methods the user favors.
+	- **User Knowledge Gap:** Address any areas where the user may need guidance or clarity.
+	- **User Chat Memory:** Consider relevant details from recent conversations to enhance relevance.
+
+	User State: {userState}
+	User Preference: {userPreference}
+	User Knowledge Gap: {userBraingap}
+	User Chat Memory: {userChatMemory}
+
+	If specific context is not available or relevant, provide a broadly applicable DIY tip. Ensure the tip is concise, informative, and can apply to a wide range of DIY projects.
+
+	DIY Tip:`;
+
+
+	const factTemplate = PromptTemplate.fromTemplate(factPrompt);
+
+	const factLLMChain = factTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfFact = RunnableSequence.from([
+		factLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	const fact = await runnableChainOfFact.invoke({
+		userState,
+		userPreference,
+		userBraingap,
+		userChatMemory,
+	});
+
+	console.log('Generated fact:', fact);
+	return fact.trim();
 }

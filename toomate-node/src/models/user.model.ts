@@ -8,7 +8,7 @@ export interface IUser extends Document {
   imageUrl?: string;
   clerkUserId?: string;
   status: string[];
-  toolInventory: { toolId: string; count: number }[];
+  toolInventory?: mongoose.Types.ObjectId[];
   wishList: { toolId: string; count: number }[];
   bookmarked: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -44,21 +44,8 @@ const UserSchema = new mongoose.Schema<IUser>({
     default: ["active"], // can be [active, warned, suspended, blocked]
   },
   toolInventory: {
-    type: [
-      {
-        toolId: { type: String, required: true },
-        count: { type: Number, required: true },
-      },
-    ],
-    default: [],
-  },
-  wishList: {
-    type: [
-      {
-        toolId: { type: String, required: true },
-        count: { type: Number, required: true },
-      },
-    ],
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'UserToolInventory',
     default: [],
   },
   bookmarked: {

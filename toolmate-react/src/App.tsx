@@ -16,10 +16,11 @@ import { ExploreCommunity } from "./_private/pages/ExploreCommunity";
 import { MyCommunity } from "./_private/pages/MyCommunity";
 import { CommunityCreationForm } from "./components/custom/CommunityCreationForm";
 import { useUser } from "@clerk/clerk-react";
+import MyInventory from "./_private/pages/MyInventory";
 
 function App() {
-  const {user} = useUser()
-  console.log(user,"user")
+  const { user } = useUser()
+  console.log(user, "user")
   return (
     <main className="h-screen w-full font-roboto">
       <Routes>
@@ -39,6 +40,7 @@ function App() {
           <Route path="/explore-community" element={<ExploreCommunity />} />
           <Route path="/my-community" element={<MyCommunity />} />
           <Route path="/createCommunity" element={<CommunityCreationForm />} />
+          <Route path="/my-inventory" element={<MyInventory />} />
 
           {/* Wrap the routes that need the SocketProvider */}
           <Route element={<SocketLayout />}>

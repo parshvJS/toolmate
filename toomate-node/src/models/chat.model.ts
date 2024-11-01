@@ -23,14 +23,13 @@ const ChatSchema = new mongoose.Schema(
 			default: false
 		},
 		communityId: {
-			type: [mongoose.Schema.Types.ObjectId],
-			ref: 'Community',
+			type: [],
 			default: []
 		},
 		// this field will be used for summury product suggestion , sort last data base entry and show that in product suggestion
 		productId: {
-			type: [mongoose.Schema.Types.ObjectId],
-			ref: 'Product',
+			type: [],
+			default: []
 		}
 	},
 	{ timestamps: true }

@@ -1,21 +1,69 @@
 import MateyExpression from "@/components/custom/MateyExpression";
 
 import { useContext, useEffect, useState } from "react";
-import { Anvil, LoaderPinwheel, Send } from "lucide-react";
+import { Anvil, CalendarDays, LoaderPinwheel, Package2, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "@/context/userContext";
 import { ChatItem, iChatname } from "@/types/types";
 import { UserButton } from "@clerk/clerk-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import axios from "axios";
+
 export default function Dashboard() {
     // const { isLoaded, isSignedIn, user } = useUser();
     const [mainInput, setMainInput] = useState("");
     const [stateOfButton, setStateOfButton] = useState(-1);
-    const { retrieveCache, historyData } = useContext(UserContext);
+    const { retrieveCache, historyData, userData } = useContext(UserContext);
     const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
     const [error, setError] = useState("");
     const [cache, setCache] = useState<ChatItem[]>([]);
+    const [isTooltipLoading, setIsTooltipLoading] = useState(false)
+    const [toolTipMessage, setToolTipMessage] = useState("")
+    const [isTooltipAlreadyGiven, setIsTooltipAlreadyGiven] = useState(false)
     const navigate = useNavigate();
 
+
+    useEffect(() => {
+        const lastTooltipDate = localStorage.getItem("lastTooltipDate");
+        const currentDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+        console.log(new Date(lastTooltipDate).toDateString() === new Date(currentDate).toDateString())
+        // Check if the stored date exists and if it matches today’s date
+        if (lastTooltipDate && new Date(lastTooltipDate).toDateString() === new Date(currentDate).toDateString()) {
+            console.log("hit getting tooltip")
+            setIsTooltipAlreadyGiven(true);
+            setToolTipMessage(localStorage.getItem("toolTipMessage") || "");
+            localStorage.setItem("lastTooltipDate", new Date().toISOString().split("T")[0]); // Save only date
+        } else {
+            console.log("miss getting tooltip")
+            handleGetTooltip();
+        }
+    }, []);
+
+    async function handleGetTooltip() {
+        setIsTooltipLoading(true);
+        if (isTooltipAlreadyGiven) {
+            setIsTooltipLoading(false);
+            return;
+        }
+        const url = `${import.meta.env.VITE_SERVER_URL}/api/v1/getTooltip`;
+        const response = await axios.post(url, { userId: userData?.id });
+
+        if (response.data.success) {
+            const tooltip = response.data.tooltip;
+            setToolTipMessage(tooltip);
+            localStorage.setItem("toolTipMessage", tooltip);
+            localStorage.setItem("lastTooltipDate", new Date().toISOString().split("T")[0]); // Save only date
+        }
+        setIsTooltipLoading(false);
+    }
 
     useEffect(() => {
         if (historyData) {
@@ -58,9 +106,67 @@ export default function Dashboard() {
                 <p className="text-left text-md text-slate-600 font-semibold">Share your DIY project ideas with Matey for expert advice!</p>
 
 
+                {/* section */}
 
                 {/* input */}
-                <div className="w-full flex gap-0 border-2 bg-white border-lightOrange mt-6 rounded-lg flex-col">
+
+                <div className="mt-6 flex gap-2">
+                    <div
+                        onClick={() => navigate("/my-inventory")}
+                        className=" flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-orange/80  hover:to-lightOrange/80 cursor-pointer from-orange to-lightOrange p-2 px-4 gap-3 w-fit ">
+                        <Package2 className="text-white" />
+                        <p>Your Tool Inventory </p>
+                    </div>
+                    <Dialog>
+                        <DialogTrigger>
+                            <div
+                                onClick={handleGetTooltip}
+                                className=" flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-lightOrange/80  hover:to-orange/80 cursor-pointer from-lightOrange to-orange p-2 px-4 gap-3 w-fit ">
+                                <CalendarDays className="text-white" />
+                                <p>Tooltip Of the Day </p>
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    <div className="flex gap-2 items-center">
+                                        <MateyExpression expression="offer" />
+                                        <p className="font-semibold text-xl capitalize">Tooltip of the Day by matey </p>
+                                    </div>
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {
+                                        isTooltipAlreadyGiven && (
+                                            <div className="font-semibold text-black border-orange border-2 bg-lightOrange  my-3 rounded-md p-2">
+                                                <p className="capitalize">Here's your tip of the day from Matey! Don't forget to check back tomorrow for another tip.</p>
+
+
+                                            </div>
+                                        )
+                                    }
+                                    <div className="border-2 border-lightOrange p-4 rounded-md">
+
+
+
+                                        {
+                                            isTooltipLoading ? (
+                                                <div className="flex justify-center items-center gap-2">
+                                                    <LoaderPinwheel className="animate-spin" />
+                                                    <p>Remembering Tooltip...</p>
+                                                </div>
+                                            ) : (
+                                                <p>{toolTipMessage}</p>
+                                            )
+                                        }
+                                    </div>
+                                </DialogDescription>
+                            </DialogHeader>
+                        </DialogContent>
+                    </Dialog>
+
+
+                </div>
+                <div className="w-full flex gap-0 border-2 bg-white border-lightOrange mt-2 rounded-lg flex-col">
                     <textarea
                         value={mainInput}
                         onChange={(e) => setMainInput(e.target.value)}

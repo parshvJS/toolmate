@@ -207,7 +207,7 @@ async function getRedisData(key: string) {
     }
 }
 
-async function setRedisData(key: string, value: string, expiry: number) {
+async function setRedisData(key: string, value: any, expiry: number) {
     try {
         const data = await redisInstance.set(key, JSON.stringify(value), 'EX', expiry);
         console.log("Data set to Redis with expiry.");
@@ -221,11 +221,18 @@ async function setRedisData(key: string, value: string, expiry: number) {
 
 async function appendArrayItemInRedis(key: string, value: any) {
     try {
+        console.log("Appending data to Redis.");
         const data = await getRedisData(key);
         if (data.success) {
-            const parsedData = JSON.parse(data.data);
+            let parsedData;
+            if (!Array.isArray(data.data)) {
+                parsedData = JSON.parse(data.data);
+            }
+            else {
+                parsedData = data.data;
+            }
             const updatedData = [...parsedData, value];
-            await redisInstance.set(key, JSON.stringify(updatedData));
+            await redisInstance.set(key, JSON.stringify(updatedData), 'EX', 3600);
             return {
                 success: true,
                 data: updatedData
