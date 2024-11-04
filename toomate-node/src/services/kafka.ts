@@ -8,7 +8,7 @@ dotenv.config();
 
 
 const kafka = new Kafka({
-	brokers: ['kafka-12172946-nikunjsheth402-05ee.g.aivencloud.com:18021'],
+	brokers: ['kafka-505f1c5-nikunjsheth402-4876.f.aivencloud.com:15665'],
 	ssl: {
 		ca: [fs.readFileSync(path.resolve('./ca.pem'), 'utf-8')],
 	},
@@ -16,7 +16,7 @@ const kafka = new Kafka({
 		//   username: process.env.KAFKA_USERNAME!,
 		//   password: process.env.KAFKA_PASSWORD!,
 		username: 'avnadmin',
-		password: 'AVNS_0iVH-FOwfzmsIkG6h_v',
+		password: 'AVNS_GFmLpMFtFHn6etwKGkb',
 		mechanism: 'plain',
 	},
 });
@@ -44,12 +44,13 @@ export async function produceNewMessage(
 	productId: string[] = []
 ) {
 	const producer = await createProducer();
+	const createdAt = Date.now();
 	await producer.send({
 		topic: 'NEW-MESSAGE',
 		messages: [
 			{
 				key: `message-${Date.now()}`,
-				value: JSON.stringify({ message, sessionId, isProductSuggested, isCommunitySuggested, communityId, productId, role })
+				value: JSON.stringify({ message, sessionId, isProductSuggested, isCommunitySuggested, communityId, productId, role, createdAt }), 
 			}
 		]
 	})
@@ -145,6 +146,7 @@ export async function startNewMessageConsumer() {
 					communityId,
 					productId,
 					role,
+					createdAt
 				} = JSON.parse(message.value?.toString() || '{}');
 
 				if (!msg) {
@@ -165,6 +167,7 @@ export async function startNewMessageConsumer() {
 					communityId,
 					productId,
 					role,
+					createdAt
 				});
 				console.log("data got inserted");
 			} catch (err) {

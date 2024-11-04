@@ -50,9 +50,10 @@ function UserContextProvider({ children }: { children: ReactNode }) {
                 throw new Error("User ID is not available");
             }
             const response = await axios.post<{ data: UserData }>(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
+
                 clerkUserId: userId,
             });
-
+            console.log(response.data.data, "response.data.data");
             const res = JSON.parse(String(response.data.data));
             return res;
         },
@@ -167,7 +168,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         console.log(historyData, "historyData");
-        console.log(userData, "userData");
+        console.log(userData, userData?.userId, "userData");
 
     }, [historyData, userData])
     const mutation = useMutation<iChatname[], Error, iChatname[], { previousHistory: iChatname[] | undefined }>({

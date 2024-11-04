@@ -21,12 +21,14 @@ import mongoose from 'mongoose';
 import User from '../../models/user.model.js';
 import UserMemory from '../../models/userMemory.model.js';
 import { encode } from 'gpt-tokenizer';
+import axios from 'axios';
 
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
 	apiKey: openAIApiKey,
 	streaming: true, // Enable streaming if supported
+	model: "gpt-3.5-turbo",
 });
 
 // service for free preview user
@@ -93,7 +95,7 @@ export async function GetAnswerFromPrompt(
 		console.log(gatheredResponse, 'gatheredResponse');
 	} catch (error) {
 		console.error('Error streaming response:', error);
-		socket.emit('messageError', 'Error occurred during streaming.');
+		socket.emit('error', 'Error occurred during streaming.');
 	}
 }
 
@@ -384,7 +386,6 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 
 // intend list and user Id
 export async function executeIntend(prompt: string, chatHistory: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, isBudgetSliderValue: boolean, budgetSliderValue: number, socket: Socket) {
-	console.log('Intend:---------', intend);
 	var newChat = {
 		sessionId: userId,
 		role: 'ai',
@@ -392,8 +393,12 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 		isProductSuggested: false,
 		isCommunitySuggested: false,
 		communityId: [],
-		productId: []
+		productId: [],
+		emo: '',
 	};
+
+	console.clear()
+	console.log('Intend:', intend,"chat history",chatHistory); // Debugging log
 	// TODO: Remove this below condition and code all features for pro plan currently plan 2
 	if (plan == 1 || plan == 2) {
 		for (let i = 0; i < intend.length; i++) {
@@ -402,8 +407,9 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 				case 1: {
 					socket.emit('status', {
 						message: "Matey Is Typing..."
-					})
+					});
 					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, intend.includes(3), intend.includes(2), socket);
+
 					newChat['message'] = generalResponse;
 					break;
 				}
@@ -421,19 +427,77 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					socket.emit('status', {
 						message: "Matey Is Finding Product For You..."
 					})
-					const productId = await HandleProductRecommendation(prompt, chatHistory, signal, isBudgetSliderValue, budgetSliderValue, socket);
-					if (!productId) {
-						socket.emit('noProducts', {
-							message: "No products found."
-						})
-						continue;
+
+					const productIntent = await findAndSuggestProduct(prompt, chatHistory, socket);
+
+					if (!productIntent.success) {
+						socket.emit('error', 'Error occurred while fetching product intent.');
+						return newChat;
 					}
-					newChat['isProductSuggested'] = true;
-					newChat['productId'] = productId;
-					socket.emit('productId', {
-						productId: productId
+
+					// Emit the product list first
+					// 1. Bunnings
+					// 2. Adsense
+					// 3. AI Generated
+					socket.emit('productList', productIntent.data);
+
+					// Map over product intents and create promises for each
+					console.clear();
+					const productPromises = productIntent.data.map((intent: number | string) => {
+						console.log('Processing intent:', intent); // Debugging log
+						switch (intent) {
+							case 1:
+								return handleBunningsProduct(prompt, chatHistory, sessionId, isBudgetSliderValue, 0, budgetSliderValue, socket)
+									.then((bunningsProducts) => {
+										console.log('Bunnings products:', bunningsProducts); // Debugging log
+										socket.emit('bunningsProducts', bunningsProducts);
+										return bunningsProducts;
+									})
+									.catch((error) => {
+										console.error('Error fetching Bunnings products:', error); // Debugging log
+										socket.emit('error', 'Error fetching Bunnings products.');
+										return null;
+									});
+
+							case 2:
+								return HandleProductRecommendation(prompt, chatHistory, signal, isBudgetSliderValue, budgetSliderValue, socket)
+									.then((adsenseProducts) => {
+										console.log('Adsense products:', adsenseProducts); // Debugging log
+										socket.emit('productId', adsenseProducts);
+										return adsenseProducts;
+									})
+									.catch((error) => {
+										console.error('Error fetching Adsense products:', error); // Debugging log
+										socket.emit('error', 'Error fetching Adsense products.');
+										return null;
+									});
+
+							case 3:
+								return handleMateyProduct(prompt, chatHistory, sessionId, socket)
+									.then((aiProducts) => {
+										console.log('AI products:', aiProducts); // Debugging log
+										socket.emit('aiProducts', aiProducts);
+										return aiProducts;
+									})
+									.catch((error) => {
+										console.error('Error fetching AI products:', error); // Debugging log
+										socket.emit('error', 'Error fetching AI products.');
+										return null;
+									});
+
+							default:
+								console.error('Invalid product intent selected:', intent); // Debugging log
+								socket.emit('error', 'Invalid product intent selected.');
+								return Promise.resolve(null); // Handle unexpected intent cases
+						}
 					});
-					console.log('Product ID:-------------------------------', productId);
+
+					// Wait for all product promises to resolve
+					await Promise.all(productPromises);
+
+					console.clear();
+					console.log('Product Promises:', productPromises);
+
 					break;
 				}
 				// follow up question for more understanding
@@ -446,7 +510,8 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 				}
 				// Emotional Playfullness with Matey
 				case 6: {
-					await emotionalChatMessage(prompt, socket)
+					const emo = await emotionalChatMessage(prompt, socket)
+					newChat['emo'] = emo;
 				}
 
 				default: { }
@@ -457,46 +522,292 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 	}
 }
 
+async function findAndSuggestProduct(prompt: string, chatHistory: string, socket: Socket) {
+	const productIntentPrompt = `Based on the user's prompt and chat history, determine the most suitable product providers. 
+
+	User Prompt: {prompt}
+	Chat Context: {chatHistory}
+
+	Provider Selection Criteria:
+	1. Bunnings:
+		- Choose if the user mentions Bunnings or prefers well-known hardware stores.
+		- Select if the user is looking for common DIY tools and materials.
+	2. Adsense Vendor:
+		- Choose if the user shows interest in ads or external vendors.
+		- Select if the user is looking for niche or specialized products.
+	3. AI Generated Product:
+		- Choose if AI-generated products fit the user's needs based on the context.
+		- Select if the user is open to innovative or unique product suggestions.
+
+	Output:
+	- Return a JSON array of selected provider indices.
+	- Example: [1, 3], [2, 3], [1, 2, 3]
+	- Selection should be based on context.
+	- Minimum 1 and maximum 3 indices can be selected.
+
+	Return only the selected indices in an array (response should contain only an array that can be parsed to JSON): Array:`;
+	const productIntentTemplate = PromptTemplate.fromTemplate(productIntentPrompt);
+	const productIntentLLMChain = productIntentTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfProductIntent = RunnableSequence.from([productIntentLLMChain, new RunnablePassthrough()]);
+	const productIntent = await runnableChainOfProductIntent.invoke({ prompt, chatHistory });
+	console.log('productIntent:', productIntent);
+	try {
+
+		const intents = JSON.parse(productIntent);
+
+		if (!intents || intents.length === 0) {
+			return {
+				success: false,
+				data: 'No product intent selected.',
+			};
+		}
+		return {
+			success: true,
+			data: intents,
+		};
+
+
+	} catch (error) {
+		console.error('Error fetching product intent:', error);
+		return {
+			success: false,
+			data: 'Error occurred while fetching product intent.',
+		};
+	}
+}
+
+
+async function handleMateyProduct(prompt: string, chatHistory: string, sessionId: string, socket: Socket) {
+	const productPrompt = ` Based On User Prompt and Chat Context Create a use full and relavent product list :
+	
+	User Prompt: {prompt}
+	Chat Context: {chatHistory}
+
+	Output :
+	[
+		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string)),
+		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string))
+	]
+
+	Keep in mind:
+	- The Product should be related to DIY and creative projects.
+	- Provide the response in this exact format (use JSON in actual response):
+	- product catagorization should be meaning full
+	- You will be provided with name, price, imageUrl, link, and rating for each product
+	- Based on context and prompt, create a personalUsage field for each product that includes tips on how, why, or where to use it in a simple sentence
+	- Lenght Bounds : 1-4 Catagory Can Have 1-5 Products Maxmimum
+	
+	Return only the array of objects without any extra text or comments , start directly from creating array of objects`;
+
+	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
+	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
+	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
+	console.log('products:', products);
+	return products;
+}
+
+
+
+export async function abstractChathistory(
+	chatHistory: string,
+	newMessage:
+		{ role: string, message: string }
+) {
+
+	const abstractChathistoryPrompt = `Given the chat history, abstract the main points and summarize the conversation in a few sentences.
+
+	- you will be given previous chat History and new message 
+	- you have to merge that new message in chat history and create a new chat history context
+
+	Chat History: {chatHistory}
+	New Message: {newMessage}
+
+	Keep in mind:
+	- The summary should capture the main points of the conversation.
+	- a summury should contain all relavent information of chat
+	- It Should be detailed and capture all aspects of the conversation.
+	Return the summary in a few sentences:`;
+	const abstractChathistoryTemplate = PromptTemplate.fromTemplate(abstractChathistoryPrompt);
+	const abstractChathistoryLLMChain = abstractChathistoryTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfAbstractChathistory = RunnableSequence.from([abstractChathistoryLLMChain, new RunnablePassthrough()]);
+	const abstractChathistory = await runnableChainOfAbstractChathistory.invoke({ chatHistory, newMessage: JSON.stringify(newMessage) });
+	return abstractChathistory;
+}
+
+
+export async function inititalSummurizeChat(chatHistory: string) {
+	const abstractChathistoryPrompt = `Given the chat history, abstract the main points and summarize the conversation in a few sentences.
+	Chat History: {chatHistory}
+	Keep in mind:
+	- The summary should capture the main points of the conversation.
+	- a summury should contain all relavent information of chat
+	- It Should be detailed and capture all aspects of the conversation.
+	Return the summary in a sentences:`;
+
+	const abstractChathistoryTemplate = PromptTemplate.fromTemplate(abstractChathistoryPrompt);
+	const abstractChathistoryLLMChain = abstractChathistoryTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfAbstractChathistory = RunnableSequence.from([abstractChathistoryLLMChain, new RunnablePassthrough()]);
+	const abstractChathistory = await runnableChainOfAbstractChathistory.invoke({ chatHistory });
+	return abstractChathistory;
+}
+
+
+// get products from bunnigns
+async function handleBunningsProduct(prompt: string, chatHistory: string, sessionId: string, isBudgetAvailable: boolean, maxBudget: number, minBudget: number, socket: Socket) {
+	socket.emit('status', {
+		message: "Matey Is Prepareing Product From Bunnings For You..."
+	})
+	console.log("inside handleBunningsProduct function");
+	const productPrompt = `
+		Based on User Prompt And Chat Context generate DIY Product that are relavent to search in internet and return to user 
+		User Prompt: {prompt}
+		Chat Context: {chatHistory}
+
+		Keep in mind:
+		- The products should be related to DIY and creative projects.
+		- The products should be easily available online.
+		- The products should be suitable for a wide range of users, from beginners to experts.
+		- Data gram format should be valid and parsable to JSON.
+		- Data gram Example : ['product1','product2','product3','product4','product5']
+		- length of array should be 0-5
+		- Return only the product names in an array (response should contain only an array that can be parsed to JSON):
+		- No Comment or additional text
+		Array:
+`;
+	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
+	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
+	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
+	console.log('products:', products);
+
+	try {
+		const parsedProductList = JSON.parse(products);
+		console.log('Parsed product list:', parsedProductList, "=-----------------=", products);
+
+		const searchItems = parsedProductList.map((product: string) => {
+			return {
+				searchTerm: product,
+				productLimit: 5,
+				productPage: 1
+			}
+		});
+		console.log('searchItems:', searchItems);
+		const response = await axios.post(`${process.env.WEB_SCRAPPER_API_ENDPOINT}/api/v1/scrapeBunningsProduct`, {
+			userId: sessionId,
+			searchItems: searchItems,
+			isBudgetSearchOn: isBudgetAvailable,
+			minBudgetValue: minBudget,
+			maxBudgetValue: maxBudget
+		})
+		if (!response.data.success || !(response.data.data.data.length === 0)) {
+			socket.emit('error', 'Error occurred while fetching product list.');
+			return [];
+		}
+		console.log('Response from bunnings:', response.data.data);
+		console.dir(response.data.data.data);
+
+			const personalizeProductPrompt = `Based on the Product List, user prompt, and chat context, generate a personalized product list for the user
+
+	User Prompt: {prompt}
+	Chat Context: {chatHistory}
+	Product List: {parsedProductList}
+
+	Keep in mind:
+	- Provide the response in this exact format (use JSON in actual response):
+	[
+		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string)),
+		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string))
+	]
+
+	Guidelines:
+	- product catagorization should be meaning full
+	- You will be provided with name, price, imageUrl, link, and rating for each product
+	- Based on context and prompt, create a personalUsage field for each product that includes tips on how, why, or where to use it in a simple sentence
+	- If needed, make the name field clearer for user readability
+	- Include categories only if they contain at least one product
+	- No comments or additional text in the response, start directly with the array of objects
+	- Ensure each object has a categoryName and a products array with complete details
+	- Do not generate random product IDs; only use product IDs from the Product Catalog
+
+Return only the array of objects without any extra text or comments`;
+
+		const personalizeProductTemplate = PromptTemplate.fromTemplate(personalizeProductPrompt);
+
+		const personalizeProductLLMChain = personalizeProductTemplate.pipe(llm).pipe(new StringOutputParser());
+
+		const runnableChainOfPersonalizeProduct = RunnableSequence.from([personalizeProductLLMChain, new RunnablePassthrough()]);
+
+		const personalizedProductList = await runnableChainOfPersonalizeProduct.invoke({
+			prompt,
+			chatHistory,
+			parsedProductList: JSON.stringify(response.data.data.data)
+		});
+
+		console.log('Personalized product list: ---------------------', personalizedProductList, JSON.parse(personalizedProductList));
+		try {
+			const parsedPersonalizedProductList = JSON.parse(personalizedProductList);
+			socket.emit('bunningsProduct', parsedPersonalizedProductList);
+
+			return parsedPersonalizedProductList;
+		} catch (error: any) {
+			console.error('Error parsing product list:', error.message);
+			socket.emit('error', 'Error occurred while fetching product list.');
+			return [];
+		}
+
+	} catch (error: any) {
+		console.error('Error parsing product list:', error.message);
+		socket.emit('error', 'Error occurred while fetching product list.');
+		return [];
+	}
+
+
+
+}
 
 async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, isProductSuggestion: boolean, isCommunitySuggestin: boolean, socket: Socket) {
-	socket.emit('status', {
-		message: "Matey Is Typing..."
-	})
 	let streamPrompt;
+	const chatHistoryString = JSON.stringify(chatHistory, null, 2);
+	console.log(chatHistoryString, "---------------------chatHistory------------------------------------------------------------------------");
+
 	if (isProductSuggestion) {
-		streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the tool request. If the request for tools is high, provide a brief response referring to the relevant tool. Tools include:
-		1. Product
-		2. Community suggestions
+		streamPrompt = `Based on the user's prompt and chat history, assess the intensity of the tool request. 
+	If the request is high, provide a relevant tool suggestion. If it's low, still offer a useful response related to DIY. 
 	
-		User Prompt: ${prompt}
-		Chat History: ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "No available chat history procide without chat history"}
-		system : Your job is to give concise response to user as per the intensity of the tool request.
-		Your task is to:
-		1. Assess the intensity of the tool request.
-		2. If the intensity is high, generate a concise response referring to the relevant tool (e.g., "Here is a product suggestion related to ...", "Here is a community suggestion related to ..." etc.). then create dynamic response based on the intensity.
-		3. If the intensity is low, proceed with a normal response.
+	User Prompt: ${prompt}
+	Chat History:Use this for answering the question if needed: ${chatHistory.length !== 0 ? chatHistoryString : "No chat history available."}
+	System: Your task is to provide concise, relevant responses based on the intensity of the tool request. 
+	1. Assess the intensity (high, medium, low).
+	2. If high: "Here's a product suggestion related to ...".
+	3. If medium: "This tool might be helpful: ...".
+	4. If low: Offer a general but relevant response . 
+	-just give clear response dont mention prompt or chat history in response.
+	Response to user:`;
+
+	} else if (isCommunitySuggestin) {
+		streamPrompt = `Based on the user's prompt and chat history, assess the intensity of the community request. 
+	If the request is high, provide a relevant community suggestion. If it's low, still give an insightful comment related to DIY.
 	
-		Response to user:`;
+	User Prompt: ${prompt}
+	Chat History: ${chatHistory.length !== 0 ? chatHistoryString : "No chat history available."}
+	System: Your task is to provide concise, relevant responses based on the intensity of the community request. 
+	1. Assess the intensity (high, medium, low).
+	2. If high: "Here's a community suggestion related to ...".
+	3. If medium: "You might want to check out this community: ...".
+	4. If low: Offer a thoughtful remark or tip related to DIY.
+		-just give clear response dont mention prompt or chat history in response.
+
+	Response to user:`;
+	} else {
+		streamPrompt = `System prompt: As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
+	| User Prompt: ${prompt} 
+		-just give clear response dont mention prompt or chat history in response.
+
+	Context of chat (use this if present, else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistoryString : "Context not available."} 
+	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
 	}
-	else if (isCommunitySuggestin) {
-		streamPrompt = `Based on the user's prompt and chat history, determine the intensity of the community request. If the request for community is high, provide a brief response referring to the relevant communitys.
-	
-		User Prompt: ${prompt}
-		Chat History: ${chatHistory.length !== 0 ? JSON.stringify(chatHistory) : "No available chat history procide without chat history"}
-		system : Your job is to give concise response to user as per the intensity of the community request.
-		Your task is to:
-		1. Assess the intensity of the community request.
-		2. If the intensity is high, generate a concise response referring to the relevant community (e.g., "Here is a community suggestion related to ...", "Here is a community suggestion related to ..." etc.). then create dynamic response based on the intensity.
-		3. If the intensity is low, proceed with a normal response.
-	
-		Response to user:`;
-	}
-	else {
-		streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
-		| User Prompt: ${prompt} 
-		Context of chat(use This If Present,else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistory : "Context not available"} 
-		Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
-	}
+	console.log(streamPrompt, "---------------------streamPrompt------------------------------------------------------------------------");
 
 	const stream = await llm.stream(streamPrompt);
 
@@ -605,8 +916,8 @@ async function HandleProductRecommendation(
 				if (signal.aborted) return;
 				if (parsedCategory.length === 0) {
 					console.error('No categories selected.');
-					socket.emit('noProducts', {
-						message: "No categories selected."
+					socket.emit('error', {
+						message: "No categories Selected For You By Matey"
 					})
 					return;
 				}
@@ -632,7 +943,7 @@ async function HandleProductRecommendation(
 			const redisProductData = await getRedisData(`PRODUCT-${parsedCategory}`);
 			let productDetails;
 			if (redisProductData.success) {
-				productDetails = redisProductData.data;
+				productDetails = JSON.parse(redisProductData.data);
 			} else {
 				await connectDB();
 				console.log("Fetching product from database", categoryIds);
@@ -648,7 +959,7 @@ async function HandleProductRecommendation(
 				}
 				productDetails = DbProductDetails;
 			}
-
+			console.log('Product details:', productDetails);
 			const refinedProductDetails = productDetails.map((product: any) => ({
 				_id: product._id,
 				productName: product.name,
@@ -658,11 +969,7 @@ async function HandleProductRecommendation(
 			console.log('Refined product details:', refinedProductDetails);
 			const jsonProductDetails = JSON.stringify(refinedProductDetails);
 			console.log('JSON product details:', jsonProductDetails);
-			// 			const productPrompt = `
-			// Suggest the most relevant products based on the user's prompt from the given product catalog. Ensure the products are highly relevant and useful | Max 4-5 suggestions | Product Catalog: {jsonProductDetails} | User Prompt: {prompt}
 
-			// Chat Context  {chatHistory} Return only an array of product IDs:
-			// `;
 			const productPrompt = `
 Based on the user's prompt, suggest the most relevant products from the provided product catalog. Ensure the products are highly relevant and useful, limiting each category to 4-5 suggestions. 
 
@@ -673,8 +980,6 @@ Provide the response in this format: this is just format use JSON in actual resp
 
 Ensure that:
 - Categories only exist if there is at least one product in them.
-- Group products efficiently if there are fewer than 4 products in a category.
-- Generate groups way that each group must have aleast 1 product else dont include that group in response.
 - no comments or additional text in the response, only the array of objects.
 - productId should be from Product Catalog Only No Random Value
 - never try to generate random productId, always use productId from Product Catalog Only
@@ -682,9 +987,6 @@ Only return the array of objects, without any additional text.
 
 Response: 
 `;
-
-
-
 			const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 
 			const productLLMChain = productTemplate
@@ -708,7 +1010,7 @@ Response:
 				if (signal.aborted) return;
 				if (parsedProduct.length === 0) {
 					console.error('No products selected.');
-					socket.emit('noProducts', {
+					socket.emit('error', {
 						message: "No products Selected For You By Matey"
 					})
 					return;
@@ -810,7 +1112,7 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
 			socket.emit('budgetSlider', parsedBudgetSlider);
 		} catch (error: any) {
 			console.error('Error during budget slider creation:', error.message);
-
+			socket.emit('error', 'Error occurred while creating budget slider.');
 		}
 		console.log('Budget slider:', budgetSlider);
 	}

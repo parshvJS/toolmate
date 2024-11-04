@@ -21,7 +21,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import CommunityCreationDialog from "./CommunityForm"
 import {
     Dialog,
     DialogContent,
@@ -35,7 +34,6 @@ import { Input } from "../ui/input"
 import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
 import { DialogDescription } from "@radix-ui/react-dialog"
-import MateyInput from "./MateyInput"
 import { Textarea } from "../ui/textarea"
 
 const navItem = [

@@ -74,9 +74,110 @@ export function ChatPage() {
     const [isError, setIsError] = useState(false);
     const [isMateyMemory, setIsMateyMemory] = useState(true);
 
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+    const lastScrollPositionRef = useRef(0);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     const { toast } = useToast();
+
+
+
+
+    const handleScroll = async () => {
+        if (!chatContainerRef.current || isLoadingMore || !hasMore) return;
+
+        const { scrollTop } = chatContainerRef.current;
+
+        // Check if we're near the top (within 100px)
+        if (scrollTop < 100) {
+            setIsLoadingMore(true);
+
+            // Save current scroll height
+            const scrollHeight = chatContainerRef.current.scrollHeight;
+
+            // Fetch more messages
+            const nextPage = pagination.page + 1;
+            const chatData = await fetchChatHistory(sessionId, userData?.id, {
+                page: nextPage,
+                limit: pagination.limit
+            });
+
+            if (chatData.success && chatData.data.length > 0) {
+                // Update pagination
+                setPagination(prev => ({ ...prev, page: nextPage }));
+
+                // Prepend new messages to conversation
+                setConversation(prev => [...chatData.data, ...prev]);
+
+                // Restore scroll position after new content is loaded
+                setTimeout(() => {
+                    if (chatContainerRef.current) {
+                        const newScrollHeight = chatContainerRef.current.scrollHeight;
+                        chatContainerRef.current.scrollTop = newScrollHeight - scrollHeight;
+                    }
+                }, 0);
+            } else {
+                setHasMore(false);
+            }
+
+            setIsLoadingMore(false);
+        }
+    };
+
+    // Add scroll event listener
+    useEffect(() => {
+        const chatContainer = chatContainerRef.current;
+        if (chatContainer) {
+            chatContainer.addEventListener('scroll', handleScroll);
+            return () => chatContainer.removeEventListener('scroll', handleScroll);
+        }
+    }, [isLoadingMore, hasMore, pagination]);
+
+    // Initial chat history fetch
+    useEffect(() => {
+        async function fetchHistory() {
+            const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
+            if (!isNew && isFetchAllowed) {
+                setIsLoadingHistory(true);
+                const chatData = await fetchChatHistory(sessionId, userData?.id, pagination);
+                const memoryData = await fetchCurrentMateyMemoryStatus(sessionId);
+
+                if (!memoryData.success) {
+                    toast({
+                        title: "Error",
+                        description: memoryData.message,
+                        variant: "destructive",
+                    });
+                    setIsError(true);
+                } else {
+                    setIsMateyMemory(memoryData.data.isMateyMemoryOn);
+                }
+
+                if (!chatData.success) {
+                    toast({
+                        title: "Error",
+                        description: chatData.message,
+                        variant: "destructive",
+                    });
+                    setIsError(true);
+                } else {
+                    setConversation(chatData.data);
+                    setHasMore(chatData.data.length === pagination.limit);
+                }
+                setIsLoadingHistory(false);
+            }
+        }
+
+        fetchHistory();
+    }, [sessionId]);
+
+
+    /////////////////////////////
+
+
+
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -166,6 +267,9 @@ export function ChatPage() {
         const handleNoProduct = (data: { message: string }) => {
             setNotificationText(data.message);
         };
+        const handleBunningProduct = (data: any) => {
+            console.log(data, "bunning product")
+        }
 
         socket?.on("message", handleMessage);
         socket?.on("chatName", handleChatName);
@@ -176,6 +280,7 @@ export function ChatPage() {
         socket?.on("productId", handleProductId);
         socket?.on("noProduct", handleNoProduct);
         socket?.on("emoMessage", handleEmoMessage)
+        socket?.on('bunningsProduct', handleBunningProduct)
         socket?.on("terminate", () => {
             setStateOfButton(-1);
             setCurrStreamingRes("");
@@ -219,6 +324,7 @@ export function ChatPage() {
                     });
                     setIsError(true);
                 } else {
+
                     setConversation(chatData.data);
                 }
                 setIsLoadingHistory(false);
@@ -280,7 +386,7 @@ export function ChatPage() {
 
     const handleUserPrompt = () => {
         if (mainInput === "") return;
-        if(stateOfButton === 0) return;
+        if (stateOfButton === 0) return;
         setStateOfButton(0);
         setConversation([...conversation, { role: "user", message: mainInput }]);
         const userMessage = {
@@ -345,7 +451,15 @@ export function ChatPage() {
 
     return (
         <div className={`flex flex-col h-screen py-4 pl-4 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
-            <div className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4 pr-4 relative w-full">
+            <div
+                ref={chatContainerRef}
+                className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4 pr-4 relative w-full"
+            >
+                {isLoadingMore && (
+                    <div className="flex justify-center py-4">
+                        <LoaderPinwheel className="animate-spin text-orange" />
+                    </div>
+                )}
                 {conversation.map((data, index) => (
                     <div key={index}>
                         {data.role === "ai" ? (
@@ -455,7 +569,5 @@ export function ChatPage() {
         </div>
     );
 }
-
-
 
 

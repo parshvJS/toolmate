@@ -17,10 +17,9 @@ export async function getChatConversationHistory(req: Request, res: Response) {
                 message: "Please Enter all the required fields [ sessionId, userId, pagination ]",
             });
         }
-        console.log(sessionId, userId, pagination,"sessionId, userId, pagination");
+
         const userChatHistory = await UserChat.findOne({ sessionId }).lean();
 
-        console.log(userChatHistory);
         if (!userChatHistory) {
             return res.status(404).json({
                 success: false,
@@ -37,66 +36,87 @@ export async function getChatConversationHistory(req: Request, res: Response) {
 
         const { page = 1, limit = 10 } = pagination;
 
-        // Fetch chat history
-        console.log("sessionId", sessionId);
+        // Calculate skip value for pagination
+        const skip = (page - 1) * limit;
+
+        // Get total count of messages
+        const totalMessages = await Chat.countDocuments({ sessionId });
+
+        // Fetch chat history with proper pagination
         const chatHistory = await Chat.find({ sessionId })
-            .sort({ createdAt: 1 })
-            .skip((page - 1) * limit)
+            // .sort({ createdAt: -1 }) // Sort by newest first
+            .skip(skip)
             .limit(limit)
-            .lean(); // Use lean to get plain JavaScript objects
+            .lean();
 
         // Use Set to collect unique product and community IDs
         const productIdSet = new Set<string>();
         const communityIdSet = new Set<string>();
 
-        // Collect product and community IDs in a single pass
+        // Collect product and community IDs
         chatHistory.forEach(chat => {
-            chat.productId.forEach(id => productIdSet.add(String(id)));
-            chat.communityId.forEach(id => communityIdSet.add(String(id)));
+            if (chat.productId) {
+                chat.productId.forEach(id => productIdSet.add(String(id)));
+            }
+            if (chat.communityId) {
+                chat.communityId.forEach(id => communityIdSet.add(String(id)));
+            }
         });
 
         // Fetch product and community details concurrently
-        const productDetailsPromise = productIdSet.size > 0 ? getProductDetails(Array.from(productIdSet)) : Promise.resolve({ success: true, data: [] });
-        const communityDetailsPromise = communityIdSet.size > 0 ? getCommunityDetails(Array.from(communityIdSet)) : Promise.resolve({ success: true, data: [] });
-
-        const [productDetails, communityDetails] = await Promise.all([productDetailsPromise, communityDetailsPromise]);
-
+        // const [productDetails, communityDetails] = await Promise.all([
+        //     productIdSet.size > 0 ? getProductDetails(Array.from(productIdSet)) : Promise.resolve({ success: true, data: [] }),
+        //     communityIdSet.size > 0 ? getCommunityDetails(Array.from(communityIdSet)) : Promise.resolve({ success: true, data: [] })
+        // ]);
+        // console.log("Product Details:", productDetails, "Community Details:", communityDetails);
         // Transform chat history with product and community details
         const newChatHistory = chatHistory.map(chat => ({
             id: chat._id,
             message: chat.message,
             role: chat.role,
+            createdAt: chat.createdAt,
             isProductSuggested: chat.isProductSuggested,
             isCommunitySuggested: chat.isCommunitySuggested,
-            communitySuggested: communityDetails?.success ? communityDetails.data?.find((community: any) => community._id === String(chat.communityId)) : null,
-            productSuggested: productDetails?.success ? productDetails.data?.find((product: any) => product._id === String(chat.productId)) : null,
+            communitySuggested: chat.communityId, 
+            productSuggested: chat.productId 
         }));
-        console.log(newChatHistory);
+
         res.status(200).json({
             success: true,
             data: newChatHistory,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalMessages / limit),
+                totalMessages,
+                hasMore: totalMessages > skip + limit
+            }
         });
+
     } catch (error: any) {
-        console.log(error.message); // Log the error for debugging
+        console.error("Chat History Error:", error);
         res.status(500).json({
             success: false,
             message: "Internal Server Error",
+            error: error.message
         });
     }
 }
 
 async function getProductDetails(productId: string[]): Promise<{ success: boolean; data?: any[]; message?: string }> {
     try {
-        const productDetails = await Product.find({ _id: { $in: productId } }).lean(); // Use lean to get plain JavaScript objects
+        const productDetails = await Product.find({ _id: { $in: productId } }).lean();
+        console.log("Product Details:", productDetails);
         return { success: true, data: productDetails };
     } catch (error: any) {
+        console.error("Product Details Error:", error);
         return { success: false, message: error.message };
     }
 }
 
 async function getCommunityDetails(communityId: string[]): Promise<{ success: boolean; data?: any[]; message?: string }> {
     try {
-        const communityDetails = await Community.find({ _id: { $in: communityId } }).lean(); // Use lean to get plain JavaScript objects
+        const communityDetails = await Community.find({ _id: { $in: communityId } }).lean();
+        console.log("Community Details:", communityDetails);
         return {
             success: true,
             data: communityDetails.map(community => ({
@@ -110,6 +130,7 @@ async function getCommunityDetails(communityId: string[]): Promise<{ success: bo
             })),
         };
     } catch (error: any) {
+        console.error("Community Details Error:", error);
         return { success: false, message: error.message };
     }
 }

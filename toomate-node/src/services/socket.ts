@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getUserIntend } from "./langchain/langchain.js";
+import { abstractChathistory, executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getUserIntend, inititalSummurizeChat } from "./langchain/langchain.js";
 import { produceMessage, produceNewMessage } from "./kafka.js";
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -41,116 +41,169 @@ export async function handleSocketSerivce(socket: Socket) {
     // this service gives name for the chat 
     socket.on('getChatName', async (data: iChatname) => handleGetChatName(socket, data))
 
-    // this service will stream some response
     socket.on('userMessage', async (data: INewUserMessage) => {
-        const controller = new AbortController();
-        const { signal } = controller;
-        socket.on('stop', () => {
-            console.log('stop signal received-------------------------------------------------------------------');
-            controller.abort();
-        });
-        console.log("storange module----------------------------------", data);
-        await produceNewMessage(data.message || "", data.sessionId, false, false, "user", [], []);
-        console.log('message produced,redis start');
-        await appendArrayItemInRedis(`USER-CHAT-${data.sessionId}`, {
-            message: data.message,
-            type: 'user',
-        })
-        const redisUserData = await getRedisData(`USER-PAYMENT-${data.userId}`);
-        var currentPlan = 0;
-        if (redisUserData.success) {
-            console.log(data.userId, 'user payment details found in redis');
-            const plan = JSON.parse(redisUserData.data).planAccess;
-            // plan indicated by their number 0 - free , 1 - essential , 2 - pro
-            currentPlan = plan[1] == true ? 1 : plan[2] == true ? 2 : 1;
-        }
-        else {
-            await connectDB();
-            console.log(data.userId, 'user payment details not found in redis');
-            const user = await User.findOne({ clerkUserId: data.userId });
-            if (!user) {
-                console.log('User not found');
-                socket.emit('error', {
-                    message: "User not found",
-                    success: false
-                })
-                return;
-            }
-            const userPlan = await UserPayment.findOne({
-                userId: user._id
+        try {
+            // Initialize controller for stream handling
+            const controller = new AbortController();
+            const { signal } = controller;
+
+            // Store initial message
+            await produceNewMessage(data.message, data.sessionId, false, false, "user", [], []);
+
+            // Setup stop handler early
+            socket.once('stop', () => {
+                console.log('Stop signal received');
+                controller.abort();
             });
-            if (!userPlan) {
-                console.log('User payment details not found');
-                socket.emit('error', {
-                    message: "User not found",
-                    success: false
-                })
-                return;
-            }
-            const plan = userPlan.planAccess;
-            // plan indicated by their number 0 - free , 1 - essential , 2 - pro
-            currentPlan = plan[1] == true ? 1 : plan[2] == true ? 2 : 0;
-            await setRedisData(`USER-PAYMENT-${data.userId}`, JSON.stringify(userPlan), 3600);
-        }
-        // no project memory
-        const redisChatData = await getRedisData(`USER-CHAT-${data.sessionId}`);
-        var chatHistory;
-        if (redisChatData.success) {
-            chatHistory = redisChatData.data;
-        } else {
-            await connectDB();
-            const DbChatHistory = await Chat.find({ sessionId: data.sessionId });
-            console.log(DbChatHistory, 'DbChatHistory');
-            const NLessNum = DbChatHistory.length > 30 ? DbChatHistory.length - 30 : 0;
-            chatHistory = DbChatHistory.slice(NLessNum, DbChatHistory.length);
-            await setRedisData(`USER-CHAT-${data.sessionId}`, chatHistory, 3600);
-        }
-        switch (currentPlan) {
-            case 1: {
-                console.log("Processing...")
-                const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
-                socket.emit('intendList', intendList);
-                console.log('intendList done', intendList);
-                const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, false, 0, socket);
-                if (messageSteam) {
-                    await produceNewMessage(messageSteam?.message || "", data.sessionId, messageSteam.isProductSuggested, messageSteam.isCommunitySuggested, "ai", messageSteam.communityId, messageSteam.productId);
-                    console.log('messageSteam done--------------------------', messageSteam);
-                    await appendArrayItemInRedis(`USER-CHAT-${data.sessionId}`, messageSteam);
-                    console.log('messageSteam done', messageSteam);
-                }
-                // budget slider
-                socket.emit('statusOver', {})
 
-                // handle all the intend    
-                break;
-            }
-            case 2: {
-                const intendList = await getUserIntend(data.message, chatHistory, currentPlan);
-                socket.emit('intendList', intendList);
-                if (data.budgetSliderValue) {
-                    const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, true, data.budgetSliderValue, socket);
-                }
-                else {
-                    const messageSteam = await executeIntend(data.message, chatHistory, data.sessionId, intendList, data.userId, currentPlan, signal, false, 0, socket);
+            // Get chat history from cache or DB
+            const cacheKey = `USER-CHAT-${data.sessionId}`;
+            const chatHistory = await getRedisData(cacheKey).then(async (redisChatData) => {
+                if (redisChatData.success) {
+                    return redisChatData.data;
                 }
 
-                // budget slider
-                const isBudgetSliderPresent = data.isBudgetSliderPresent;
-                if (!isBudgetSliderPresent) {
-                    if (chatHistory.length > 3) {
-                        const isBudgetSliderNeeded = await FindNeedOfBudgetSlider(chatHistory, socket);
+                await connectDB();
+                const dbChatHistory = await Chat.find({ sessionId: data.sessionId })
+                    .sort({ _id: -1 })
+                    .limit(30);
+
+                if (dbChatHistory.length > 0) {
+                    const chatHistoryStore = dbChatHistory.map(chat => ({
+                        role: chat.role,
+                        message: chat.message,
+                    }));
+
+                    const contextedChat = await inititalSummurizeChat(JSON.stringify(chatHistoryStore));
+                    await setRedisData(cacheKey, JSON.stringify(contextedChat), 3600);
+                    return contextedChat;
+                }
+
+                return [];
+            });
+
+            // Process new chat context
+            const newChatContext = await abstractChathistory(chatHistory, {
+                message: data.message,
+                role: 'user',
+            });
+            await appendArrayItemInRedis(cacheKey, newChatContext);
+
+            // Get user plan from cache or DB
+            const userPlanCacheKey = `USER-PAYMENT-${data.userId}`;
+            const currentPlan = await getRedisData(userPlanCacheKey).then(async (redisUserData) => {
+                if (redisUserData.success) {
+                    console.log(data.userId, 'User payment details found in Redis');
+                    const plan = JSON.parse(redisUserData.data).planAccess;
+                    return plan[2] ? 2 : plan[1] ? 1 : 0;
+                }
+
+                await connectDB();
+                console.log(data.userId, 'User payment details not found in Redis');
+
+                const user = await User.findOne({ clerkUserId: data.userId });
+                if (!user) {
+                    throw new Error('User not found');
+                }
+
+                const userPlan = await UserPayment.findOne({ userId: user._id });
+                if (!userPlan) {
+                    throw new Error('User payment details not found');
+                }
+
+                await setRedisData(userPlanCacheKey, JSON.stringify(userPlan), 3600);
+                return userPlan.planAccess[2] ? 2 : userPlan.planAccess[1] ? 1 : 0;
+            });
+
+            // Process based on plan type
+            switch (currentPlan) {
+                case 1: {
+                    console.log("Processing basic plan...");
+                    const intendList = await getUserIntend(data.message, newChatContext, currentPlan);
+                    socket.emit('intendList', intendList);
+
+                    const messageStream = await executeIntend(
+                        data.message,
+                        newChatContext,
+                        data.sessionId,
+                        intendList,
+                        data.userId,
+                        currentPlan,
+                        signal,
+                        false,
+                        0,
+                        socket
+                    );
+
+                    if (messageStream) {
+                        await Promise.all([
+                            produceNewMessage(
+                                messageStream.message || "",
+                                data.sessionId,
+                                messageStream.isProductSuggested,
+                                messageStream.isCommunitySuggested,
+                                "ai",
+                                messageStream.communityId,
+                                messageStream.productId
+                            ),
+                            produceNewMessage(
+                                messageStream.emo,
+                                data.sessionId,
+                                false,
+                                false,
+                                "ai",
+                                [],
+                                []
+                            )
+                        ]);
+
+                        const newAiAddedChatHistory = await abstractChathistory(chatHistory, {
+                            message: messageStream.message,
+                            role: 'ai',
+                        });
+                        await appendArrayItemInRedis(cacheKey, newAiAddedChatHistory);
                     }
+                    break;
                 }
-                socket.emit('statusOver', {})
-                break;
 
-            }
-            default: {
+                case 2: {
+                    const intendListPro = await getUserIntend(data.message, newChatContext, currentPlan);
+                    socket.emit('intendList', intendListPro);
 
+                    const messageStreamPro = await executeIntend(
+                        data.message,
+                        newChatContext,
+                        data.sessionId,
+                        intendListPro,
+                        data.userId,
+                        currentPlan,
+                        signal,
+                        Boolean(data.budgetSliderValue),
+                        data.budgetSliderValue || 0,
+                        socket
+                    );
+
+                    if (!data.isBudgetSliderPresent && chatHistory.length > 3) {
+                        await FindNeedOfBudgetSlider(newChatContext, socket);
+                    }
+                    break;
+                }
+
+                default:
+                    console.log('No valid plan found');
+                    socket.emit('error', { message: 'Invalid plan type', success: false });
             }
+
+        } catch (error: any) {
+            console.error('Error processing message:', error);
+            socket.emit('error', {
+                message: error.message || 'An error occurred while processing your message',
+                success: false
+            });
+        } finally {
+            socket.emit('statusOver', {});
         }
-        // await produceNewMessage(data.message, data.sessionId, false, false, 'user', [], []);
-    })
+    });
 
 
     socket.on('disconnect', () => {

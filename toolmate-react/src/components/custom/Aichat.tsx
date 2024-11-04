@@ -4,14 +4,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, useRef, useContext } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { RightSidebarContext } from "@/context/rightSidebarContext";
-import { Component, Grid2x2Plus, ListCollapse } from "lucide-react";
+import { Component, Grid2x2Plus, ListCollapse, Loader, Package } from "lucide-react";
 
 export default function Aichat(
-  { workerQueue, message, productData }:
+  { workerQueue, message, productData, bunningsData, aiData, isProductLoading, isBunningLoading, isAiProductLoading }:
     {
       workerQueue: string[] | undefined;
       message: string;
       productData: any;
+      bunningsData: any
+      aiData: any,
+      isProductLoading: boolean,
+      isBunningLoading: boolean,
+      isAiProductLoading: boolean
     }
 ) {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -81,71 +86,25 @@ export default function Aichat(
               {message}
             </Markdown>
           )}
-          <div className="flex gap-0 flex-col">
 
-            <AnimatePresence>
-              {productData && (
-                <motion.div
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 50 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="flex flex-col gap-2 bg-slate-100 my-2 rounded-lg w-fit p-4"
-                >
-                  {/* label */}
-                  <div className="flex items-start gap-2">
-                    <img src="/assets/icons/Tick.svg" alt="tick" className="w-6 h-6" />
-                    <p className="font-semibold text-lg">Material And Product Suggestion</p>
-                  </div>
-                  <div className="gap-2 w-full flex">
-                    <AnimatePresence>
-                      {productData.map((product, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 50 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 50 }}
-                          transition={{ duration: 0.3, delay: index * 0.2, ease: "easeOut" }}
-                          className="flex h-full flex-col items-start justify-between gap-2 rounded-lg bg-slate-200 hover:bg-slate-300 transition-all duration-200 cursor-pointer p-3 md:w-40"
-                        >
-                          <div className="text-left">
-                            <p className="font-semibold items-start text-left">{product.name}</p>
-                            <p className="font-medium">{product.data.length == 1 ? `${product.data.length} Tool` : `${product.data.length} Tools`}</p>
-                          </div>
-                          <Component className="mt-6 h-5 w-5" />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                  <div className="cursor-pointer p-2 rounded-md bg-slate-100 w-fit flex justify-between items-center gap-3 hover:bg-slate-200 transition-all duration-200">
-                    <Grid2x2Plus className="w-5 h-5" />
-                    <p>Show All Suggestions In Toolbar</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="flex gap-2">
-              <AnimatePresence>
-                {showWorkerQueue && workerQueue?.map((item, index) => (
-                  item && (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 50 }}
-                      transition={{ duration: 0.3, delay: index * 0.2, ease: "easeOut" }}
-                      className="px-2 py-1 rounded-md flex justify-start bg-slate-100 w-fit"
-                    >
-                      <div className="text-slate-500">
-                        {item}
-                      </div>
-                    </motion.div>
-                  )
-                ))}
-              </AnimatePresence>
+          {/* events */}
+          {
+            (isProductLoading || isBunningLoading || isAiProductLoading) &&
+            <div className="bg-slate-200 border border-slate-400 w-fit h-16 mt-2 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 group">
+              <div className="flex items-center justify-center bg-softYellow border-r-[1px] border-slate-400 w-16 z-10 h-16 flex-1 group-hover:bg-lightYellow">
+                <Loader className="animate-spin " />
+              </div>
+              <div className="p-4 flex flex-col text-left">
+                <p className="font-semibold text-slate-700">Matey Is Preparing The Products For You</p>
+                <p className="font-semibold text-slate-500">Loading Product ...</p>
+              </div>
             </div>
-          </div>
+          }
+
+          {
+
+          }
+
         </div>
       </div>
       {/* <div className="w-[100px]">
