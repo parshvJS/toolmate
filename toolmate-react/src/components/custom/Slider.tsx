@@ -7,7 +7,6 @@ import { Tag } from "lucide-react";
 import { RightSidebarContext } from "@/context/rightSidebarContext";
 import MateyExpression from "./MateyExpression";
 
-
 export default function CustomSlider() {
     const {
         sliderValue,
@@ -22,22 +21,25 @@ export default function CustomSlider() {
     const [max, setMax] = useState(0);
 
     useEffect(() => {
+        console.log("sliderValue", sliderValue, "value", value, "Min", min, "Max", max);
+    }, []);
+
+    useEffect(() => {
         setMin(breakpoints.reduce((acc, curr) => {
             if (acc > curr.value) {
                 acc = curr.value;
             }
             return acc; // Ensure acc is returned here
-        }
-            , Infinity));
+        }, Infinity));
 
         setMax(breakpoints.reduce((acc, curr) => {
             if (acc < curr.value) {
                 acc = curr.value;
             }
             return acc; // Ensure acc is returned here
-        }
-            , 0));
-    }, [breakpoints])
+        }, 0));
+    }, [breakpoints]);
+
     const getCurrentTooltip = () => {
         const currentValue = value[0];
         for (let i = breakpoints.length - 1; i >= 0; i--) {
@@ -90,9 +92,11 @@ export default function CustomSlider() {
                     <SliderPrimitive.Root
                         className="relative mr-1 flex items-center select-none touch-none w-full h-5"
                         value={value}
-                        onValueChange={(newValue) =>
-                            setValue([Math.max(min, Math.min(newValue[0], max))])
-                        } // Enforce min and max
+                        onValueChange={(newValue) => {
+                            const boundedValue = [Math.max(min, Math.min(newValue[0], max))];
+                            setValue(boundedValue);
+                            setSliderValue(boundedValue[0]); // Update the context value
+                        }} // Enforce min and max
                         min={min}
                         max={max}
                         onMouseEnter={() => setShowTooltip(true)}
@@ -138,3 +142,5 @@ export default function CustomSlider() {
         </div>
     );
 }
+
+

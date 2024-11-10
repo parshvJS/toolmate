@@ -97,3 +97,16 @@ export function wrapWordsInQuotes(input:any) {
     });
   }
   
+
+export  function parseJsonString(input:string) {
+    // Remove any leading/trailing backticks and ```json code block markers
+    const cleanedInput = input.replace(/```json|```/g, '').trim();
+
+    try {
+        // Parse the cleaned JSON string
+        return JSON.parse(cleanedInput);
+    } catch (error) {
+        console.error("Failed to parse JSON:", error);
+        return null;
+    }
+}

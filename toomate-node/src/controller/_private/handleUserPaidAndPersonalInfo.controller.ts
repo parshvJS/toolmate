@@ -23,7 +23,7 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
             return res.status(200).json({
                 success: true,
                 status: 200,
-                data: redisData.data
+                data: JSON.parse(redisData.data)
             });
         }
 

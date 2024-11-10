@@ -21,8 +21,9 @@ const PORT = 5000;
 
 // Middleware
 app.use(cors({
-	origin: ['http://localhost:5173','http://localhost:5174', /\.ngrok\.io$/], // Your frontend URL and ngrok domains
-	methods: ['GET', 'POST','PUT','DELETE'],
+	origin: '*',
+	methods: ['GET', 'POST', 'PUT', 'DELETE'],
+	// credentials: true, // Allow credentials
 }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));

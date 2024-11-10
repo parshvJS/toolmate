@@ -24,11 +24,11 @@ export function SocketLayout() {
             {/* <div className="grid grid-cols-[1fr_auto] h-screen"> */}
             {/* Main Content */}
             <div className="flex-grow relative w-full">
-                <div className="w-full flex">
-                    <div className="w-3/5 p-0">
+                <div className="w-full flex h-screen">
+                    <div className="md:w-3/5 p-0">
                         <Outlet />
                     </div>
-                    <div className={`w-1/3`}>
+                    <div className={`md:w-1/3 w-full md:block hidden`}>
                         <ToolSpread />
                     </div>
                 </div>

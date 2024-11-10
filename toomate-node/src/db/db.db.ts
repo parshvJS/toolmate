@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
-
+let retryCount = 15;
 const connectDB = async () => {
 	try {
-		if(mongoose.connection.readyState === 1) {
+		if (mongoose.connection.readyState === 1) {
 			console.log('Database already connected !');
 			return;
 		}
@@ -12,8 +12,15 @@ const connectDB = async () => {
 		);
 		console.log('Connected Database !');
 	} catch (error: any) {
-		console.log(error.message);
-		throw error;
+		if (retryCount > 0) {
+			console.log('Retrying to connect database !');
+			setTimeout(() => {
+				connectDB();
+			}, 5000);
+			retryCount--;
+			return;
+		}
+
 	}
 };
 

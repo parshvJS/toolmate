@@ -11,7 +11,7 @@ import {
 	RunnablePassthrough,
 	RunnableSequence,
 } from '@langchain/core/runnables';
-import { getPremiumUserChatMessage, wrapWordsInQuotes } from '../../utils/utilsFunction.js';
+import { getPremiumUserChatMessage, parseJsonString, wrapWordsInQuotes } from '../../utils/utilsFunction.js';
 import { tool } from "@langchain/core/tools";
 import { tools } from './tools.js';
 import { getRedisData, setRedisData } from '../redis.js';
@@ -22,13 +22,15 @@ import User from '../../models/user.model.js';
 import UserMemory from '../../models/userMemory.model.js';
 import { encode } from 'gpt-tokenizer';
 import axios from 'axios';
+import BunningsProduct from '../../models/BunningsProduct.model.js';
+import { IBunningsChat } from '../../types/types.js';
 
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
 const llm = new ChatOpenAI({
 	apiKey: openAIApiKey,
 	streaming: true, // Enable streaming if supported
-	model: "gpt-3.5-turbo",
+	model: "gpt-3.5-turbo-0125",
 });
 
 // service for free preview user
@@ -192,13 +194,19 @@ async function streamResponse(sessionId: string, prompt: string, chatHistory: an
 	}
 	socket.emit('terminate', { done: true });
 
-	await produceNewMessage(
+	produceNewMessage(
 		gatheredResponse,
 		sessionId,
 		false,
 		false,
-		'ai'
-	);
+		false,
+		[],
+		[],
+		[],
+		false,
+		[],
+		"ai",
+	)
 }
 
 
@@ -295,7 +303,8 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 		3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
 		4. Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
 		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. Highly add this  
-		
+		6. is you see need of budget slider and there is not specified need of products then dont include product recommendation
+
 		**Chat History**: {chatHistory}
 		**User Prompt**: {prompt}
 		
@@ -325,6 +334,8 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 		3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
 		4. Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
 		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. 
+		6. is you see need of budget slider and there is not specified need of products then dont include product recommendation
+
 		
 		**Chat History**: {chatHistory}
 		**User Prompt**: {prompt}
@@ -348,7 +359,7 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
 	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
 	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
-	
+	5. include 4. follow up question when there is some context of chat and more context can improve the user experience
 	**Chat History**: {chatHistory}
 	**User Prompt**: {prompt}
 	
@@ -385,72 +396,93 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 }
 
 // intend list and user Id
-export async function executeIntend(prompt: string, chatHistory: string, sessionId: string, intend: number[], userId: string, plan: number, signal: AbortSignal, isBudgetSliderValue: boolean, budgetSliderValue: number, socket: Socket) {
+export async function executeIntend(
+	prompt: string,
+	chatHistory: string,
+	sessionId: string,
+	intend: number[],
+	userId: string,
+	plan: number,
+	signal: AbortSignal,
+	isBudgetSliderValue: boolean,
+	budgetSliderValue: number,
+	socket: Socket
+) {
 	var newChat = {
 		sessionId: userId,
 		role: 'ai',
 		message: '',
-		isProductSuggested: false,
 		isCommunitySuggested: false,
 		communityId: [],
-		productId: [],
+		isProductSuggested: false,
+		isBunningsProduct: false,
+		isMateyProduct: false,
+		mateyProduct: [] as any,
+		productSuggestionList: [] as any,
+		bunningsProductList: [] as string[],
 		emo: '',
 	};
 
-	console.clear()
-	console.log('Intend:', intend,"chat history",chatHistory); // Debugging log
+	console.log('Intend:', intend, "chat history", chatHistory); // Debugging log
+
 	// TODO: Remove this below condition and code all features for pro plan currently plan 2
 	if (plan == 1 || plan == 2) {
 		for (let i = 0; i < intend.length; i++) {
 			switch (intend[i]) {
-				// general response
+				// General response
 				case 1: {
 					socket.emit('status', {
 						message: "Matey Is Typing..."
 					});
 					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, intend.includes(3), intend.includes(2), socket);
-
 					newChat['message'] = generalResponse;
 					break;
 				}
-				// community recommendation
+				// Community recommendation
 				case 2: {
 					socket.emit('status', {
 						message: "Matey Is Finding Community For You..."
-					})
+					});
 					newChat['isCommunitySuggested'] = true;
 					const communityId = await HandleCommunityRecommendation(prompt, chatHistory, signal, socket);
 					break;
 				}
-				// product recommendation
+				// Product recommendation
 				case 3: {
 					socket.emit('status', {
 						message: "Matey Is Finding Product For You..."
-					})
+					});
 
-					const productIntent = await findAndSuggestProduct(prompt, chatHistory, socket);
-
-					if (!productIntent.success) {
-						socket.emit('error', 'Error occurred while fetching product intent.');
-						return newChat;
+					// const productIntent = await findAndSuggestProduct(prompt, chatHistory, socket);
+					const productIntent = {
+						success: true,
+						data: [1, 2, 3]
 					}
 
+					// if (!productIntent.success) {
+					// 	socket.emit('error', 'Error occurred while fetching product intent.');
+					// 	return newChat;
+					// }
+
 					// Emit the product list first
-					// 1. Bunnings
-					// 2. Adsense
-					// 3. AI Generated
-					socket.emit('productList', productIntent.data);
+					// socket.emit('productList', productIntent.data);
+					socket.emit('productList', [1, 2, 3]);
 
 					// Map over product intents and create promises for each
-					console.clear();
-					const productPromises = productIntent.data.map((intent: number | string) => {
+					let bunningsProductList: IBunningsChat[] | undefined = undefined;
+					let adsenseProductList: any[] | undefined = undefined;
+					let aiProductList: any[] | undefined = undefined;
+
+					// const productPromises = productIntent.data.map(async (intent: number | string) => {
+					const productPromises = [1, 2, 3].map(async (intent: number | string) => {
 						console.log('Processing intent:', intent); // Debugging log
 						switch (intent) {
 							case 1:
-								return handleBunningsProduct(prompt, chatHistory, sessionId, isBudgetSliderValue, 0, budgetSliderValue, socket)
+								return handleBunningsProduct(prompt, chatHistory, sessionId, isBudgetSliderValue, budgetSliderValue, 0, socket)
 									.then((bunningsProducts) => {
+										bunningsProductList = bunningsProducts;
 										console.log('Bunnings products:', bunningsProducts); // Debugging log
-										socket.emit('bunningsProducts', bunningsProducts);
+										// socket.emit('bunningsProducts', bunningsProducts);
 										return bunningsProducts;
 									})
 									.catch((error) => {
@@ -462,6 +494,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 							case 2:
 								return HandleProductRecommendation(prompt, chatHistory, signal, isBudgetSliderValue, budgetSliderValue, socket)
 									.then((adsenseProducts) => {
+										adsenseProductList = adsenseProducts;
 										console.log('Adsense products:', adsenseProducts); // Debugging log
 										socket.emit('productId', adsenseProducts);
 										return adsenseProducts;
@@ -475,6 +508,7 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 							case 3:
 								return handleMateyProduct(prompt, chatHistory, sessionId, socket)
 									.then((aiProducts) => {
+										aiProductList = aiProducts;
 										console.log('AI products:', aiProducts); // Debugging log
 										socket.emit('aiProducts', aiProducts);
 										return aiProducts;
@@ -495,30 +529,68 @@ export async function executeIntend(prompt: string, chatHistory: string, session
 					// Wait for all product promises to resolve
 					await Promise.all(productPromises);
 
-					console.clear();
-					console.log('Product Promises:', productPromises);
+					// Check if Bunnings product intent is included
+					if (bunningsProductList && Array.isArray(bunningsProductList)) {
+						if ((bunningsProductList as any[]).length > 0) {
+							const data = (bunningsProductList as any[]).flatMap((category) => {
+								const { categoryName, products } = category; // Destructure categoryName and products
+								return (products || []).map((product: any) => {
+									console.log('Product:', product); // Debugging log
+									return {
+										name: product.name,
+										price: product.price,
+										personalUsage: product.personalUsage,
+										rating: product.rating,
+										image: product.imageUrl,
+										link: product.link,
+										searchTerm: categoryName, // Assign categoryName to searchTerm
+									};
+								});
+							});
 
+							const bunningsProduct = await BunningsProduct.insertMany(data);
+							newChat['isBunningsProduct'] = true;
+							console.log("bunningsProduct           0  0 0 0 0 0 0 0 ", bunningsProduct);
+							newChat['bunningsProductList'] = bunningsProduct.map((product) => product._id.toString());
+						}
+					}
+					if (productIntent.data.includes(2)) {
+						newChat['isProductSuggested'] = true;
+						newChat['productSuggestionList'] = adsenseProductList;
+					}
+					console.log('Intent 2', adsenseProductList, productIntent.data.includes(2));
+
+					console.log('Intent 3:', productIntent.data, productIntent.data.includes(3), aiProductList);
+					if (productIntent.data.includes(3)) {
+						newChat['isMateyProduct'] = true;
+						newChat['mateyProduct'] = aiProductList;
+					}
+
+					console.log('new chat with products:', newChat);
 					break;
 				}
-				// follow up question for more understanding
+				// Follow-up question for more understanding
 				case 4: {
-
+					const followupQuestion = await followUpQuestion(prompt, chatHistory, socket);
+					break;
 				}
 				// Guidance of project
 				case 5: {
-
+					// Implementation goes here
+					break;
 				}
-				// Emotional Playfullness with Matey
+				// Emotional Playfulness with Matey
 				case 6: {
-					const emo = await emotionalChatMessage(prompt, socket)
+					const emo = await emotionalChatMessage(prompt, socket);
 					newChat['emo'] = emo;
+					break;
 				}
 
 				default: { }
 			}
 		}
-		return newChat;
 
+		return newChat;
 	}
 }
 
@@ -534,12 +606,17 @@ async function findAndSuggestProduct(prompt: string, chatHistory: string, socket
 		- Select if the user is looking for common DIY tools and materials.
 	2. Adsense Vendor:
 		- Choose if the user shows interest in ads or external vendors.
-		- Select if the user is looking for niche or specialized products.
+		- select if user is looking for specific niche product to upsell the adsense product
+		- choose this frequently to promote adsense product
+
 	3. AI Generated Product:
 		- Choose if AI-generated products fit the user's needs based on the context.
 		- Select if the user is open to innovative or unique product suggestions.
 
+
+
 	Output:
+	- keep in mind to create randomize and meaning full product catagorization to try the user behaviour ,dont stick on criteria 100% try creativ and random choose
 	- Return a JSON array of selected provider indices.
 	- Example: [1, 3], [2, 3], [1, 2, 3]
 	- Selection should be based on context.
@@ -550,7 +627,7 @@ async function findAndSuggestProduct(prompt: string, chatHistory: string, socket
 	const productIntentLLMChain = productIntentTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProductIntent = RunnableSequence.from([productIntentLLMChain, new RunnablePassthrough()]);
 	const productIntent = await runnableChainOfProductIntent.invoke({ prompt, chatHistory });
-	console.log('productIntent:', productIntent);
+	console.log('productIntent', productIntent);
 	try {
 
 		const intents = JSON.parse(productIntent);
@@ -576,8 +653,38 @@ async function findAndSuggestProduct(prompt: string, chatHistory: string, socket
 	}
 }
 
+async function followUpQuestion(prompt: string, chatHistory: string, socket: Socket) {
+	const followUpQuestionPrompt = `Based on the user's prompt and chat history, generate a follow-up question to gain a better understanding of the user's needs. 
+
+	User Prompt: {prompt}
+	Chat Context: {chatHistory}
+
+	Keep in mind:
+	- The follow-up question should be relevant to the user's prompt and chat history.
+	- It should be open-ended to encourage the user to provide more information.
+	- The question should be clear and concise.
+	- Return the follow-up question in a sentence:`;
+	const followUpQuestionTemplate = PromptTemplate.fromTemplate(followUpQuestionPrompt);
+	const followUpQuestionLLMChain = followUpQuestionTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfFollowUpQuestion = RunnableSequence.from([followUpQuestionLLMChain, new RunnablePassthrough()]);
+	const stream = await runnableChainOfFollowUpQuestion.stream({ prompt, chatHistory });
+	socket.emit('status', {
+		message: "Matey Have Question..."
+	})
+	let gatheredResponse = '';
+	for await (const chunk of stream) {
+		gatheredResponse += chunk.content; // Assuming 'content' is the property holding the text
+		socket.emit('followUpQuestion', { text: chunk.content });
+	}
+	socket.emit('terminate', { done: true });
+	console.log('followUpQuestion', gatheredResponse);
+	return gatheredResponse;
+}
 
 async function handleMateyProduct(prompt: string, chatHistory: string, sessionId: string, socket: Socket) {
+	socket.emit('status', {
+		message: "Matey Is Preparing Product For You..."
+	})
 	const productPrompt = ` Based On User Prompt and Chat Context Create a use full and relavent product list :
 	
 	User Prompt: {prompt}
@@ -585,26 +692,27 @@ async function handleMateyProduct(prompt: string, chatHistory: string, sessionId
 
 	Output :
 	[
-		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string)),
-		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string))
+		object(categoryName: string, products: array of object(name: string, price: float description:string, personalUsage: string)),
+		object(categoryName: string, products: array of object(name: string, price: float description:string, personalUsage: string))
 	]
 
 	Keep in mind:
 	- The Product should be related to DIY and creative projects.
 	- Provide the response in this exact format (use JSON in actual response):
 	- product catagorization should be meaning full
-	- You will be provided with name, price, imageUrl, link, and rating for each product
+	- You will have to generate fields which are : name,descrition,estimated price,personalUsage for each product
 	- Based on context and prompt, create a personalUsage field for each product that includes tips on how, why, or where to use it in a simple sentence
 	- Lenght Bounds : 1-4 Catagory Can Have 1-5 Products Maxmimum
-	
+	- create this in one linear dont add any extra text or comments
 	Return only the array of objects without any extra text or comments , start directly from creating array of objects`;
 
 	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
 	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
-	console.log('products:', products);
-	return products;
+	console.log('products from matey Is Here 890:', products);
+	socket.emit('mateyProduct', JSON.parse(products));
+	return JSON.parse(products);
 }
 
 
@@ -614,7 +722,9 @@ export async function abstractChathistory(
 	newMessage:
 		{ role: string, message: string }
 ) {
-
+	;
+	console.log('Chat History:', chatHistory);
+	console.log('New Message:', newMessage);
 	const abstractChathistoryPrompt = `Given the chat history, abstract the main points and summarize the conversation in a few sentences.
 
 	- you will be given previous chat History and new message 
@@ -655,6 +765,7 @@ export async function inititalSummurizeChat(chatHistory: string) {
 
 // get products from bunnigns
 async function handleBunningsProduct(prompt: string, chatHistory: string, sessionId: string, isBudgetAvailable: boolean, maxBudget: number, minBudget: number, socket: Socket) {
+	console.log("inside handleBunningsProduct function", prompt, "busget slider bool", isBudgetAvailable, "max value", maxBudget, minBudget);
 	socket.emit('status', {
 		message: "Matey Is Prepareing Product From Bunnings For You..."
 	})
@@ -669,8 +780,8 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 		- The products should be easily available online.
 		- The products should be suitable for a wide range of users, from beginners to experts.
 		- Data gram format should be valid and parsable to JSON.
-		- Data gram Example : ['product1','product2','product3','product4','product5']
-		- length of array should be 0-5
+		- Data gram Example : ["product1","product2","product3"]
+		- length of array should be 0-3
 		- Return only the product names in an array (response should contain only an array that can be parsed to JSON):
 		- No Comment or additional text
 		Array:
@@ -700,70 +811,101 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 			minBudgetValue: minBudget,
 			maxBudgetValue: maxBudget
 		})
-		if (!response.data.success || !(response.data.data.data.length === 0)) {
-			socket.emit('error', 'Error occurred while fetching product list.');
+		
+		if (!response.data.success) {
 			return [];
 		}
-		console.log('Response from bunnings:', response.data.data);
-		console.dir(response.data.data.data);
+		const res = response.data.data.map((product: any) => ({
+			categoryName: product.searchTerm,
+			products: [...product.products]
+		}));
+		console.log('Response from bunnings267:', JSON.stringify(res));
+		socket.emit('bunningsProduct', res);
+	// 	console.dir(response.data.data.data);
+	// 	const bunningsProductForAi = response.data.data.data.map((product: any) => (product.name));
+	// 	const personalizeProductPrompt = `Based on the Product List, user prompt, and chat context, generate a personalized product list for the user
 
-			const personalizeProductPrompt = `Based on the Product List, user prompt, and chat context, generate a personalized product list for the user
+	// User Prompt: {prompt}
+	// Chat Context: {chatHistory}
+	// Product List: {parsedProductList}
 
-	User Prompt: {prompt}
-	Chat Context: {chatHistory}
-	Product List: {parsedProductList}
+	// Keep in mind:
+	// - Provide the response in this exact format (use JSON in actual response):
+	// [
+	// 	object(categoryName: string, products: array of object(name: string)),
+	// 	object(categoryName: string, products: array of object(name: string))
+	// ]
 
-	Keep in mind:
-	- Provide the response in this exact format (use JSON in actual response):
-	[
-		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string)),
-		object(categoryName: string, products: array of object(name: string, price: float, imageUrl: string, link: string, rating: int, personalUsage: string))
-	]
+	// Guidelines:
+    // - Categorize products meaningfully, ensuring each category is relevant and non-empty.
+	// - For each product, create a personalUsage field with a short, practical tip on how, why, or where to use it, based on context.
+	// - Adjust product names for clarity if needed, but keep them recognizable.
+	// - Include only categories with at least one product.
+	// - Output a JSON array of objects, starting directly with [ ... ], containing no additional text or annotations.
+	// - generate all the given details as it is dont change any thing or try to add random dummy data
+	// - Each object should have:
+    //    I. categoryName
+    //    II . products: an array with complete product details (including personalUsage).
+	// - make it one linear for better parsing to JSON and avoid any extra text or comments
+	// - Return only the array of objects without any extra text or comments Start by creating an array directly : Array : `;
 
-	Guidelines:
-	- product catagorization should be meaning full
-	- You will be provided with name, price, imageUrl, link, and rating for each product
-	- Based on context and prompt, create a personalUsage field for each product that includes tips on how, why, or where to use it in a simple sentence
-	- If needed, make the name field clearer for user readability
-	- Include categories only if they contain at least one product
-	- No comments or additional text in the response, start directly with the array of objects
-	- Ensure each object has a categoryName and a products array with complete details
-	- Do not generate random product IDs; only use product IDs from the Product Catalog
+	// 	const personalizeProductTemplate = PromptTemplate.fromTemplate(personalizeProductPrompt);
 
-Return only the array of objects without any extra text or comments`;
+	// 	const personalizeProductLLMChain = personalizeProductTemplate.pipe(llm).pipe(new StringOutputParser());
 
-		const personalizeProductTemplate = PromptTemplate.fromTemplate(personalizeProductPrompt);
+	// 	const runnableChainOfPersonalizeProduct = RunnableSequence.from([personalizeProductLLMChain, new RunnablePassthrough()]);
 
-		const personalizeProductLLMChain = personalizeProductTemplate.pipe(llm).pipe(new StringOutputParser());
+	// 	const personalizedProductList = await runnableChainOfPersonalizeProduct.invoke({
+	// 		prompt,
+	// 		chatHistory,
+	// 		parsedProductList: bunningsProductForAi
+	// 	});
 
-		const runnableChainOfPersonalizeProduct = RunnableSequence.from([personalizeProductLLMChain, new RunnablePassthrough()]);
 
-		const personalizedProductList = await runnableChainOfPersonalizeProduct.invoke({
-			prompt,
-			chatHistory,
-			parsedProductList: JSON.stringify(response.data.data.data)
-		});
+		// try {
+		// 	const parsedPersonalizedProductList = parseJsonString(personalizedProductList);
+		// 	const productDetails = response.data.data.flatMap((category: any) => {
+		// 		return category.products.map((product: any) => ({
+		// 			name: product.name,
+		// 			price: product.price,
+		// 			personalUsage: product.personalUsage,
+		// 			rating: product.rating,
+		// 			image: product.imageUrl,
+		// 			link: product.link,
+		// 			searchTerm: category.categoryName,
+		// 		}));
+		// 	});
 
-		console.log('Personalized product list: ---------------------', personalizedProductList, JSON.parse(personalizedProductList));
-		try {
-			const parsedPersonalizedProductList = JSON.parse(personalizedProductList);
-			socket.emit('bunningsProduct', parsedPersonalizedProductList);
+		// 	const expandedProductList = parsedPersonalizedProductList.map((category: any) => {
+		// 		const { categoryName, products } = category;
+		// 		const expandedProducts = products.map((product: any) => {
+		// 			const originalProduct = productDetails.find((p: any) => p.name === product.name);
+		// 			return {
+		// 				...originalProduct,
+		// 				personalUsage: product.personalUsage,
+		// 			};
+		// 		});
+		// 		return {
+		// 			categoryName,
+		// 			products: expandedProducts,
+		// 		};
+		// 	});
+		// 	console.log('Expanded product list:', JSON.stringify(expandedProductList));
+		// 	console.log('Bunnings product list:', JSON.stringify(parsedPersonalizedProductList));
+		// 	// socket.emit('bunningsProduct', expandedProductList);
 
-			return parsedPersonalizedProductList;
-		} catch (error: any) {
-			console.error('Error parsing product list:', error.message);
-			socket.emit('error', 'Error occurred while fetching product list.');
-			return [];
-		}
-
+		// 	return expandedProductList``;
+		// } catch (error: any) {
+		// 	console.error('Error parsing product list:', error.message);
+		// 	socket.emit('error', 'Error occurred while fetching product list.');
+		// 	return [];
+		// }
+		return response.data.data.data
 	} catch (error: any) {
 		console.error('Error parsing product list:', error.message);
 		socket.emit('error', 'Error occurred while fetching product list.');
 		return [];
 	}
-
-
-
 }
 
 async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, isProductSuggestion: boolean, isCommunitySuggestin: boolean, socket: Socket) {
@@ -843,134 +985,150 @@ async function HandleProductRecommendation(
 		console.log('Operation aborted');
 		return;
 	}
-
+	console.log('Handling product recommendation', isBudgetAvailable, budget, prompt, chatHistory);
 	// Handle non-budget product suggestion
-	if (!isBudgetAvailable) {
-		let productCategory;
+	let productCategory;
 
-		try {
-			// Retrieve product category from Redis or database
-			const redisData = await getRedisData('PRODUCT-CATAGORY');
-			console.log('Redis data:', redisData);
+	try {
+		// Retrieve product category from Redis or database
+		const redisData = await getRedisData('PRODUCT-CATAGORY');
+		console.log('Redis data:', redisData);
+		if (signal.aborted) return;
+
+		if (redisData.success) {
+			productCategory = JSON.parse(redisData.data);
+		} else {
+			await connectDB();
+			// Fetch from MongoDB if Redis doesn't have the data
+			const DbProductCategory = await ProductCatagory.find();
+			console.log('DB Product Category:', DbProductCategory);
 			if (signal.aborted) return;
 
-			if (redisData.success) {
-				productCategory = JSON.parse(redisData.data);
-			} else {
-				await connectDB();
-				// Fetch from MongoDB if Redis doesn't have the data
-				const DbProductCategory = await ProductCatagory.find();
-				console.log('DB Product Category:', DbProductCategory);
-				if (signal.aborted) return;
-
-				if (DbProductCategory.length > 0) {
-					// Cache the result in Redis for an hour (3600 seconds)
-					await setRedisData('PRODUCT-CATAGORY', JSON.stringify(DbProductCategory.map((curr) => ({
-						_id: curr._id,
-						catagoryName: curr.catagoryName,
-						avaragePrice: curr.avaragePrice
-					}))), 3600);
-				}
-				productCategory = DbProductCategory;
+			if (DbProductCategory.length > 0) {
+				// Cache the result in Redis for an hour (3600 seconds)
+				await setRedisData('PRODUCT-CATAGORY', JSON.stringify(DbProductCategory.map((curr) => ({
+					_id: curr._id,
+					catagoryName: curr.catagoryName,
+					avaragePrice: curr.avaragePrice
+				}))), 3600);
 			}
+			productCategory = DbProductCategory;
+		}
 
-			if (!productCategory || productCategory.length === 0) {
-				console.error('No product categories found.');
+		if (!productCategory || productCategory.length === 0) {
+			console.error('No product categories found.');
+			return;
+		}
+
+		// Extract relevant fields for the prompt (e.g., just category names)
+		const productCategoryNames = productCategory.map((cat: any) => cat.catagoryName);
+
+		// Construct prompt for LLM
+		const categoryPrompt = `Based on the user's prompt, suggest the most relevant product categories in a JSON array format from the given catalog of categories (e.g., ["category1", "category2"]). Category Catalog: {productCategoryNames}. User Prompt: {prompt}. {chatHistory} Product Categories (No Text, generate array directly):`;
+
+		// Use Langchain's PromptTemplate
+		const categoryTemplate = PromptTemplate.fromTemplate(categoryPrompt);
+
+		const categoryLLMChain = categoryTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
+
+		console.log("Running category chain");
+
+		const runnableChainOfCategory = RunnableSequence.from([
+			categoryLLMChain,
+			new RunnablePassthrough(),
+		]);
+
+		// Invoke the chain
+		const categoryResult = await runnableChainOfCategory.invoke({
+			prompt, // User's prompt
+			productCategoryNames: JSON.stringify(productCategoryNames),
+			chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
+
+		});
+
+		console.log("Raw category result:", categoryResult);
+
+		// Safely parse the category response without removing essential characters
+		let parsedCategory;
+		try {
+			parsedCategory = JSON.parse(categoryResult);
+			if (signal.aborted) return;
+			if (parsedCategory.length === 0) {
+				console.error('No categories selected.');
+				socket.emit('error', {
+					message: "No categories Selected For You By Matey"
+				})
 				return;
 			}
+		} catch (parseError) {
+			console.error('Error parsing category result:', parseError);
+			return;
+		}
 
-			// Extract relevant fields for the prompt (e.g., just category names)
-			const productCategoryNames = productCategory.map((cat: any) => cat.catagoryName);
+		// Match category names with IDs
+		const categoryIds = productCategory.reduce((acc: any, curr: any) => {
+			if (parsedCategory.includes(curr.catagoryName)) {
+				acc.push(curr._id);
+			}
+			return acc;
+		}, []);
 
-			// Construct prompt for LLM
-			const categoryPrompt = `Based on the user's prompt, suggest the most relevant product categories in a JSON array format from the given catalog of categories (e.g., ["category1", "category2"]). Category Catalog: {productCategoryNames}. User Prompt: {prompt}. {chatHistory} Product Categories (No Text, generate array directly):`;
+		socket.emit('status', {
+			message: "Matey Is Picking Right Products For You..."
+		});
 
-			// Use Langchain's PromptTemplate
-			const categoryTemplate = PromptTemplate.fromTemplate(categoryPrompt);
+		// TODO: make redis cacheing more clear and efficient
+		// Query Redis for products or fetch from MongoDB
+		const redisProductData = await getRedisData(`PRODUCT-${parsedCategory}`);
+		let productDetails;
+		if (redisProductData.success) {
+			productDetails = JSON.parse(redisProductData.data);
+		} else {
+			await connectDB();
+			console.log("Fetching product from database", categoryIds);
 
-			const categoryLLMChain = categoryTemplate
-				.pipe(llm)
-				.pipe(new StringOutputParser());
+			// Convert categoryIds (strings) to ObjectIds using 'new mongoose.Types.ObjectId()'
+			const objectIdCategoryIds = categoryIds.map((id: string) => new mongoose.Types.ObjectId(id));
 
-			console.log("Running category chain");
+			// Query for products with any of the specified category IDs
+			let DbProductDetails;
+			if (isBudgetAvailable) {
 
-			const runnableChainOfCategory = RunnableSequence.from([
-				categoryLLMChain,
-				new RunnablePassthrough(),
-			]);
-
-			// Invoke the chain
-			const categoryResult = await runnableChainOfCategory.invoke({
-				prompt, // User's prompt
-				productCategoryNames: JSON.stringify(productCategoryNames),
-				chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
-
-			});
-
-			console.log("Raw category result:", categoryResult);
-
-			// Safely parse the category response without removing essential characters
-			let parsedCategory;
-			try {
-				parsedCategory = JSON.parse(categoryResult);
-				if (signal.aborted) return;
-				if (parsedCategory.length === 0) {
-					console.error('No categories selected.');
-					socket.emit('error', {
-						message: "No categories Selected For You By Matey"
-					})
-					return;
-				}
-			} catch (parseError) {
-				console.error('Error parsing category result:', parseError);
-				return;
+				DbProductDetails = await Product.find({
+					catagory: { $in: objectIdCategoryIds },
+					price: { $lte: budget }
+				}).lean();
+			}
+			else {
+				DbProductDetails = await Product.find({ catagory: { $in: objectIdCategoryIds } }).lean();
 			}
 
-			// Match category names with IDs
-			const categoryIds = productCategory.reduce((acc: any, curr: any) => {
-				if (parsedCategory.includes(curr.catagoryName)) {
-					acc.push(curr._id);
-				}
-				return acc;
-			}, []);
 
-			socket.emit('status', {
-				message: "Matey Is Picking Right Products For You..."
-			});
+			productDetails = DbProductDetails;
+		}
+		console.log('Product details:', productDetails);
+		if (signal.aborted) return;
+		if (!productDetails || productDetails.length === 0) {
+			console.error('No products found.');
+			socket.emit('error', "No products Selected For You By Matey")
+			return;
+		}
+		const refinedProductDetails = productDetails.map((product: any) => ({
+			_id: product._id,
+			productName: product.name,
+			description: product.description,
+		})).slice(0, 30);
+		if (refinedProductDetails.length === 0) {
+			socket.emit('error', "No products Selected For You By Matey")
+			return;
+		}
+		console.log('Refined product details:', refinedProductDetails);
+		const jsonProductDetails = JSON.stringify(refinedProductDetails);
+		console.log('JSON product details:', jsonProductDetails);
 
-			// TODO: make redis cacheing more clear and efficient
-			// Query Redis for products or fetch from MongoDB
-			const redisProductData = await getRedisData(`PRODUCT-${parsedCategory}`);
-			let productDetails;
-			if (redisProductData.success) {
-				productDetails = JSON.parse(redisProductData.data);
-			} else {
-				await connectDB();
-				console.log("Fetching product from database", categoryIds);
-
-				// Convert categoryIds (strings) to ObjectIds using 'new mongoose.Types.ObjectId()'
-				const objectIdCategoryIds = categoryIds.map((id: string) => new mongoose.Types.ObjectId(id));
-
-				// Query for products with any of the specified category IDs
-				const DbProductDetails = await Product.find({ catagory: { $in: objectIdCategoryIds } }).lean();
-
-				if (DbProductDetails.length > 0) {
-					await setRedisData(`PRODUCT-${parsedCategory}`, JSON.stringify(DbProductDetails), 3600);
-				}
-				productDetails = DbProductDetails;
-			}
-			console.log('Product details:', productDetails);
-			const refinedProductDetails = productDetails.map((product: any) => ({
-				_id: product._id,
-				productName: product.name,
-				description: product.description,
-			})).slice(0, 30);
-
-			console.log('Refined product details:', refinedProductDetails);
-			const jsonProductDetails = JSON.stringify(refinedProductDetails);
-			console.log('JSON product details:', jsonProductDetails);
-
-			const productPrompt = `
+		const productPrompt = `
 Based on the user's prompt, suggest the most relevant products from the provided product catalog. Ensure the products are highly relevant and useful, limiting each category to 4-5 suggestions. 
 
 Product Catalog: {jsonProductDetails} | User Prompt: {prompt} | Chat Context: {chatHistory}. 
@@ -979,71 +1137,80 @@ Provide the response in this format: this is just format use JSON in actual resp
 [object(categoryName: string, products: array of product IDs), object(categoryName: string, products: array of product IDs)]. 
 
 Ensure that:
+
 - Categories only exist if there is at least one product in them.
 - no comments or additional text in the response, only the array of objects.
 - productId should be from Product Catalog Only No Random Value
 - never try to generate random productId, always use productId from Product Catalog Only
+- product id should be valid and should be from product catalog only dont generate random product id 
+- generate one linear json ,so parsing becomes easy 
 Only return the array of objects, without any additional text. 
 
 Response: 
 `;
-			const productTemplate = PromptTemplate.fromTemplate(productPrompt);
+		const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 
-			const productLLMChain = productTemplate
-				.pipe(llm)
-				.pipe(new StringOutputParser());
+		const productLLMChain = productTemplate
+			.pipe(llm)
+			.pipe(new StringOutputParser());
 
-			const runnableChainOfProduct = RunnableSequence.from([
-				productLLMChain,
-				new RunnablePassthrough(),
-			]);
+		const runnableChainOfProduct = RunnableSequence.from([
+			productLLMChain,
+			new RunnablePassthrough(),
+		]);
 
-			const productResult = await runnableChainOfProduct.invoke({
-				prompt, // User's prompt
-				jsonProductDetails: jsonProductDetails,
-				chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
-			});
-			console.log('Product suggestions:', productResult);
-			let parsedProduct;
-			try {
-				parsedProduct = JSON.parse(wrapWordsInQuotes(String(productResult.replace('`', '').replace('JSON', '').replace('js', ''))));
-				if (signal.aborted) return;
-				if (parsedProduct.length === 0) {
-					console.error('No products selected.');
-					socket.emit('error', {
-						message: "No products Selected For You By Matey"
-					})
-					return;
-				}
-			} catch (parseError) {
-				console.error('Error parsing product result:', parseError);
+		const productResult = await runnableChainOfProduct.invoke({
+			prompt, // User's prompt
+			jsonProductDetails: jsonProductDetails,
+			chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
+		});
+		console.log('Product suggestions:', productResult);
+		let parsedProduct;
+		try {
+			parsedProduct = JSON.parse(wrapWordsInQuotes(String(productResult.replace('`', '').replace('JSON', '').replace('js', ''))));
+			console.log('Parsed product suggestions:', parsedProduct);
+			if (signal.aborted) return;
+			if (parsedProduct.length === 0) {
+				console.error('No products selected.');
+				socket.emit('error', {
+					message: "No products Selected For You By Matey"
+				})
 				return;
 			}
-
-			console.log('Product suggestions:', parsedProduct);
-			return parsedProduct;
-
-		} catch (error: any) {
-			console.error('Error during product recommendation:', error.message);
+		} catch (parseError) {
+			console.error('Error parsing product result:', parseError);
+			return;
 		}
+
+		console.log('Product suggestions:', parsedProduct);
+		return parsedProduct;
+
+	} catch (error: any) {
+		console.error('Error during product recommendation:', error.message);
 	}
 }
 
 
+
 // budget selection
-export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
+export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: [], socket: Socket) {
 	socket.emit("status", {
 		message: "Matey Is Creating Budget Slider..."
 	})
 
-	const checkContextPrompt = `Based on the user's chat history, determine if a budget slider is needed to provide more accurate product recommendations. 
-	Analysis criteria:
-	1. check if user has mentioned any budget or price range in the chat history.
-	2. check if user have enought context to provide budget slider.
+	const checkContextPrompt = `Analyze the user's chat history to determine if a budget slider is necessary for providing more accurate product recommendations. 
 
-	output format: true/false
-	there should be no additional text in the response, only the boolean value of true or false.
-	Chat History: {chatHistory}. Is Budget Slider Needed?:`;
+	Consider the following criteria:
+	1. Budget Mentions: Check if the user has explicitly mentioned any budget, price range, or cost-related concerns in their chat history.
+	2. Context Adequacy: Evaluate if there is sufficient context in the chat history to justify the creation of a budget slider. This includes understanding the user's project scope, preferences, and any financial constraints.
+	3. User's Financial Sensitivity: Determine if the user has shown sensitivity to costs or has asked for cost-effective solutions.
+
+	Output format: true/false
+	There should be no additional text in the response, only the boolean value of true or false.
+
+	Chat History: {chatHistory}
+	User Prompt: {prompt}
+	Is Budget Slider Needed?:`;
 
 	const checkContextTemplate = PromptTemplate.fromTemplate(checkContextPrompt);
 
@@ -1057,37 +1224,41 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
 	]);
 
 	const needOfBudgetSlider = await runnableChainOfCheckContext.invoke({
-		chatHistory: JSON.stringify(chatHistory)
+		chatHistory: JSON.stringify(chatHistory),
+		prompt: prompt
 	});
 
 	console.log('Need of budget slider:', needOfBudgetSlider);
 
-	const parsedNeedOfBudgetSlider = Boolean(needOfBudgetSlider);
+	const parsedNeedOfBudgetSlider = Boolean(needOfBudgetSlider) || true;
 	console.log('Parsed need of budget slider:', parsedNeedOfBudgetSlider);
 
 	if (parsedNeedOfBudgetSlider) {
 		const createBudgetSlider = `
-    Based on the user's project and chat context, generate a budget slider in JSON array format that provides relevant budget options for optimal product recommendations. 
+	Based on the user's project and chat context, generate a budget slider in JSON array format that provides relevant budget options for optimal product recommendations. 
 
-    The budget slider should adhere to the following JSON structure:
-   [
+	The budget slider should adhere to the following JSON structure:
+	   [
 				object("value": number, "label": "string", "tooltip": "string"),
 				object("value": number, "label": "string", "tooltip": "string"),
 				object("value": number, "label": "string", "tooltip": "string")
-			]
-    Guidelines:
-    - Create 4 to 6 objects within the array, each tailored to the user's specific context and project requirements.
-    - "value": Define a numeric budget value meaningful to the user's project needs.
-    - "label": Provide a descriptive label summarizing the budget level (e.g., "Economy", "Mid-Range", "Premium").
-    - "tooltip": Offer a brief description of the quality and brand type expected at each budget level, including examples if possible.
-	- all data should be authantic and real based on chat try to find different brands and mention them in tooltip if possible else just mention quality and brand type user will get on certain budget.
-	- main goal of tooltip and label is to make user aware of what kind of product user will get on certain budget.
- - as per chat analize the budget fit for user and then create meaning full values
-    Chat Context: {chatHistory}
-
-    Format Requirements:
-    - Output only the JSON array, with no extra text or explanation.
+		]
+	Guidelines:
+	- Create 4 to 6 objects within the array, each tailored to the user's specific context and project requirements.
+	- "value": Define a numeric budget value meaningful to the user's project needs.
+	- "label": Provide a descriptive label summarizing the budget level (e.g., "Economy", "Mid-Range", "Premium").
+	- "tooltip": Offer a brief description of the quality and brand type expected at each budget level, including examples if possible.
+	- Ensure all data is authentic and real based on the chat context. Mention different brands in the tooltip if possible; otherwise, describe the quality and brand type the user will get at each budget level.
+	- The main goal of the tooltip and label is to make the user aware of what kind of product they will get at a certain budget.
+	- Analyze the chat to determine a budget fit for the user and create meaningful values.
+	- Service Type: Assess the type of service or product the user is looking for. If the service or product is typically expensive, create a budget slider with higher ranges. For mid-range or low-budget services, adjust the budget slider accordingly.
+	
+	Chat Context: {chatHistory}
+	User Prompt: {prompt}
+	Format Requirements:
+	- Output only the JSON array, with no extra text or explanation.
 `;
+
 
 
 		const createBudgetSliderTemplate = PromptTemplate.fromTemplate(createBudgetSlider);
@@ -1103,7 +1274,8 @@ export async function FindNeedOfBudgetSlider(chatHistory: [], socket: Socket) {
 
 
 		const budgetSlider = await runnableChainOfCreateBudgetSlider.invoke({
-			chatHistory: JSON.stringify(chatHistory)
+			chatHistory: JSON.stringify(chatHistory),
+			prompt: prompt
 		});
 
 		try {

@@ -13,8 +13,17 @@ import {
 import { Skeleton } from "../ui/skeleton"
 import { UserContext } from "@/context/userContext"
 import { iChatname } from "@/types/types"
-import { AlertTriangle, Columns2, Ellipsis, PanelLeftDashed, Pencil, Send, Trash, Trash2 } from "lucide-react"
+import { AlertTriangle, Columns2, Ellipsis, PanelLeftDashed, Pencil, Plus, Send, Trash, Trash2 } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet"
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,6 +44,16 @@ import axios from "axios"
 import { useToast } from "@/hooks/use-toast"
 import { DialogDescription } from "@radix-ui/react-dialog"
 import { Textarea } from "../ui/textarea"
+import {
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer"
 
 const navItem = [
     {
@@ -70,6 +89,7 @@ export default function ImprovedAnimatedSidebar({
     const [deleteDialog, setDeleteDialog] = useState(false)
     const [mainInput, setMainInput] = useState("");
     const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
+    const [newChatDrawerOpen, setNewChatDrawerOpen] = useState(false);
     const { toast } = useToast()
     const filteredHistory = useMemo(() => {
         if (!historyData || historyData.length === 0) return [];
@@ -202,9 +222,175 @@ export default function ImprovedAnimatedSidebar({
     }
 
     return (
-        <div className={`bg-whiteYellow border-r-2 border-slate-300 h-screen flex flex-col ${collabsable ? "px-1" : "px-3"}`}>
+        <div className={`md:bg-whiteYellow md:border-r-2 md:border-slate-300 md:h-screen max-h-screen flex flex-col ${collabsable ? "px-1" : "px-3"}`}>
             {/* Logo */}
-            <div className={`flex  mt-5 items-center ${collabsable ? "justify-center" : "justify-between"}`}>
+
+
+            <div className="flex fixed flex-1 w-screen bg-white z-30 mb-28 justify-between items-center md:hidden px-5 py-2 border-b-2 border-yellow">
+                <div className="flex items-center gap-2">
+                    <Sheet>
+                        <SheetTrigger>
+                            <div className="shadow-md shadow-lightOrange rounded-full p-2 ">
+                                <img src="/assets/line2.svg" alt="3 line" />
+                            </div>
+                        </SheetTrigger>
+                        <SheetContent side={"left"} className="p-4">
+                            <SheetHeader className="p-0">
+                                <SheetTitle><DarkLogo /></SheetTitle>
+                                <SheetDescription className="overflow-scroll h-screen">
+                                    <div className={`flex flex-col space-y-1`}>
+                                        {navItem.map((item, index) => (
+                                            <Link to={item.href} key={index} className="flex items-center gap-2 py-2 px-4 bg-softYellow cursor-pointer rounded-lg">
+                                                <img src={item.icon} alt={item.title} className="w-8 h-8" />
+                                                <p className="font-semibold text-md">{item.title}</p>
+                                            </Link>
+                                        ))}
+                                    </div>
+
+
+                                    <div className={`flex-1 overflow-y-auto    space-y-2 hide-scrollbar`}>
+                                        <hr className="border border-l-stone-300 my-2" />
+                                        {isLoading || isFetching ? (
+                                            <div className="space-y-2">
+                                                {Array.from({ length: 10 }).map((_, index) => (
+                                                    <Skeleton key={index} className="h-5 w-full bg-mangoYellow mt-1" style={{ opacity: 1 }} />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <AnimatePresence>
+                                                {animatedHistory.map((item: iChatname, index) => (
+                                                    <motion.div
+                                                        key={index}
+                                                        initial={isInitialMount.current ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                                                    >
+                                                        <p className="font-bold text-black capitalize text-left sticky top-0 px-2  py-2 bg-whiteYellow z-10">
+                                                            {item.dateDiff.replace(/_/g, " ")}
+                                                        </p>
+                                                        <div className="text-left px-1">
+                                                            <AnimatePresence>
+                                                                {item.data.map((chat, chatIndex) => {
+                                                                    const isActive = sessionId === chat.sessionId;
+
+                                                                    return <motion.div
+                                                                        onClick={() => {
+
+                                                                            handleChatClick(chat.sessionId, chat.id)
+                                                                        }}
+                                                                        key={chat.chatName}
+                                                                        initial={isInitialMount.current ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                                                                        animate={{ opacity: 1, x: 0 }}
+                                                                        exit={{ opacity: 0, x: -20 }}
+                                                                        transition={{
+                                                                            duration: 0.3,
+                                                                            delay: chatIndex * 0.05,
+                                                                            ease: [0.25, 0.1, 0.25, 1]
+                                                                        }}
+                                                                        className={`${isActive && "bg-paleYellow"} font-normal flex justify-between  py-[7px] px-2 hover:bg-paleYellow transition-all cursor-pointer rounded-lg w-full group`}
+                                                                    >
+                                                                        <p className={`overflow-hidden whitespace-nowrap text-ellipsis flex justify-between`} style={{ maxWidth: '100%' }}>
+                                                                            {chat.chatName.length > 28 ? chat.chatName.replace(/"/g, '').slice(0, 28) + " ..." : chat.chatName.replace(/"/g, '')}
+                                                                        </p>
+                                                                        {/* 3 dot */}
+                                                                        <div className="hover:bg-lightYellow rounded-md transition-opacity">
+                                                                            <DropdownMenu onOpenChange={(state) => state ? setOpen(chat.sessionId) : setOpen("")}>
+                                                                                <DropdownMenuTrigger
+                                                                                    className={`w-6 h-6 flex items-center justify-center transition-opacity `}
+                                                                                >
+                                                                                    <Ellipsis />
+                                                                                </DropdownMenuTrigger>
+
+                                                                                <DropdownMenuContent>
+                                                                                    {open === chat.sessionId && (
+                                                                                        <DropdownMenuItem onSelect={() => {
+                                                                                            setDropDownDialog(true)
+                                                                                            setActiveDialog(chat.id)
+                                                                                        }}
+                                                                                        >
+                                                                                            <div className="flex gap-4 items-center">
+                                                                                                <Pencil width={17} height={17} />
+                                                                                                <p className="font-semibold">Rename</p>
+                                                                                            </div>
+                                                                                        </DropdownMenuItem>
+                                                                                    )}
+                                                                                    <DropdownMenuItem onSelect={() => { setDeleteDialog(true); setDeleteId(chat.id); }}>
+                                                                                        <div className="flex gap-4 items-center text-red-500">
+                                                                                            <Trash width={17} height={17} />
+                                                                                            <span className="font-semibold">Delete</span>
+                                                                                        </div>
+                                                                                    </DropdownMenuItem>
+                                                                                    {/* <DropdownMenuItem>
+                                                                <Button onClick={() => setDeleteDialog(true)} variant="ghost" className=" flex gap-4 items-center"
+                                                                >
+                                                                    <Trash width={17} height={17} />
+                                                                    <span>Delete</span>
+                                                                </Button>
+                                                            </DropdownMenuItem> */}
+                                                                                </DropdownMenuContent>
+
+                                                                            </DropdownMenu>
+                                                                        </div>
+
+
+                                                                    </motion.div>
+                                                                })}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </AnimatePresence>
+                                        )}
+                                    </div>
+
+                                </SheetDescription>
+                            </SheetHeader>
+                        </SheetContent>
+                    </Sheet>
+                    <Drawer open={newChatDrawerOpen} onOpenChange={setNewChatDrawerOpen}>
+                        <DrawerTrigger>
+                            <div className="shadow-md gap-2 text-lightOrange shadow-lightOrange px-3 py-2 rounded-full flex">
+                                <Plus className="text-orange" />
+                                <p className="font-semibold">New Chat</p>
+                            </div>
+                        </DrawerTrigger>
+                        <DrawerContent>
+                            <div className="flex gap-1 flex-col p-5">
+                                {/* title */}
+                                <h4 className="text-orange text-xl">Create New Chat </h4>
+
+                                {/* input */}
+                                <div className="w-full flex flex-col gap-2">
+                                    <Textarea
+                                        value={mainInput}
+                                        onChange={(e) => setMainInput(e.target.value)}
+                                        placeholder="Start a new chat"
+                                        className="w-full bg-slate-200 rounded-md border-2 border-orange ring-0 focus:ring-0 active:ring-0 focus:border-orange  text-gray-800 placeholder-gray-400"
+                                        rows={3}
+                                    />
+
+                                    {/* submit */}
+                                    <div
+                                        onClick={() => {
+                                            setNewChatDrawerOpen(false)
+                                            handleUserPrompt()
+                                        }}
+                                        className="bg-lightOrange hover:bg-orange cursor-pointer rounded-md text-black w-fit p-2  ">
+                                        <Send className="w-6 h-6" />
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </DrawerContent>
+                    </Drawer>
+                </div>
+                <LogoSmall />
+
+
+
+            </div>
+            <div className={`md:flex hidden  mt-5 items-center ${collabsable ? "justify-center" : "justify-between"}`}>
                 {!collabsable ? <DarkLogo /> : <LogoSmall />}
                 <div className={`hover:bg-softYellow rounded-md ${collabsable ? "hidden" : "flex"}`}>
                     <TooltipProvider>
@@ -224,12 +410,13 @@ export default function ImprovedAnimatedSidebar({
                 </div>
             </div>
 
-            <hr className="border border-l-stone-300 my-2" />
+            <hr className="border border-l-stone-300 my-2 md:block hidden" />
+
 
             {/* Tooltip - Create New Chat */}
             <TooltipProvider>
                 <Tooltip delayDuration={70}>
-                    <TooltipTrigger className={`${collabsable ? "block" : "hidden"}`}>
+                    <TooltipTrigger className={`${collabsable ? "md:flex hidden" : "hidden"} `}>
                         <img
                             src="/assets/matey-emoji/tool.svg"
                             alt="new chat"
@@ -245,51 +432,53 @@ export default function ImprovedAnimatedSidebar({
             {/* New Chat Button (Expanded View) */}
 
 
-            <Dialog open={newChatDialogOpen} onOpenChange={setNewChatDialogOpen}>
-                <DialogTrigger>
-                    <div
-                        className={`${collabsable ? "hidden" : "flex"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out`}>
-                        <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
-                        <p className="font-semibold">New Chat</p>
-                    </div>
-                </DialogTrigger>
-                <DialogContent className="[&>button]:hidden">
-                    <DialogHeader>
-                        <DialogDescription>
-                            <div className="flex gap-1 flex-col">
-                                {/* title */}
-                                <h4 className="text-orange text-xl">Create New Chat </h4>
+            <div className="">
+                <Dialog open={newChatDialogOpen} onOpenChange={setNewChatDialogOpen} >
+                    <DialogTrigger className="md:flex hidden">
+                        <div
+                            className={`${collabsable ? "hidden" : "md:flex hidden"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out`}>
+                            <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
+                            <p className="font-semibold">New Chat</p>
+                        </div>
+                    </DialogTrigger>
+                    <DialogContent className="[&>button]:hidden md:flex hidden">
+                        <DialogHeader>
+                            <DialogDescription>
+                                <div className="flex gap-1 flex-col">
+                                    {/* title */}
+                                    <h4 className="text-orange text-xl">Create New Chat </h4>
 
-                                {/* input */}
-                                <div className="w-full flex flex-col gap-2">
-                                    <Textarea
-                                        value={mainInput}
-                                        onChange={(e) => setMainInput(e.target.value)}
-                                        placeholder="Start a new chat"
-                                        className="w-full bg-slate-200 rounded-md border-2 border-orange ring-0 focus:ring-0 active:ring-0 focus:border-orange  text-gray-800 placeholder-gray-400"
-                                        rows={3}
-                                    />
+                                    {/* input */}
+                                    <div className="w-full flex flex-col gap-2">
+                                        <Textarea
+                                            value={mainInput}
+                                            onChange={(e) => setMainInput(e.target.value)}
+                                            placeholder="Start a new chat"
+                                            className="w-full bg-slate-200 rounded-md border-2 border-orange ring-0 focus:ring-0 active:ring-0 focus:border-orange  text-gray-800 placeholder-gray-400"
+                                            rows={3}
+                                        />
 
-                                    {/* submit */}
-                                    <div
-                                        onClick={handleUserPrompt}
-                                        className="bg-lightOrange hover:bg-orange cursor-pointer rounded-md text-black w-fit p-2  ">
-                                        <Send className="w-6 h-6" />
+                                        {/* submit */}
+                                        <div
+                                            onClick={handleUserPrompt}
+                                            className="bg-lightOrange hover:bg-orange cursor-pointer rounded-md text-black w-fit p-2  ">
+                                            <Send className="w-6 h-6" />
+                                        </div>
+
                                     </div>
 
                                 </div>
+                            </DialogDescription>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
+            </div>
 
-                            </div>
-                        </DialogDescription>
-                    </DialogHeader>
-                </DialogContent>
-            </Dialog>
 
-
-            <hr className="border border-l-stone-300 my-2" />
+            <hr className="border border-l-stone-300 my-2 md:block hidden" />
 
             {/* Navigation Items */}
-            <div className={`${collabsable ? "hidden" : "flex"} flex-col`}>
+            <div className={`${collabsable ? "hidden" : "md:flex hidden"} flex-col`}>
                 {navItem.map((item, index) => (
                     <Link to={item.href} key={index} className="flex items-center gap-2 py-2 px-4 hover:bg-softYellow cursor-pointer rounded-lg">
                         <img src={item.icon} alt={item.title} className="w-8 h-8" />
@@ -299,7 +488,7 @@ export default function ImprovedAnimatedSidebar({
             </div>
 
             {/* Chat History */}
-            <div className={`flex-1 overflow-y-auto ${collabsable ? "hidden" : "block"} space-y-2 hide-scrollbar`}>
+            <div className={`flex-1 overflow-y-auto ${collabsable ? "hidden" : "md:block hidden"}   space-y-2 hide-scrollbar`}>
                 <hr className="border border-l-stone-300 my-2" />
                 {isLoading || isFetching ? (
                     <div className="space-y-2">
@@ -396,7 +585,7 @@ export default function ImprovedAnimatedSidebar({
             </div>
 
             {/* Mobile Navigation */}
-            <div className={`${collabsable ? "flex" : "hidden"} flex-col gap-2`}>
+            <div className={`${collabsable ? "md:flex hidden" : "hidden"} flex-col gap-2 `}>
                 {navItem.map((item, index) => (
                     <TooltipProvider key={index}>
                         <Tooltip delayDuration={70}>
@@ -414,7 +603,7 @@ export default function ImprovedAnimatedSidebar({
             </div>
 
             {/* History Button (Collapsed View) */}
-            <div className={`${collabsable ? "flex" : "hidden"}`}>
+            <div className={`${collabsable ? "md:flex hidden" : "hidden"} `}>
                 <TooltipProvider>
                     <Tooltip delayDuration={70}>
                         <TooltipTrigger>
@@ -431,10 +620,10 @@ export default function ImprovedAnimatedSidebar({
                     </Tooltip>
                 </TooltipProvider>
             </div>
-            <hr className="border border-l-stone-300 my-2" />
+            <hr className="border border-l-stone-300 my-2 md:block hidden" />
 
             {/* side bar opener */}
-            <div className={` justify-center rounded-md ${collabsable ? "flex" : "hidden"}`}>
+            <div className={` justify-center rounded-md ${collabsable ? "md:flex hidden" : "hidden"} `}>
                 <TooltipProvider>
                     <Tooltip delayDuration={0}>
                         <TooltipTrigger>

@@ -4,6 +4,8 @@ import Aichat from "@/components/custom/Aichat";
 import MateyExpression from "@/components/custom/MateyExpression";
 import { useSocket } from "@/context/socketContext";
 import { UserContext } from "@/context/userContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+
 import {
     Tooltip,
     TooltipContent,
@@ -11,30 +13,82 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Disc3 } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { ProductItem } from "@/types/types";
-import { ProductSuggestion, RightSidebarContext } from "@/context/rightSidebarContext";
+import { RightSidebarContext } from "@/context/rightSidebarContext";
 import { getImageUrl } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@radix-ui/react-separator";
+import { useUser } from "@clerk/clerk-react";
 
 interface Message {
     role: string;
     message: string;
-    productData?: ProductItem[];
     workQueue?: string[];
+    productData?: ProductItem[];
+    bunningsData?: any;
+    mateyProduct?: any;
+    isProductSuggested?: boolean;
+    isCommunitySuggested?: boolean;
+    communityId?: any[];
+    productSuggestionList?: any[];
+    isMateyProduct?: boolean;
+    isBunningsProduct?: boolean;
+    bunningsProductList?: any[];
+    productId?: any[];
+}
+interface ChatHistorySuccessResponse {
+    success: true;
+    data: any;
+    ai: any[];
+    matey: any[];
+    bunnings: any[];
 }
 
-async function fetchChatHistory(sessionId: string | undefined, userId: string | undefined, pagination: { page: number, limit: number }) {
+interface ChatHistoryErrorResponse {
+    success: false;
+    message: string;
+}
+
+type ChatHistoryResponse = ChatHistorySuccessResponse | ChatHistoryErrorResponse;
+
+async function fetchChatHistory(
+    sessionId: string | undefined,
+    userId: string | undefined,
+    pagination: { page: number, limit: number }
+): Promise<ChatHistoryResponse> {
     try {
         const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getChatConversationHistory`, {
             sessionId,
             userId,
-            pagination
+            pagination,
         });
-        return { success: true, data: response.data.data };
+
+        const aiProduct: any[] = [];
+        const mateyProduct: any[] = [];
+        const bunningsProduct: any[] = [];
+
+        response.data.data.forEach((chatItem: any) => {
+            if (chatItem.isMateyProduct) {
+                aiProduct.push(...chatItem.mateyProduct);
+            }
+            if (chatItem.isBunningsProduct) {
+                bunningsProduct.push(...chatItem.bunningsData);
+            }
+            if (chatItem.isProductSuggested) {
+                mateyProduct.push(...chatItem.productSuggestionList);
+            }
+        });
+
+        return {
+            success: true,
+            data: response.data.data,
+            ai: aiProduct,
+            matey: mateyProduct,
+            bunnings: bunningsProduct,
+        };
     } catch (error) {
         console.error("Error fetching chat history", error);
         return { success: false, message: "Can't Load Your Chat History" };
@@ -55,12 +109,13 @@ async function fetchCurrentMateyMemoryStatus(sessionId: string | undefined) {
 
 }
 export function ChatPage() {
+    const { user } = useUser()
     const [conversation, setConversation] = useState<Message[]>([]);
     const [currStreamingRes, setCurrStreamingRes] = useState("");
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
     const { userId, userData, unshiftiChatname } = useContext(UserContext);
-    const { setProductSuggestions, setBreakpoints, sliderValue, breakpoints } = useContext(RightSidebarContext);
+    const { clearAllTool, setBreakpoints, sliderValue, breakpoints, massAddAi, massAddBunnings, massAddVendor, appendAi, appendBunnings, appendVendor } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
@@ -77,54 +132,52 @@ export function ChatPage() {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    const lastScrollPositionRef = useRef(0);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
+    const [currLoadingProductFeature, setCurrLoadingProductFeature] = useState<number[]>([]);
+    const [currLoadingProductFeatureIndex, setCurrLoadingProductFeatureIndex] = useState(-1);
     const { toast } = useToast();
 
+    const handleScroll = () => { }
+    // const handleScroll = async () => {
+    //     if (!chatContainerRef.current || isLoadingMore || !hasMore) return;
 
+    //     const { scrollTop } = chatContainerRef.current;
 
+    //     // Check if we're near the top (within 100px)
+    //     if (scrollTop < 100) {
+    //         setIsLoadingMore(true);
 
-    const handleScroll = async () => {
-        if (!chatContainerRef.current || isLoadingMore || !hasMore) return;
+    //         // Save current scroll height
+    //         const scrollHeight = chatContainerRef.current.scrollHeight;
 
-        const { scrollTop } = chatContainerRef.current;
+    //         // Fetch more messages
+    //         const nextPage = pagination.page + 1;
+    //         const chatData = await fetchChatHistory(sessionId, userData?.id, {
+    //             page: nextPage,
+    //             limit: pagination.limit
+    //         });
 
-        // Check if we're near the top (within 100px)
-        if (scrollTop < 100) {
-            setIsLoadingMore(true);
+    //         if (chatData.success && chatData.data.length > 0) {
+    //             // Update pagination
+    //             setPagination(prev => ({ ...prev, page: nextPage }));
 
-            // Save current scroll height
-            const scrollHeight = chatContainerRef.current.scrollHeight;
+    //             // Prepend new messages to conversation
+    //             setConversation(prev => [...chatData.data, ...prev]);
 
-            // Fetch more messages
-            const nextPage = pagination.page + 1;
-            const chatData = await fetchChatHistory(sessionId, userData?.id, {
-                page: nextPage,
-                limit: pagination.limit
-            });
+    //             // Restore scroll position after new content is loaded
+    //             setTimeout(() => {
+    //                 if (chatContainerRef.current) {
+    //                     const newScrollHeight = chatContainerRef.current.scrollHeight;
+    //                     chatContainerRef.current.scrollTop = newScrollHeight - scrollHeight;
+    //                 }
+    //             }, 0);
+    //         } else {
+    //             setHasMore(false);
+    //         }
 
-            if (chatData.success && chatData.data.length > 0) {
-                // Update pagination
-                setPagination(prev => ({ ...prev, page: nextPage }));
-
-                // Prepend new messages to conversation
-                setConversation(prev => [...chatData.data, ...prev]);
-
-                // Restore scroll position after new content is loaded
-                setTimeout(() => {
-                    if (chatContainerRef.current) {
-                        const newScrollHeight = chatContainerRef.current.scrollHeight;
-                        chatContainerRef.current.scrollTop = newScrollHeight - scrollHeight;
-                    }
-                }, 0);
-            } else {
-                setHasMore(false);
-            }
-
-            setIsLoadingMore(false);
-        }
-    };
+    //         setIsLoadingMore(false);
+    //     }
+    // };
 
     // Add scroll event listener
     useEffect(() => {
@@ -158,11 +211,15 @@ export function ChatPage() {
                 if (!chatData.success) {
                     toast({
                         title: "Error",
-                        description: chatData.message,
+                        description: chatData.message || "Can't Load Your Chat History",
                         variant: "destructive",
                     });
                     setIsError(true);
                 } else {
+                    massAddAi(chatData.ai);
+                    massAddBunnings(chatData.bunnings);
+                    massAddVendor(chatData.matey);
+
                     setConversation(chatData.data);
                     setHasMore(chatData.data.length === pagination.limit);
                 }
@@ -171,12 +228,11 @@ export function ChatPage() {
         }
 
         fetchHistory();
+
+        return () => {
+            clearAllTool()
+        }
     }, [sessionId]);
-
-
-    /////////////////////////////
-
-
 
 
     const scrollToBottom = () => {
@@ -187,6 +243,7 @@ export function ChatPage() {
 
         const handleMessage = (data: { text: string }) => {
             setCurrStreamingRes((prev) => prev + data.text);
+
         };
 
 
@@ -232,7 +289,7 @@ export function ChatPage() {
                     case 5: return "Provided project guidance as needed";
                 }
             });
-            setConversation((prev) => {
+            setConversation((prev: any) => {
                 const lastMessage = prev[prev.length - 1];
                 if (lastMessage.role === "ai") {
                     return [...prev.slice(0, -1), { ...lastMessage, workQueue: workerQueue }];
@@ -241,36 +298,123 @@ export function ChatPage() {
             });
         };
 
-        const handleProductId = async (data: { productId: ProductItem[] }) => {
-            const productData = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data.productId);
-            if (productData.status === 200) {
-                const refinedData: ProductSuggestion[] = productData.data.data.map((item: any) => ({
-                    name: item.categoryName,
-                    data: item.products.map((product: any) => ({
-                        image: getImageUrl(product.imageParams[0]),
-                        title: product.name,
-                        description: product.description,
-                        price: parseInt(product.price) || 0,
-                    }))
-                }));
-                setProductSuggestions(refinedData);
-                setConversation((prev) => {
-                    const lastMessage = prev[prev.length - 1];
-                    if (lastMessage.role === "ai") {
-                        return [...prev.slice(0, -1), { ...lastMessage, productData: refinedData as unknown as ProductItem[] }];
-                    }
-                    return [...prev, { role: "ai", message: "", productData: refinedData as unknown as ProductItem[] }];
-                });
+        const handleProductId = async (data: { categoryName: string; products: string[] }[]) => {
+            try {
+                console.log("Received data:", data);
+
+                // Step 1: Gather all product IDs from the input data
+                const allProductIds = data.flatMap(category => category.products);
+
+                // Step 2: Fetch data for these product IDs from the API
+                const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, allProductIds);
+
+                if (response.status === 200) {
+                    const productData = response.data.data;  // Assuming this contains product details
+
+                    // Step 3: Create a lookup map for product details based on the product ID
+                    const productMap = productData.reduce((acc: Record<string, any>, product: any) => {
+                        acc[product._id] = {
+                            image: getImageUrl(product.imageParams[0]),
+                            title: product.name,
+                            description: product.description,
+                            price: parseInt(product.price) || 0,
+                        };
+                        return acc;
+                    }, {});
+
+                    // Step 4: Map the original categories with detailed product data
+                    const refinedData = data.map(category => ({
+                        categoryName: category.categoryName,
+                        products: category.products.map(productId => productMap[productId]),
+                    }));
+
+                    console.log("Refined product suggestions:", refinedData);
+                    appendVendor(refinedData);
+                    // Update product suggestions and conversation
+                    setConversation((prev) => {
+                        const lastMessage = prev[prev.length - 1];
+                        if (lastMessage.role === "ai") {
+                            return [
+                                ...prev.slice(0, -1),
+                                { ...lastMessage, productData: refinedData as unknown as ProductItem[] },
+                            ];
+                        }
+                        return [
+                            ...prev,
+                            { role: "ai", message: "", productData: refinedData as unknown as ProductItem[] },
+                        ];
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching product data:", error);
             }
         };
+
+
+
+        const handleMateyProducts = async (data: any) => {
+            console.log(data, "matey created Data")
+            appendAi(data)
+            setCurrLoadingProductFeature((prev) => {
+                const newFeat = prev.filter((item) => item != 3)
+                return newFeat
+            })
+
+            setConversation((prev) => {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage.role === "ai") {
+                    return [...prev.slice(0, -1), { ...lastMessage, mateyProduct: data }];
+                }
+                return prev;
+            });
+        }
+
+        // const handleVendorProducts = async (data) =>{
+        //     console.log(data,"vendor created Data")
+        //     setCurrLoadingProductFeature((prev)=>{
+        //         const newFeat = prev.filter((item)=>item!=2)
+        //         return newFeat
+        //     })
+
+        //     setConversation((prev) => {
+        //         const lastMessage = prev[prev.length - 1];
+        //         if (lastMessage.role === "ai") {
+        //             return [...prev.slice(0, -1), { ...lastMessage, productData: data }];
+        //         }
+        //         return prev;
+        //     });
+        // }
 
         const handleNoProduct = (data: { message: string }) => {
             setNotificationText(data.message);
         };
         const handleBunningProduct = (data: any) => {
             console.log(data, "bunning product")
+            appendBunnings(data)
+            setCurrLoadingProductFeature([])
+            setCurrLoadingProductFeatureIndex(-1)
+            setConversation((prev) => {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage.role === "ai") {
+                    return [...prev.slice(0, -1), { ...lastMessage, bunningsData: data }];
+                }
+                return prev;
+            });
+        }
+        const handleError = (data: any) => {
+            toast({
+                title: "Error",
+                description: data.message,
+                variant: "destructive",
+            })
         }
 
+        const handleProductIdLoading = (data: []) => {
+            setCurrLoadingProductFeature(data)
+            const lastIndex = conversation.length + 2;
+            setCurrLoadingProductFeatureIndex(lastIndex)
+            console.log("product id loading", data, lastIndex, conversation.length, conversation)
+        }
         socket?.on("message", handleMessage);
         socket?.on("chatName", handleChatName);
         socket?.on("status", handleStatus);
@@ -281,11 +425,14 @@ export function ChatPage() {
         socket?.on("noProduct", handleNoProduct);
         socket?.on("emoMessage", handleEmoMessage)
         socket?.on('bunningsProduct', handleBunningProduct)
+        socket?.on("productList", handleProductIdLoading)
+        socket?.on("aiProducts", handleMateyProducts)
+        // socket?.on("vendorProducts", handleVendorProducts);
         socket?.on("terminate", () => {
             setStateOfButton(-1);
             setCurrStreamingRes("");
         });
-
+        socket?.on("error", handleError)
         return () => {
             socket?.off("message", handleMessage);
             socket?.off("chatName", handleChatName);
@@ -295,10 +442,26 @@ export function ChatPage() {
             socket?.off("intendList", handleIntendList);
             socket?.off("productId", handleProductId);
             socket?.off("noProduct", handleNoProduct);
-            socket?.off("emoMessage", handleEmoMessage)
+            socket?.off("emoMessage", handleEmoMessage);
+            socket?.off('bunningsProduct', handleBunningProduct);
+            socket?.off("error", handleError);
+            socket?.off("aiProducts", handleMateyProducts);
         };
     };
 
+    // // this useEffect clear the curr prodyct feature list 
+    // useEffect(() => {
+    //     const lastMessage = conversation[conversation.length - 1];
+    //     const lastMessageIndex = conversation.length;
+    //     console.log("last message", lastMessage)
+    //     if (lastMessage && lastMessage.role == "ai") {
+    //         console.log("loading feature for product", lastMessageIndex, currLoadingProductFeatureIndex)
+    //         if (currLoadingProductFeature.length > 0) {
+    //             setCurrLoadingProductFeatureIndex(lastMessageIndex)
+    //         }
+    //     }
+    // }, [conversation])
+    console.log(conversation.length)
     useEffect(() => {
         async function fetchHistory() {
             const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
@@ -330,7 +493,6 @@ export function ChatPage() {
                 setIsLoadingHistory(false);
             }
         }
-
         fetchHistory();
     }, [sessionId]);
 
@@ -359,6 +521,7 @@ export function ChatPage() {
     }
     useEffect(() => {
         if (isNew) {
+            setStateOfButton(1);
             const initialMessage = localStorage.getItem('userPrompt') || "Hey Matey!";
             setConversation((prev) => [...prev, { role: "user", message: initialMessage }]);
 
@@ -377,7 +540,6 @@ export function ChatPage() {
         return () => {
             cleanup();
             localStorage.setItem('retrieveChat', "yes");
-            setProductSuggestions([]);
             setBreakpoints([]);
         };
     }, [socket, isNew, userData, sessionId, searchParams, setSearchParams]);
@@ -448,9 +610,9 @@ export function ChatPage() {
             </div>
         );
     }
-
+    { console.log(conversation) }
     return (
-        <div className={`flex flex-col h-screen py-4 pl-4 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
+        <div className={`flex flex-col h-screen py-4 md:pl-4 px-2 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
             <div
                 ref={chatContainerRef}
                 className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4 pr-4 relative w-full"
@@ -464,19 +626,47 @@ export function ChatPage() {
                     <div key={index}>
                         {data.role === "ai" ? (
                             <Aichat
+                                id={index}
                                 workerQueue={data.workQueue}
                                 message={data.message.replace("Typing...", "")}
                                 productData={data.productData}
+                                bunningsData={data.bunningsData ? data.bunningsData : []}
+                                aiData={data.mateyProduct}
+                                isCurrFeatureLoading={currLoadingProductFeatureIndex == (index + 1)}
+                                isBunningLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(1)}
+                                isProductLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(2)}
+                                isAiProductLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(3)}
                             />
                         ) : (
-                            <div className="w-full flex justify-end">
-                                <div className="flex w-fit bg-yellow rounded-md px-3 py-2">
-                                    {data.message}
+                            <div>
+
+                                <div className="w-full flex justify-start  rounded-md items-center">
+                                    <hr className="h-1 border-2 border-slate-300 " />
+                                    <div className="flex gap-4 w-full items-center rounded-md px-1 py-2 ">
+                                        <div className="w-8 h-8">
+                                            {
+                                                (!user?.hasImage) ?
+                                                    <Avatar>
+                                                        <AvatarFallback>A</AvatarFallback>
+                                                    </Avatar>
+                                                    : <img
+                                                        className="w-8 h-8 rounded-full"
+                                                        src={user?.imageUrl}
+                                                    />
+                                            }
+                                        </div>
+                                        <div className="px-2 font-medium text-left">
+                                            {data.message}
+                                        </div>
+                                    </div>
                                 </div>
+                                <Separator orientation="vertical" className="border border-slate-300 w-full mt-4" />
                             </div>
                         )}
+
                     </div>
                 ))}
+
                 <div ref={messagesEndRef} />
             </div>
             <div className="w-full flex flex-col items-center">
@@ -538,10 +728,10 @@ export function ChatPage() {
                                 </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>
-                                <Tooltip delayDuration={10}>
-                                    <TooltipTrigger>
+                                <Tooltip delayDuration={10} >
+                                    <TooltipTrigger className="md:flex hidden">
                                         <ExpandIcon
-                                            className="cursor-pointer text-slate-600 hover:text-orange"
+                                            className="md:flex hidden cursor-pointer text-slate-600 hover:text-orange"
                                             onClick={() => setIsExpanded((prev) => !prev)}
                                         />
                                     </TooltipTrigger>

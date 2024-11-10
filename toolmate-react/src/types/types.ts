@@ -31,5 +31,5 @@ export interface ExpressionData {
 
   export interface ProductItem{
     catagoryName:string;
-    products:string[]
+    products:any[]
   }

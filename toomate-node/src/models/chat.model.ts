@@ -14,10 +14,7 @@ const ChatSchema = new mongoose.Schema(
 			type: String,
 			default: "ai"
 		},
-		isProductSuggested: {
-			type: Boolean,
-			default: false
-		},
+		// to check if there is product 
 		isCommunitySuggested: {
 			type: Boolean,
 			default: false
@@ -26,11 +23,38 @@ const ChatSchema = new mongoose.Schema(
 			type: [],
 			default: []
 		},
-		// this field will be used for summury product suggestion , sort last data base entry and show that in product suggestion
+		isProductSuggested: {
+			type: Boolean,
+			default: false
+		},
+		productSuggestionList:{
+			type: [],
+			default: []
+		},
+		isMateyProduct:{
+			type: Boolean,
+			default: false
+		},
+		isBunningsProduct:{
+			type: Boolean,
+			default: false
+		},
+		bunningsProductList:{
+			type: [mongoose.Schema.Types.ObjectId],
+			ref: 'BunningsProduct',
+			default: null
+		},
 		productId: {
 			type: [],
 			default: []
-		}
+		},
+		mateyProduct:{
+			type: [],
+			default: []
+		},
+		
+		// this field will be used for summury product suggestion , sort last data base entry and show that in product suggestion
+		
 	},
 	{ timestamps: true }
 );

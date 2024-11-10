@@ -50,11 +50,10 @@ function UserContextProvider({ children }: { children: ReactNode }) {
                 throw new Error("User ID is not available");
             }
             const response = await axios.post<{ data: UserData }>(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
-
                 clerkUserId: userId,
             });
             console.log(response.data.data, "response.data.data");
-            const res = JSON.parse(String(response.data.data));
+            const res = response.data.data;
             return res;
         },
         enabled: !!userId,                  // Only run the query if userId exists
@@ -64,7 +63,10 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         staleTime: Infinity,                 // Data is always considered fresh
         // Cache data forever (you can change this if you want a specific time)
     });
-    console.log(userData?.id, "userId");
+    useEffect(() => {
+
+        console.log(userData?.id, "userId");
+    }, [userData?.id])
 
 
     function deleteCacheElement(id: string) {
@@ -130,12 +132,8 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         // If no mainCache is available, return top 6 from historyData
         console.log(historyData?.map((item) => item.data).slice(0, 6), "historyData.map((item) => item.data).slice(0, 6)");
         if (mainCache.length === 0 && historyData) {
-            console.log(historyData.map((item) => item.data).slice(0, 6), "historyData.map((item) => item.data).slice(0, 6)");
-            return historyData.flatMap((item) => {
-                if (item.data) {
-                    return item.data
-                }
-            }).slice(6).reverse();
+            console.log(historyData.flatMap((item) => item.data).slice(0, 6), "historyData.map((item) => item.data).slice(0, 6)");
+            return historyData.flatMap((item) => item.data).slice(0, 6)
         }
         const resp = mainCache.map((id: string) => {
             const chatItem = historyData?.flatMap((item) => item.data).find((chat) => chat.id === id);
@@ -149,6 +147,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
     const { data: historyData } = useQuery<iChatname[], Error>({
         queryKey: ['chatHistory', userData?.id],
         queryFn: async () => {
+            console.log("calling hisotry data");
             if (!userData?.id) {
                 throw new Error("User ID is not available");
             }
@@ -168,7 +167,7 @@ function UserContextProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         console.log(historyData, "historyData");
-        console.log(userData, userData?.userId, "userData");
+        console.log(userData, "userData");
 
     }, [historyData, userData])
     const mutation = useMutation<iChatname[], Error, iChatname[], { previousHistory: iChatname[] | undefined }>({
@@ -224,7 +223,6 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         newIdForCache,
         retrieveCache,
         deleteCacheElement
-
     };
 
     return (

@@ -4,16 +4,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, useRef, useContext } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { RightSidebarContext } from "@/context/rightSidebarContext";
-import { Component, Grid2x2Plus, ListCollapse, Loader, Package } from "lucide-react";
+import { Boxes, Component, Disc3, Grid2x2Plus, ListCollapse, Loader, Package, PackageOpen } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Separator } from "../ui/separator";
+import { Navigate } from "react-router-dom";
 
 export default function Aichat(
-  { workerQueue, message, productData, bunningsData, aiData, isProductLoading, isBunningLoading, isAiProductLoading }:
+  { id, workerQueue, message, productData, bunningsData, aiData, isCurrFeatureLoading, isProductLoading, isBunningLoading, isAiProductLoading }:
     {
+      id: string | number | undefined;
       workerQueue: string[] | undefined;
       message: string;
       productData: any;
       bunningsData: any
       aiData: any,
+      isCurrFeatureLoading: boolean,
       isProductLoading: boolean,
       isBunningLoading: boolean,
       isAiProductLoading: boolean
@@ -23,6 +35,12 @@ export default function Aichat(
   const [showWorkerQueue, setShowWorkerQueue] = useState(false);
   const [productRendered, setProductRendered] = useState(true);
   const { productSuggestions } = useContext(RightSidebarContext);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [currActiveDialog, setCurrActiveDialog] = useState(id);
+  const [currDialogActiveTab, setCurrDialogActiveTab] = useState("bunnings");
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
   const messageRef = useRef(message);
 
   useEffect(() => {
@@ -52,10 +70,17 @@ export default function Aichat(
       setProductRendered(true);
     }
   }, [productData])
+  {
+    const totalProducts = bunningsData.reduce((count, category) => count + category.products.length, 0);
+    console.log(totalProducts);
+
+
+  }
+
 
   return (
     <div className="flex flex-col w-fit">
-      <div className="flex items-start gap-2 justify-start">
+      <div className="flex  items-start gap-2 justify-start">
         {/* Chat Icon */}
         {/* {showExpression(expresion)} */}
         <img src="/assets/icons/blur-ball.svg" alt="matey" width={45} />
@@ -88,25 +113,272 @@ export default function Aichat(
           )}
 
           {/* events */}
-          {
-            (isProductLoading || isBunningLoading || isAiProductLoading) &&
-            <div className="bg-slate-200 border border-slate-400 w-fit h-16 mt-2 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 group">
-              <div className="flex items-center justify-center bg-softYellow border-r-[1px] border-slate-400 w-16 z-10 h-16 flex-1 group-hover:bg-lightYellow">
-                <Loader className="animate-spin " />
-              </div>
-              <div className="p-4 flex flex-col text-left">
-                <p className="font-semibold text-slate-700">Matey Is Preparing The Products For You</p>
-                <p className="font-semibold text-slate-500">Loading Product ...</p>
-              </div>
-            </div>
-          }
+          <div className="flex gap-2 flex-wrap w-full items-center">
 
-          {
+            {
+              (isCurrFeatureLoading && (isBunningLoading)) &&
+              <div className="bg-slate-200 border border-slate-400 w-fit h-16 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 duration-150 group">
+                <div className="flex items-center justify-center bg-teal-700 border-r-[1px] border-slate-400 w-16 z-10 h-16 flex-1 group-hover:bg-teal-700/80">
+                  <Disc3 className="animate-spin text-black" />
+                </div>
+                <div className="p-4 flex flex-col text-left">
+                  <p className="font-semibold text-slate-700">Matey Is Finding Materials and Tools In Bunnings</p>
+                  <p className="font-thin text-slate-500">Loading Product ...</p>
+                </div>
+              </div>
+            }
+            {
+              (isCurrFeatureLoading && isProductLoading) &&
+              <div className="bg-slate-200 border border-slate-400 w-fit h-16 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 duration-150 group">
+                <div className="flex items-center justify-center bg-purple-400 border-r-[1px] border-slate-400 w-16 z-10 h-16 flex-1 group-hover:bg-purple-400/80">
+                  <Disc3 className="animate-spin text-black" />
+                </div>
+                <div className="p-4 flex flex-col text-left">
+                  <p className="font-semibold text-slate-700">Matey Is Finding Products From Vendors</p>
+                  <p className="font-semibold text-slate-500">Loading Product ...</p>
+                </div>
+              </div>
+            }
+            {
+              (isCurrFeatureLoading && (isAiProductLoading)) &&
+              <div className="bg-slate-200 border border-slate-400 w-fit h-16 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 duration-150 group">
+                <div className="flex items-center justify-center bg-red-400 border-r-[1px] border-slate-300 w-16 z-10 h-16 flex-1 group-hover:bg-red-400/80">
+                  <Disc3 className="animate-spin text-black" />
+                </div>
+                <div className="p-4 flex flex-col text-left">
+                  <p className="font-semibold text-slate-700">Matey Is Preparing Products </p>
+                  <p className="font-semibold text-slate-500">Loading Product ...</p>
+                </div>
+              </div>
+            }
+          </div>
 
-          }
+          {/* event data */}
+          <div className="flex  gap-2 flex-wrap items-center my-2">
+            {
+              bunningsData && bunningsData?.length > 0 && (
+                <div
+                  onClick={() => {
+                    setIsProductDialogOpen(!isProductDialogOpen)
+                    setCurrActiveDialog(id)
+                    setCurrDialogActiveTab("bunnings")
+                  }}
+                  className="bg-slate-200 border border-slate-400 w-fit h-16 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 duration-150 group">
+                  <div className="flex items-center justify-center bg-white w-16 z-10 h-16 flex-1 bg-cover bg-center" style={{ backgroundImage: "url('/assets/images/bunnings-logo.png')", opacity: 0.8 }}>
+                  </div>
+                  <div className="p-4 flex flex-col text-left">
+                    <p className="font-semibold text-slate-700">Bunning Material And Products By Matey</p>
+                    <div className="flex gap-2 items-center w-full">
+                      <p className="font-semibold text-slate-500">{bunningsData.length == 1 ? "1 Item" : `${bunningsData.reduce((count, category) => count + category.products.length, 0)} Items`}</p>
+                      <div className="w-[5px] h-[5px] rounded-md bg-slate-500 ">
+                      </div>
+                      <p className="text-slate-500">Click To View</p>
+
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+            {
+              aiData && aiData.length > 0 &&
+              <div
+                onClick={() => {
+                  setIsProductDialogOpen(!isProductDialogOpen)
+                  setCurrActiveDialog(id)
+                  setCurrDialogActiveTab("aiData")
+                }}
+                className="bg-slate-200 border border-slate-400 w-fit h-16 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 duration-150 group">
+                <div className="flex items-center justify-center bg-purple-400 border-r-[1px] border-slate-400 w-16 z-10 h-16 flex-1 group-hover:bg-purple-400/80">
+                  <PackageOpen className="text-white" />
+                </div>
+                <div className="p-4 flex flex-col text-left">
+                  <p className="font-semibold text-slate-700">Material And Products Prepared By Matey </p>
+                  <div className="flex gap-2 items-center w-full">
+                    <p className="font-semibold text-slate-500">{aiData.length == 1 ? "1 Item" : `${bunningsData.reduce((count, category) => count + category.products.length, 0)} Items`}</p>
+                    <div className="w-[5px] h-[5px] rounded-md bg-slate-500 ">
+                    </div>
+                    <p className="text-slate-500">Click To View</p>
+
+                  </div>
+                </div>
+              </div>
+            }
+            {
+              productData && productData.length !== 0 &&
+              <div
+                onClick={() => {
+                  setIsProductDialogOpen(!isProductDialogOpen)
+                  setCurrActiveDialog(id)
+                  setCurrDialogActiveTab("productData")
+                }}
+                className="bg-slate-200 border border-slate-400 w-fit h-16 flex items-center rounded-md overflow-hidden cursor-pointer hover:bg-slate-300 duration-150 group">
+                <div className="flex items-center justify-center bg-red-400 border-r-[1px] border-slate-300 w-16 z-10 h-16 flex-1 group-hover:bg-red-400/80">
+                  <Boxes className="text-white" />
+                </div>
+                <div className="p-4 flex flex-col text-left">
+                  <p className="font-semibold text-slate-700">Material And Products Suggestion From Vendor</p>
+                  <p className="font-semibold text-slate-500">{productData.length == 1 ? "1 Item" : `${productData.reduce((count, category) => count + category.products.length, 0)} Items`}</p>
+
+                </div>
+              </div>
+            }
+          </div>
 
         </div>
       </div>
+      <Separator orientation="vertical" className="border border-slate-300 w-full my-2" />
+
+
+
+
+      {
+        id == currActiveDialog && (
+          <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+            {/* <DialogTrigger>Open</DialogTrigger> */}
+            <DialogContent className="h-[calc(100%-10rem)] lg:max-w-screen-lg md:max-w-screen-md sm:max-w-screen-sm p-0">
+              <div className="flex">
+                {/* <div className="h-full border-r-2 border-slate-400 p-2 space-y-2">
+                  {
+                    bunningsData && bunningsData.length > 0 && (
+                      <div>
+                        <img src="/assets/images/bunnings-logo.png" alt="bunnings" className="w-14 h-14 rounded-md opacity-80 hover:opacity-90 cursor-pointer" />
+                      </div>
+                    )
+                  }
+                  {
+                    aiData && aiData.length > 0 && (
+                      <div>
+                        <img src="/assets/icons/ai-placeholder.svg" alt="bunnings" className="w-14 h-14 rounded-md opacity-80 hover:opacity-90 cursor-pointer" />
+                      </div>
+                    )
+                  }
+
+                  {
+                    productData && productData.length > 0 && (
+                      <div>
+                        <img src="/assets/icons/vendor-placeholder.svg" alt="bunnings" className="w-14 h-14 rounded-md opacity-80 hover:opacity-90 cursor-pointer" />
+                      </div>
+                    )
+                  }
+
+                </div> */}
+                <div className=" h-fit w-full flex gap-2 flex-col">
+                  <div className="flex gap-2 border-b-2 border-slate-400 p-2">
+                    {
+                      currDialogActiveTab == "bunnings" && bunningsData && bunningsData.map((category, inx) => {
+                        return (
+                          <div
+                            key={inx}
+                            onClick={() => {
+                              setSelectedCategory(category.categoryName)
+                            }}
+                            className="px-3 py-2 border-2 border-slate-400 rounded-sm hover:bg-yellow hover:border-yellow cursor-pointer transition-colors duration-200"
+                          >
+                            {category.categoryName}
+                          </div>
+                        )
+                      })
+                    }
+                    {
+                      currDialogActiveTab == "productData" && productData && productData.map((category, inx) => {
+                        return (
+                          <div
+                            key={inx}
+                            onClick={() => {
+                              setSelectedCategory(category.categoryName)
+                            }}
+                            className="px-3 py-2 border-2 border-slate-400 rounded-sm hover:bg-yellow hover:border-yellow cursor-pointer transition-colors duration-200"
+                          >
+                            {category.categoryName}
+                          </div>
+                        )
+                      })
+                    }
+
+                  </div>
+                  <div className="">
+
+                    {
+                      currDialogActiveTab == "bunnings" && bunningsData.map((category, inx) => {
+                        const currCategory = selectedCategory === category.categoryName;
+                        return (
+                          <div
+                            key={inx}
+                            className={`w-full ${currCategory ? "block" : "hidden"} grid md:grid-cols-3 lg:grid-cols-4 gap-0`}
+                          >
+                            {
+                              category.products.map((product, index) => {
+                                return (
+                                  <a
+                                    target="_blank"
+                                    key={index}
+                                    href={product.link}
+                                    className="flex gap-2 flex-col border-slate-400 m-1 ml-2 hover:bg-slate-200 rounded-md p-2"
+                                  >
+                                    <div className="w-full h-full">
+                                      <img
+                                        src={product.image}
+                                        alt={product.name}
+                                        className="w-full h-48 object-cover rounded-lg shadow-lg border-2 border-slate-300 hover:shadow-xl hover:border-slate-500 transition-all duration-150"
+                                      />
+                                    </div>
+                                    <div className="text-left">
+                                      <p className="font-semibold text-black">{product.name}</p>
+                                      <p className="font-thin text-slate-400">{product.personalUsage}</p>
+                                      <p className="font-semibold text-slate-700">{product.price} $</p>
+                                    </div>
+                                  </a>
+                                )
+                              })
+                            }
+                          </div>
+                        )
+                      })
+                    }
+                    {
+                      currDialogActiveTab == "productData" && productData.map((category, inx) => {
+                        const currCategory = selectedCategory === category.categoryName;
+                        return (
+                          <div
+                            key={inx}
+                            className={`w-full ${currCategory ? "block" : "hidden"} grid md:grid-cols-3 lg:grid-cols-4 gap-0`}
+                          >
+                            {
+                              category.products.map((product, index) => {
+                                return (
+                                  <a
+                                    target="_blank"
+                                    key={index}
+                                    href={product.link}
+                                    className="flex gap-2 flex-col border-slate-400 m-1 ml-2 hover:bg-slate-200 rounded-md p-2"
+                                  >
+                                    <div className="w-full h-full">
+                                      <img
+                                        src={product.image}
+                                        alt={product.name}
+                                        className="w-full h-48 object-cover rounded-lg shadow-lg border-2 border-slate-300 hover:shadow-xl hover:border-slate-500 transition-all duration-150"
+                                      />
+                                    </div>
+                                    <div className="text-left">
+                                      <p className="font-semibold text-black">{product.name}</p>
+                                      <p className="font-thin text-slate-400">{product.personalUsage}</p>
+                                      <p className="font-semibold text-slate-700">{product.price} $</p>
+                                    </div>
+                                  </a>
+                                )
+                              })
+                            }
+                          </div>
+                        )
+                      })
+                    }
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )
+      }
       {/* <div className="w-[100px]">
         <GetPremium />
       </div> */}

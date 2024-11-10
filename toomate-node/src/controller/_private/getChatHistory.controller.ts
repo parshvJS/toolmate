@@ -28,7 +28,6 @@ export async function getChatHistory(req: Request, res: Response) {
             return acc;
         }, []);
 
-        console.log("reducedChat called",categorizeChatSessions(reducedChat));
         return res.status(200).json({
             success: true,
             status: 200,

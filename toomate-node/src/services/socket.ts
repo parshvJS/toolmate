@@ -48,8 +48,19 @@ export async function handleSocketSerivce(socket: Socket) {
             const { signal } = controller;
 
             // Store initial message
-            await produceNewMessage(data.message, data.sessionId, false, false, "user", [], []);
-
+            produceNewMessage(
+                data.message,
+                data.sessionId,
+                false,
+                false,
+                false,
+                [],
+                [],
+                [],
+                false,
+                [],
+                "user",
+            )
             // Setup stop handler early
             socket.once('stop', () => {
                 console.log('Stop signal received');
@@ -136,29 +147,49 @@ export async function handleSocketSerivce(socket: Socket) {
                     );
 
                     if (messageStream) {
+                        console.log({
+                            message: messageStream.message,
+                            isProductSuggested: messageStream.isProductSuggested,
+                            isMateyProduct: messageStream.isMateyProduct,
+                            isBunningsProduct: messageStream.isBunningsProduct,
+                            mateyProduct: messageStream.mateyProduct,
+                            productSuggestionList: messageStream.productSuggestionList,
+                            bunningsProductList: messageStream.bunningsProductList,
+                            isCommunitySuggested: messageStream.isCommunitySuggested,
+                            communityId: messageStream.communityId,
+                            emo: messageStream.emo
+                        }, "-------------------messageStream 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 ");
                         await Promise.all([
                             produceNewMessage(
-                                messageStream.message || "",
+                                messageStream.message,
                                 data.sessionId,
                                 messageStream.isProductSuggested,
+                                messageStream.isMateyProduct,
+                                messageStream.isBunningsProduct,
+                                messageStream.productSuggestionList,
+                                messageStream.mateyProduct,
+                                messageStream.bunningsProductList,
                                 messageStream.isCommunitySuggested,
-                                "ai",
-                                messageStream.communityId,
-                                messageStream.productId
+                                messageStream.communityId || [],
+                                "ai"
                             ),
                             produceNewMessage(
                                 messageStream.emo,
                                 data.sessionId,
                                 false,
                                 false,
-                                "ai",
+                                false,
                                 [],
-                                []
+                                [],
+                                [],
+                                false,
+                                [],
+                                "ai",
                             )
                         ]);
 
                         const newAiAddedChatHistory = await abstractChathistory(chatHistory, {
-                            message: messageStream.message,
+                            message: messageStream.message || "",
                             role: 'ai',
                         });
                         await appendArrayItemInRedis(cacheKey, newAiAddedChatHistory);
@@ -182,16 +213,44 @@ export async function handleSocketSerivce(socket: Socket) {
                         data.budgetSliderValue || 0,
                         socket
                     );
+                    if (messageStreamPro) {
 
-                    if (!data.isBudgetSliderPresent && chatHistory.length > 3) {
-                        await FindNeedOfBudgetSlider(newChatContext, socket);
+                        await Promise.all([
+                            produceNewMessage(
+                                messageStreamPro.message,
+                                data.sessionId,
+                                messageStreamPro.isProductSuggested,
+                                messageStreamPro.isMateyProduct,
+                                messageStreamPro.isBunningsProduct,
+                                messageStreamPro.productSuggestionList,
+                                messageStreamPro.mateyProduct,
+                                messageStreamPro.bunningsProductList,
+                                messageStreamPro.isCommunitySuggested,
+                                messageStreamPro.communityId || [],
+                                "ai"
+                            ),
+                            produceNewMessage(
+                                messageStreamPro.emo,
+                                data.sessionId,
+                                false,
+                                false,
+                                false,
+                                [],
+                                [],
+                                [],
+                                false,
+                                [],
+                                "ai",
+                            )
+                        ]);
                     }
+                        await FindNeedOfBudgetSlider(data.message,newChatContext, socket);
                     break;
                 }
 
                 default:
                     console.log('No valid plan found');
-                    socket.emit('error', { message: 'Invalid plan type', success: false });
+                    socket.emit('error', "No valid plan found");
             }
 
         } catch (error: any) {

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
-import { TableOfContents, Timer, Wrench } from "lucide-react";
+import { LoaderPinwheel, TableOfContents, Timer, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import MateyExpression from "./MateyExpression";
 
 interface Product {
     name: string;
@@ -13,6 +14,7 @@ interface Product {
 interface ChatMessage {
     message: string;
     role: "user" | "ai";
+    expression?:"laugh" | "hello" | "smile" | "offer" | "1thumb" | "2thumb" | "tool" | "thinking"
     isToolSuggestion?: boolean;
     products?: Product[];
     followUpQuestion?: boolean;
@@ -22,10 +24,11 @@ interface ChatMessage {
 }
 
 const chatDemo: ChatMessage[] = [
-    { message: "What’s the best tool to hang a picture frame?", role: "user" },
+    { message: "What's the best tool to hang a picture frame?", role: "user" },
     {
-        message: "Based on that, a cordless drill with self-drilling wall anchors would work perfectly for secure and easy installation! 😊",
+        message: "For picture frames, a cordless drill and self-drilling wall anchors are a great combo for secure mounting. 😊",
         role: "ai",
+        expression: "tool",
         isToolSuggestion: true,
         products: [
             { name: "Cordless Drill", price: 50, assets: "/assets/images/demo/product2.png" },
@@ -33,25 +36,33 @@ const chatDemo: ChatMessage[] = [
         ]
     },
     {
-        message: "Would you like to set a budget for these tools? I can suggest options that fit your price range!",
+        message: "By the way, do you have a budget in mind? I can keep suggestions within your range.",
         role: "ai",
+        expression: "thinking",
         budgetSlider: true,
         budgetRange: { min: 10, max: 200 }
     },
-    { message: "Sure, let's keep it under $100.", role: "user" },
+    { message: "Let's keep it under $80.", role: "user" },
     {
-        message: "Perfect! Here’s a selection within your budget that will work great for your drywall project. 😊 Let me know if you need more options!",
+        message: "Perfect! Here's a selection under $80 that'll work well for your frames. Let me know if you need more ideas!",
         role: "ai",
+        expression: "offer",
         isToolSuggestion: true,
         products: [
-            { name: "Affordable Hanging Kit", price: 25, assets: "/assets/images/demo/product1.png" },
-            { name: "Basic Cordless Drill", price: 45, assets: "/assets/images/demo/product2.png" },
+            { name: "Basic Hanging Kit", price: 18, assets: "/assets/images/demo/product1.png" },
+            { name: "Compact Cordless Drill", price: 40, assets: "/assets/images/demo/product3.png" }
         ]
     },
-    { message: "Thanks for the help!", role: "user" },
+    { message: "Thanks, any tips for avoiding extra holes?", role: "user" },
     {
-        message: "Let's continue in deep. Let Me assist you with your project?",
+        message: "Sure! Try using painter's tape to plan your layout first. This way, you can visualize before drilling. 😊",
         role: "ai",
+        expression: "smile"
+    },
+    {
+        message: "Grab some tape and a pencil, and let's get those frames up! Let me know if you're ready to start!",
+        role: "ai",
+        expression: "2thumb",
         isEnd: true
     }
 ];
@@ -71,7 +82,6 @@ export function MobileMock() {
             });
         }
     };
-
     const processChat = async (index: number) => {
         if (index >= chatDemo.length) return;
 
@@ -79,13 +89,15 @@ export function MobileMock() {
         setIsProcessing(true);
 
         if (currentMessage.role === "ai") {
-            setIsStreaming(true);
-            let charIndex = -1;
-            while (charIndex < currentMessage.message.length) {
-                setStreamingText((prev) => prev + currentMessage.message[charIndex]);
-                charIndex++;
-                await new Promise((resolve) => setTimeout(resolve, 30)); // Typing speed
-            }
+                setIsStreaming(true);
+                setStreamingText(""); // Reset the streaming text first
+                let charIndex = 0;
+                const message = currentMessage.message;
+                while (charIndex < message.length) {
+                    setStreamingText(message.substring(0, charIndex + 1)); // Use substring instead
+                    charIndex++;
+                    await new Promise((resolve) => setTimeout(resolve, 30));
+                }
             setCurrChat((prev) => [...prev, { ...currentMessage, message: currentMessage.message }]);
             setStreamingText("");
             setIsStreaming(false);
@@ -95,11 +107,10 @@ export function MobileMock() {
 
         scrollToBottomSmoothly();
 
-        // Set timeout for next message only after the current one is fully processed
         setTimeout(() => {
             setIsProcessing(false);
-            processChat(index + 1); // Process the next message
-        }, 1000); // Adjust this delay as needed
+            processChat(index + 1);
+        }, 2000);
     };
 
     useEffect(() => {
@@ -164,8 +175,11 @@ export function MobileMock() {
                             <div className={`flex gap-2 w-full ${chat.role === "ai" ? "justify-start" : "justify-end"}`}>
                                 {chat.role === "ai" ? (
                                     <div className="flex gap-2 items-start">
-                                        <img src="/assets/icons/blur-ball.svg" className="min-w-9 -mt-2" />
-                                        <p>{chat.message}</p>
+                                        <div className="w-32 ">
+
+                                            <MateyExpression expression={chat.expression} />
+                                        </div>
+                                            <p>{chat.message}</p>
                                     </div>
                                 ) : (
                                     <motion.p
@@ -227,7 +241,8 @@ export function MobileMock() {
                     ))}
                     {isStreaming && (
                         <div className="p-2 rounded-lg flex items-start gap-2 text-left">
-                            <img src="/assets/icons/blur-ball.svg" className="min-w-9" />
+                            {/* <img src="/assets/icons/blur-ball.svg" className="min-w-9" /> */}
+                            <LoaderPinwheel className=" text-yellow animate-spin min-w-9 max-w-32 max-h-32" />
                             <p>{streamingText}</p>
                         </div>
                     )}
@@ -253,4 +268,10 @@ export function MobileMock() {
            
         </div>
     );
+}
+
+export function getRandomExpression(): "laugh" | "hello" | "smile" | "offer" | "1thumb" | "2thumb" | "tool" | "thinking" {
+    const expressions = ["laugh", "hello", "smile", "offer", "1thumb", "2thumb", "tool", "thinking"] as const;
+    const randomIndex = Math.floor(Math.random() * expressions.length);
+    return expressions[randomIndex];
 }

@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import connectDB from '../db/db.db.js';
+import mongoose from 'mongoose';
 dotenv.config();
 
 
@@ -38,10 +39,14 @@ export async function produceNewMessage(
 	message: string,
 	sessionId: string,
 	isProductSuggested: boolean,
+	isMateyProduct: boolean,
+	isBunningsProduct: boolean,
+	productSuggestionList: any[],
+	mateyProduct: any[],
+	bunningsProductList: string[],
 	isCommunitySuggested: boolean,
-	role: string,
-	communityId: string[] = [],
-	productId: string[] = []
+	communityId: string[],
+	role: string
 ) {
 	const producer = await createProducer();
 	const createdAt = Date.now();
@@ -50,12 +55,118 @@ export async function produceNewMessage(
 		messages: [
 			{
 				key: `message-${Date.now()}`,
-				value: JSON.stringify({ message, sessionId, isProductSuggested, isCommunitySuggested, communityId, productId, role, createdAt }), 
+				value: JSON.stringify({
+					message,
+					sessionId,
+					isProductSuggested,
+					isMateyProduct,
+					isBunningsProduct,
+					productSuggestionList,
+					mateyProduct,
+					bunningsProductList,
+					isCommunitySuggested,
+					communityId,
+					role,
+					createdAt
+				}),
 			}
 		]
-	})
-	console.log("New message created----------------------");
+	});
+	console.log("New message created----------------------", {
+		message,
+		sessionId,
+		isProductSuggested,
+		isMateyProduct,
+		isBunningsProduct,
+		productSuggestionList,
+		mateyProduct,
+		bunningsProductList,
+		isCommunitySuggested,
+		communityId,
+		role,
+	}, "New message created----------------------",JSON.stringify({
+		message,
+		sessionId,
+		isProductSuggested,
+		isMateyProduct,
+		isBunningsProduct,
+		productSuggestionList,
+		mateyProduct,
+		bunningsProductList,
+		isCommunitySuggested,
+		communityId,
+		role,
+	}));
 	return true;
+}
+
+
+export async function startNewMessageConsumer() {
+
+	console.log('Consumer is running..');
+	const consumer = kafka.consumer({ groupId: 'default' });
+	await consumer.connect();
+	await consumer.subscribe({ topic: 'NEW-MESSAGE', fromBeginning: true });
+
+	await consumer.run({
+		autoCommit: true,
+		eachMessage: async ({ message, pause }) => {
+			try {
+				await connectDB();
+				const stringifiedMessage = message.value?.toString();
+				console.log(JSON.parse(stringifiedMessage || "").bunningsProductList.map((id: string) => new mongoose.Types.ObjectId(id)),"Stringified message 6780")
+				// Parse the message
+				const {
+					message: msg,
+					sessionId,
+					isProductSuggested,
+					isMateyProduct,
+					isBunningsProduct,
+					productSuggestionList,
+					mateyProduct,
+					bunningsProductList,
+					isCommunitySuggested,
+					communityId,
+					role,
+					createdAt
+				} = JSON.parse(stringifiedMessage || "{}");
+				console.log(bunningsProductList, "Bunnings porduct 678")
+				if (!msg) {
+					console.log('No message found');
+					return;
+				}
+
+				console.log(`New Message Recv: ${msg}, Session ID: ${sessionId}`);
+
+
+				const data = {
+					message: msg,
+					sessionId,
+					isProductSuggested,
+					isMateyProduct,
+					isBunningsProduct,
+					productSuggestionList:productSuggestionList,
+					mateyProduct,
+					bunningsProductList: bunningsProductList.map((id: string) => new mongoose.Types.ObjectId(id)),
+					isCommunitySuggested,
+					communityId,
+					role,
+					createdAt
+				}
+
+				console.log(data, "Data 67800")
+				// Insert message into the database with all the fields
+				await Chat.create(data);
+				console.log("Data inserted successfully");
+			} catch (err) {
+				console.error('Error processing message:', err);
+				pause(); // Pause processing
+				setTimeout(() => {
+					consumer.resume([{ topic: 'NEW-MESSAGE' }]); // Resume after a delay
+				}, 60 * 1000);
+			}
+		},
+	});
 }
 
 
@@ -125,60 +236,6 @@ export async function startMessageConsumer() {
 }
 
 
-export async function startNewMessageConsumer() {
 
-	console.log('Consumer is running..');
-	const consumer: Consumer = kafka.consumer({ groupId: 'default' });
-	await consumer.connect();
-	await consumer.subscribe({ topic: 'NEW-MESSAGE', fromBeginning: true });
-
-	await consumer.run({
-		autoCommit: true,
-		eachMessage: async ({ message, pause }) => {
-			try {
-				await connectDB();
-				// Parse the message
-				const {
-					message: msg,
-					sessionId,
-					isProductSuggested,
-					isCommunitySuggested,
-					communityId,
-					productId,
-					role,
-					createdAt
-				} = JSON.parse(message.value?.toString() || '{}');
-
-				if (!msg) {
-					console.log('No message found');
-					return;
-				}
-
-				console.log(
-					`New Message Recv: ${msg}, Session ID: ${sessionId}`
-				);
-
-				// Insert message into the database
-				await Chat.create({
-					message: msg,
-					sessionId,
-					isProductSuggested,
-					isCommunitySuggested,
-					communityId,
-					productId,
-					role,
-					createdAt
-				});
-				console.log("data got inserted");
-			} catch (err) {
-				console.error('Error processing message:', err);
-				pause(); // Pause processing
-				setTimeout(() => {
-					consumer.resume([{ topic: 'NEW-MESSAGE' }]); // Resume after a delay
-				}, 60 * 1000);
-			}
-		},
-	});
-}
 
 export default kafka;
