@@ -29,7 +29,7 @@ export async function getProductFromId(req: Request, res: Response) {
             categoryName: category.categoryName,
             products: category.products.map((productId: string) => productMap.get(productId))
         }));
-
+        console.log(result, 'result');
         res.status(200).json({
             message: "Products fetched successfully",
             success: true,

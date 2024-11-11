@@ -40,7 +40,6 @@ export async function GetAnswerFromPrompt(
 	socket: Socket
 ) {
 	await connectDB();
-	console.log('Getting History-');
 	const chatHistory = await Chat.find({ sessionId });
 	const shortenChatHistory = chatHistory.reduce((acc: any, chat) => {
 		if (acc.length > 15) {
@@ -55,10 +54,7 @@ export async function GetAnswerFromPrompt(
 		];
 		return acc;
 	}, []);
-	console.log(
-		shortenChatHistory,
-		'is here ============================================'
-	);
+
 	let expression: any;
 
 	try {
@@ -94,7 +90,6 @@ export async function GetAnswerFromPrompt(
 			expression?.kwargs?.content || 'laugh',
 			'ai'
 		);
-		console.log(gatheredResponse, 'gatheredResponse');
 	} catch (error) {
 		console.error('Error streaming response:', error);
 		socket.emit('error', 'Error occurred during streaming.');
@@ -109,12 +104,10 @@ export async function findAndExecuteIntend(
 	socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
 	plan: number
 ) {
-	console.log("prompt", prompt);
 	const chatHistory = await getPremiumUserChatMessage(
 		sessionId,
 		Number(process.env.CONTEXT_LIMIT_CHAT) || 15
 	); // get chat history from database
-	console.log("chatHistory", chatHistory);
 	let getIntendPrompt = '';
 
 	if (plan == 1) {
@@ -168,7 +161,6 @@ export async function findAndExecuteIntend(
 		prompt, // User prompt
 	});
 
-	console.log('user intend', JSON.parse(user_intend));
 	const intend = JSON.parse(user_intend.replace(['`', ' '], ['', '']));
 
 	switch (intend) {
@@ -180,7 +172,6 @@ export async function findAndExecuteIntend(
 
 
 async function streamResponse(sessionId: string, prompt: string, chatHistory: any[], socket: Socket) {
-	console.log("Streaming response for", prompt);
 	let gatheredResponse = '';
 	const streamPrompt = `system prompt:, As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
 	| User Prompt: ${prompt} 
@@ -224,7 +215,6 @@ export async function findAndExecuteIntend1(
 	// Define a tool for providing normal advice
 	const normalAdvice = tool(
 		async function tool1(prompt: string) {
-			console.log('Normal advice received:', prompt);
 			// Return a response or perform any other action here
 			return `Here's some advice: ${prompt}`;
 		},
@@ -240,7 +230,6 @@ export async function findAndExecuteIntend1(
 	try {
 		// Use the LLM with the tools
 		const response = await llmWithTools.invoke(prompt); // Pass the user prompt
-		console.log(response, "response");
 
 		// Optionally send the response back to the user via the socket
 		socket.emit('response', response); // Adjust this based on your socket event
@@ -274,14 +263,12 @@ export async function getChatName(prompt: string) {
 	const chatName = await runnableChainOfChatName.invoke({
 		prompt, // User prompt
 	});
-	console.log('chat name', chatName);
 	return chatName;
 }
 
 
 export async function getUserIntend(prompt: string, chatHistory: string, plan: number): Promise<number[]> {
 	let getIntendPrompt = '';
-	console.log('plan:', plan, 'prompt:', prompt, 'chatHistory:', chatHistory);
 	if (plan === 1) {
 		getIntendPrompt = `Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]).
 
@@ -391,7 +378,6 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	// Ensure intent 1 is always present
 	intentArray = [1, ...intentArray];
 
-	console.log('user intend:', intentArray);
 	return intentArray;
 }
 
@@ -423,7 +409,6 @@ export async function executeIntend(
 		emo: '',
 	};
 
-	console.log('Intend:', intend, "chat history", chatHistory); // Debugging log
 
 	// TODO: Remove this below condition and code all features for pro plan currently plan 2
 	if (plan == 1 || plan == 2) {
@@ -475,13 +460,11 @@ export async function executeIntend(
 
 					// const productPromises = productIntent.data.map(async (intent: number | string) => {
 					const productPromises = [1, 2, 3].map(async (intent: number | string) => {
-						console.log('Processing intent:', intent); // Debugging log
 						switch (intent) {
 							case 1:
 								return handleBunningsProduct(prompt, chatHistory, sessionId, isBudgetSliderValue, budgetSliderValue, 0, socket)
 									.then((bunningsProducts) => {
 										bunningsProductList = bunningsProducts;
-										console.log('Bunnings products:', bunningsProducts); // Debugging log
 										// socket.emit('bunningsProducts', bunningsProducts);
 										return bunningsProducts;
 									})
@@ -495,7 +478,7 @@ export async function executeIntend(
 								return HandleProductRecommendation(prompt, chatHistory, signal, isBudgetSliderValue, budgetSliderValue, socket)
 									.then((adsenseProducts) => {
 										adsenseProductList = adsenseProducts;
-										console.log('Adsense products:', adsenseProducts); // Debugging log
+										console.log('adsenseProducts', adsenseProducts);
 										socket.emit('productId', adsenseProducts);
 										return adsenseProducts;
 									})
@@ -509,7 +492,6 @@ export async function executeIntend(
 								return handleMateyProduct(prompt, chatHistory, sessionId, socket)
 									.then((aiProducts) => {
 										aiProductList = aiProducts;
-										console.log('AI products:', aiProducts); // Debugging log
 										socket.emit('aiProducts', aiProducts);
 										return aiProducts;
 									})
@@ -535,7 +517,6 @@ export async function executeIntend(
 							const data = (bunningsProductList as any[]).flatMap((category) => {
 								const { categoryName, products } = category; // Destructure categoryName and products
 								return (products || []).map((product: any) => {
-									console.log('Product:', product); // Debugging log
 									return {
 										name: product.name,
 										price: product.price,
@@ -550,7 +531,6 @@ export async function executeIntend(
 
 							const bunningsProduct = await BunningsProduct.insertMany(data);
 							newChat['isBunningsProduct'] = true;
-							console.log("bunningsProduct           0  0 0 0 0 0 0 0 ", bunningsProduct);
 							newChat['bunningsProductList'] = bunningsProduct.map((product) => product._id.toString());
 						}
 					}
@@ -558,15 +538,12 @@ export async function executeIntend(
 						newChat['isProductSuggested'] = true;
 						newChat['productSuggestionList'] = adsenseProductList;
 					}
-					console.log('Intent 2', adsenseProductList, productIntent.data.includes(2));
 
-					console.log('Intent 3:', productIntent.data, productIntent.data.includes(3), aiProductList);
 					if (productIntent.data.includes(3)) {
 						newChat['isMateyProduct'] = true;
 						newChat['mateyProduct'] = aiProductList;
 					}
 
-					console.log('new chat with products:', newChat);
 					break;
 				}
 				// Follow-up question for more understanding
@@ -627,7 +604,6 @@ async function findAndSuggestProduct(prompt: string, chatHistory: string, socket
 	const productIntentLLMChain = productIntentTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProductIntent = RunnableSequence.from([productIntentLLMChain, new RunnablePassthrough()]);
 	const productIntent = await runnableChainOfProductIntent.invoke({ prompt, chatHistory });
-	console.log('productIntent', productIntent);
 	try {
 
 		const intents = JSON.parse(productIntent);
@@ -677,7 +653,6 @@ async function followUpQuestion(prompt: string, chatHistory: string, socket: Soc
 		socket.emit('followUpQuestion', { text: chunk.content });
 	}
 	socket.emit('terminate', { done: true });
-	console.log('followUpQuestion', gatheredResponse);
 	return gatheredResponse;
 }
 
@@ -710,8 +685,15 @@ async function handleMateyProduct(prompt: string, chatHistory: string, sessionId
 	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
 	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
-	console.log('products from matey Is Here 890:', products);
-	socket.emit('mateyProduct', JSON.parse(products));
+	try {
+
+		socket.emit('mateyProduct', JSON.parse(products));
+	} catch (error) {
+
+		socket.emit('error', 'Error occurred while fetching product intent.');
+
+		return [];
+	}
 	return JSON.parse(products);
 }
 
@@ -723,8 +705,6 @@ export async function abstractChathistory(
 		{ role: string, message: string }
 ) {
 	;
-	console.log('Chat History:', chatHistory);
-	console.log('New Message:', newMessage);
 	const abstractChathistoryPrompt = `Given the chat history, abstract the main points and summarize the conversation in a few sentences.
 
 	- you will be given previous chat History and new message 
@@ -765,11 +745,9 @@ export async function inititalSummurizeChat(chatHistory: string) {
 
 // get products from bunnigns
 async function handleBunningsProduct(prompt: string, chatHistory: string, sessionId: string, isBudgetAvailable: boolean, maxBudget: number, minBudget: number, socket: Socket) {
-	console.log("inside handleBunningsProduct function", prompt, "busget slider bool", isBudgetAvailable, "max value", maxBudget, minBudget);
 	socket.emit('status', {
 		message: "Matey Is Prepareing Product From Bunnings For You..."
 	})
-	console.log("inside handleBunningsProduct function");
 	const productPrompt = `
 		Based on User Prompt And Chat Context generate DIY Product that are relavent to search in internet and return to user 
 		User Prompt: {prompt}
@@ -781,29 +759,27 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 		- The products should be suitable for a wide range of users, from beginners to experts.
 		- Data gram format should be valid and parsable to JSON.
 		- Data gram Example : ["product1","product2","product3"]
-		- length of array should be 0-3
+		- length of array should be 0-4
 		- Return only the product names in an array (response should contain only an array that can be parsed to JSON):
 		- No Comment or additional text
+		- give in one linear plain text response
 		Array:
 `;
 	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
 	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
-	console.log('products:', products);
 
 	try {
-		const parsedProductList = JSON.parse(products);
-		console.log('Parsed product list:', parsedProductList, "=-----------------=", products);
+		const parsedProductList = JSON.parse(products.replace(/`/g, '').replace('json', '').replace('JSON', '').replace('Array:', '').trim());
 
 		const searchItems = parsedProductList.map((product: string) => {
 			return {
 				searchTerm: product,
-				productLimit: 5,
+				productLimit: 3,
 				productPage: 1
 			}
 		});
-		console.log('searchItems:', searchItems);
 		const response = await axios.post(`${process.env.WEB_SCRAPPER_API_ENDPOINT}/api/v1/scrapeBunningsProduct`, {
 			userId: sessionId,
 			searchItems: searchItems,
@@ -811,96 +787,98 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 			minBudgetValue: minBudget,
 			maxBudgetValue: maxBudget
 		})
-		
+
 		if (!response.data.success) {
 			return [];
 		}
-		const res = response.data.data.map((product: any) => ({
-			categoryName: product.searchTerm,
-			products: [...product.products]
-		}));
-		console.log('Response from bunnings267:', JSON.stringify(res));
-		socket.emit('bunningsProduct', res);
-	// 	console.dir(response.data.data.data);
-	// 	const bunningsProductForAi = response.data.data.data.map((product: any) => (product.name));
-	// 	const personalizeProductPrompt = `Based on the Product List, user prompt, and chat context, generate a personalized product list for the user
+		const indexedProducts: any = [];
+		const wholeIndexedProducts: any = [];
+		let index = 1;
+		response.data.data.data.map((category: any) => {
+			category.data.map((product: any) => {
+				indexedProducts.push({
+					index: index,
+					name: product.name,
+				});
+				wholeIndexedProducts.push({
+					index: index,
+					...product
+				});
+				index++;
+			});
+		});
+		const aiProductPrompt = `Based On User Chat Context and prompt categorize the product given
+		
+		prompt:{prompt}
+		chatHistory:{chatHistory}
+		products : {products}
 
-	// User Prompt: {prompt}
-	// Chat Context: {chatHistory}
-	// Product List: {parsedProductList}
+		your job is to return the products in categirized format
+		blueprint of output format:
+	[
+	Object(categoryName: string, products: array of object((personalUsage:string,index:number),personalUsage:string,index:number)),	
+	]
+	type : 
+	(categoryName: string,products: (personalUsage:string,index:number)[])[]
 
-	// Keep in mind:
-	// - Provide the response in this exact format (use JSON in actual response):
-	// [
-	// 	object(categoryName: string, products: array of object(name: string)),
-	// 	object(categoryName: string, products: array of object(name: string))
-	// ]
+	Steps:
 
-	// Guidelines:
-    // - Categorize products meaningfully, ensuring each category is relevant and non-empty.
-	// - For each product, create a personalUsage field with a short, practical tip on how, why, or where to use it, based on context.
-	// - Adjust product names for clarity if needed, but keep them recognizable.
-	// - Include only categories with at least one product.
-	// - Output a JSON array of objects, starting directly with [ ... ], containing no additional text or annotations.
-	// - generate all the given details as it is dont change any thing or try to add random dummy data
-	// - Each object should have:
-    //    I. categoryName
-    //    II . products: an array with complete product details (including personalUsage).
-	// - make it one linear for better parsing to JSON and avoid any extra text or comments
-	// - Return only the array of objects without any extra text or comments Start by creating an array directly : Array : `;
+Categorize relevant products only.
+Exclude empty categories and any non-useful products.
+For each product, include index (position in list) and a personal_usage field, providing a short usage description based on the chat context.
+Output as a JSON array of product objects, with no extra text or comments. Start directly with the array of objects in plain text.
+		`;
+		const aiProductTemplate = PromptTemplate.fromTemplate(aiProductPrompt);
+		const aiProductLLMChain = aiProductTemplate.pipe(llm).pipe(new StringOutputParser());
+		const runnableChainOfAiProduct = RunnableSequence.from([aiProductLLMChain, new RunnablePassthrough()]);
+		const aiProducts = await runnableChainOfAiProduct.invoke({
+			prompt,
+			chatHistory,
+			products: JSON.stringify(indexedProducts)
+		});
+		const parsedAiProducts = JSON.parse(aiProducts);
 
-	// 	const personalizeProductTemplate = PromptTemplate.fromTemplate(personalizeProductPrompt);
+		const remappedProducts = parsedAiProducts.map((category: any) => {
+			const { categoryName, products } = category;
+			return {
+				categoryName,
+				products: products.map((product: any) => {
+					const originalProduct = wholeIndexedProducts.find((p: any) => p.index === product.index);
+					return {
+						...originalProduct,
+						image: originalProduct.imageUrl,
+						rating: originalProduct.reviews.replace(/[()]/g, ''),
+						personalUsage: product.personalUsage,
+					};
+				}),
+			};
+		});
 
-	// 	const personalizeProductLLMChain = personalizeProductTemplate.pipe(llm).pipe(new StringOutputParser());
+		socket.emit('bunningsProduct', remappedProducts);
 
-	// 	const runnableChainOfPersonalizeProduct = RunnableSequence.from([personalizeProductLLMChain, new RunnablePassthrough()]);
-
-	// 	const personalizedProductList = await runnableChainOfPersonalizeProduct.invoke({
-	// 		prompt,
-	// 		chatHistory,
-	// 		parsedProductList: bunningsProductForAi
-	// 	});
+		return remappedProducts;
 
 
-		// try {
-		// 	const parsedPersonalizedProductList = parseJsonString(personalizedProductList);
-		// 	const productDetails = response.data.data.flatMap((category: any) => {
-		// 		return category.products.map((product: any) => ({
-		// 			name: product.name,
-		// 			price: product.price,
-		// 			personalUsage: product.personalUsage,
-		// 			rating: product.rating,
-		// 			image: product.imageUrl,
-		// 			link: product.link,
-		// 			searchTerm: category.categoryName,
-		// 		}));
-		// 	});
+		// // Transform the response data to match expected format
+		// const res = response.data.data.data.map((category: any) => ({
+		// 	categoryName: category.searchTerm,
+		// 	products: category.data.map((product: any) => ({
+		// 		name: product.name,
+		// 		price: product.price,
+		// 		imageUrl: product.imageUrl,
+		// 		link: product.link,
+		// 		rating: product.reviews.replace(/[()]/g, ''), // Remove parentheses from reviews
+		// 		personalUsage: `Perfect for ${category.searchTerm.toLowerCase()} tasks` // Added default personalUsage
+		// 	}))
+		// }));
 
-		// 	const expandedProductList = parsedPersonalizedProductList.map((category: any) => {
-		// 		const { categoryName, products } = category;
-		// 		const expandedProducts = products.map((product: any) => {
-		// 			const originalProduct = productDetails.find((p: any) => p.name === product.name);
-		// 			return {
-		// 				...originalProduct,
-		// 				personalUsage: product.personalUsage,
-		// 			};
-		// 		});
-		// 		return {
-		// 			categoryName,
-		// 			products: expandedProducts,
-		// 		};
-		// 	});
-		// 	console.log('Expanded product list:', JSON.stringify(expandedProductList));
-		// 	console.log('Bunnings product list:', JSON.stringify(parsedPersonalizedProductList));
-		// 	// socket.emit('bunningsProduct', expandedProductList);
 
-		// 	return expandedProductList``;
-		// } catch (error: any) {
-		// 	console.error('Error parsing product list:', error.message);
-		// 	socket.emit('error', 'Error occurred while fetching product list.');
-		// 	return [];
-		// }
-		return response.data.data.data
+		// const 
+
+
+		// socket.emit('bunningsProduct', res);
+
+		// return res;
 	} catch (error: any) {
 		console.error('Error parsing product list:', error.message);
 		socket.emit('error', 'Error occurred while fetching product list.');
@@ -911,7 +889,6 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, isProductSuggestion: boolean, isCommunitySuggestin: boolean, socket: Socket) {
 	let streamPrompt;
 	const chatHistoryString = JSON.stringify(chatHistory, null, 2);
-	console.log(chatHistoryString, "---------------------chatHistory------------------------------------------------------------------------");
 
 	if (isProductSuggestion) {
 		streamPrompt = `Based on the user's prompt and chat history, assess the intensity of the tool request. 
@@ -949,7 +926,6 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	Context of chat (use this if present, else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistoryString : "Context not available."} 
 	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
 	}
-	console.log(streamPrompt, "---------------------streamPrompt------------------------------------------------------------------------");
 
 	const stream = await llm.stream(streamPrompt);
 
@@ -963,7 +939,6 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 		socket.emit('message', { text: chunk.content });
 	}
 	socket.emit('terminate', { done: true });
-	console.log("end of stream, response:", gatheredResponse);
 	return gatheredResponse;
 }
 
@@ -982,17 +957,14 @@ async function HandleProductRecommendation(
 	socket: Socket
 ) {
 	if (signal.aborted) {
-		console.log('Operation aborted');
 		return;
 	}
-	console.log('Handling product recommendation', isBudgetAvailable, budget, prompt, chatHistory);
 	// Handle non-budget product suggestion
 	let productCategory;
 
 	try {
 		// Retrieve product category from Redis or database
 		const redisData = await getRedisData('PRODUCT-CATAGORY');
-		console.log('Redis data:', redisData);
 		if (signal.aborted) return;
 
 		if (redisData.success) {
@@ -1001,7 +973,6 @@ async function HandleProductRecommendation(
 			await connectDB();
 			// Fetch from MongoDB if Redis doesn't have the data
 			const DbProductCategory = await ProductCatagory.find();
-			console.log('DB Product Category:', DbProductCategory);
 			if (signal.aborted) return;
 
 			if (DbProductCategory.length > 0) {
@@ -1033,7 +1004,6 @@ async function HandleProductRecommendation(
 			.pipe(llm)
 			.pipe(new StringOutputParser());
 
-		console.log("Running category chain");
 
 		const runnableChainOfCategory = RunnableSequence.from([
 			categoryLLMChain,
@@ -1048,7 +1018,6 @@ async function HandleProductRecommendation(
 
 		});
 
-		console.log("Raw category result:", categoryResult);
 
 		// Safely parse the category response without removing essential characters
 		let parsedCategory;
@@ -1087,7 +1056,6 @@ async function HandleProductRecommendation(
 			productDetails = JSON.parse(redisProductData.data);
 		} else {
 			await connectDB();
-			console.log("Fetching product from database", categoryIds);
 
 			// Convert categoryIds (strings) to ObjectIds using 'new mongoose.Types.ObjectId()'
 			const objectIdCategoryIds = categoryIds.map((id: string) => new mongoose.Types.ObjectId(id));
@@ -1108,7 +1076,6 @@ async function HandleProductRecommendation(
 
 			productDetails = DbProductDetails;
 		}
-		console.log('Product details:', productDetails);
 		if (signal.aborted) return;
 		if (!productDetails || productDetails.length === 0) {
 			console.error('No products found.');
@@ -1124,9 +1091,7 @@ async function HandleProductRecommendation(
 			socket.emit('error', "No products Selected For You By Matey")
 			return;
 		}
-		console.log('Refined product details:', refinedProductDetails);
 		const jsonProductDetails = JSON.stringify(refinedProductDetails);
-		console.log('JSON product details:', jsonProductDetails);
 
 		const productPrompt = `
 Based on the user's prompt, suggest the most relevant products from the provided product catalog. Ensure the products are highly relevant and useful, limiting each category to 4-5 suggestions. 
@@ -1162,27 +1127,25 @@ Response:
 		const productResult = await runnableChainOfProduct.invoke({
 			prompt, // User's prompt
 			jsonProductDetails: jsonProductDetails,
-			chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
+			chatHistory: JSON.stringify(chatHistory)
 		});
-		console.log('Product suggestions:', productResult);
+
+		console.log("productResult", productResult);
 		let parsedProduct;
 		try {
 			parsedProduct = JSON.parse(wrapWordsInQuotes(String(productResult.replace('`', '').replace('JSON', '').replace('js', ''))));
-			console.log('Parsed product suggestions:', parsedProduct);
 			if (signal.aborted) return;
 			if (parsedProduct.length === 0) {
 				console.error('No products selected.');
-				socket.emit('error', {
-					message: "No products Selected For You By Matey"
-				})
+				socket.emit('error', "No products Selected For You By Matey")
 				return;
 			}
+			console.log("parsedProduct", parsedProduct);
 		} catch (parseError) {
 			console.error('Error parsing product result:', parseError);
 			return;
 		}
 
-		console.log('Product suggestions:', parsedProduct);
 		return parsedProduct;
 
 	} catch (error: any) {
@@ -1228,10 +1191,8 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: [], so
 		prompt: prompt
 	});
 
-	console.log('Need of budget slider:', needOfBudgetSlider);
 
 	const parsedNeedOfBudgetSlider = Boolean(needOfBudgetSlider) || true;
-	console.log('Parsed need of budget slider:', parsedNeedOfBudgetSlider);
 
 	if (parsedNeedOfBudgetSlider) {
 		const createBudgetSlider = `
@@ -1280,13 +1241,11 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: [], so
 
 		try {
 			const parsedBudgetSlider = JSON.parse(budgetSlider);
-			console.log('Parsed budget slider:', parsedBudgetSlider);
 			socket.emit('budgetSlider', parsedBudgetSlider);
 		} catch (error: any) {
 			console.error('Error during budget slider creation:', error.message);
 			socket.emit('error', 'Error occurred while creating budget slider.');
 		}
-		console.log('Budget slider:', budgetSlider);
 	}
 }
 
@@ -1325,14 +1284,12 @@ export async function emotionalChatMessage(prompt: string, socket: Socket) {
 		gatheredResponse += chunk.content;
 	}
 	socket.emit('terminate', { done: true });
-	console.log("end of stream, response:", gatheredResponse);
 	return gatheredResponse;
 }
 
 
 // chat summury
 export async function summarizeAndStoreChatHistory(userId: string, userChat: any): Promise<boolean> {
-	console.log('Summarizing and storing chat history for user:', userId, userChat);
 	await connectDB();
 
 	try {
@@ -1407,24 +1364,20 @@ export async function summarizeAndStoreChatHistory(userId: string, userChat: any
 			},
 		];
 
-		console.log('Filtered chat:', filteredChat);
 		// Helper function to parse and invoke prompt chains
 		async function invokePrompt(template: string) {
 			const promptTemplate = PromptTemplate.fromTemplate(template);
 			const llmChain = promptTemplate.pipe(llm).pipe(new StringOutputParser());
 			const runnableChain = RunnableSequence.from([llmChain, new RunnablePassthrough()]);
 			const result = await runnableChain.invoke({ userChat: JSON.stringify(filteredChat) });
-			console.log(`Result for template ${template}:`, result);
 			return JSON.parse(result);
 		}
 
 		// Process each prompt in parallel and get results
 		const results = await Promise.all(prompts.map(({ template }) => invokePrompt(template)));
-		console.log('Results from all prompts:', results);
 
 		// Fetch user context and update with new parsed data
 		const userContext: any = await UserMemory.findOne({ userId: userId });
-		console.log('Fetched user context:', userContext);
 		if (userContext) {
 			// Update each context type, checking limits and removing excess
 			prompts.forEach((prompt, index) => {
@@ -1434,7 +1387,6 @@ export async function summarizeAndStoreChatHistory(userId: string, userChat: any
 			});
 
 			const saved = await userContext.save();
-			console.log('Updated user context saved:', saved);
 			return Boolean(saved);
 		} else {
 			// Create new user context if none exists
@@ -1446,7 +1398,6 @@ export async function summarizeAndStoreChatHistory(userId: string, userChat: any
 				globalContext_UserChatMemory: results[3],
 			});
 			const saved = await newUserContext.save();
-			console.log('New user context saved:', saved);
 			return Boolean(saved);
 		}
 	} catch (error) {
@@ -1463,7 +1414,6 @@ function updateContextWithLimits(contextArray: string[], newEntries: string[]): 
 	while (isTokenSizeExceedingLimit(contextArray.join(' ')) || contextArray.length > maxLength) {
 		contextArray.shift(); // Remove oldest entry if limit is exceeded
 	}
-	console.log('Updated context array:', contextArray);
 	return contextArray;
 }
 
@@ -1539,11 +1489,9 @@ async function filterChatHistory(userChat: []) {
 		userChat: JSON.stringify(allUserChats)
 	});
 
-	console.log('Filtered Chat:', filteredChat);
 
 	try {
 		const parsedFilteredChat = JSON.parse(filteredChat);
-		console.log('Parsed filtered chat:', parsedFilteredChat);
 
 		const filteredUserChat = parsedFilteredChat.map((chat: any) => {
 
@@ -1611,6 +1559,5 @@ export async function generateUsefulFact(userState: string, userPreference: stri
 		userChatMemory,
 	});
 
-	console.log('Generated fact:', fact);
 	return fact.trim();
 }

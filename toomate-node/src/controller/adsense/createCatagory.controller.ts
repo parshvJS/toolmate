@@ -6,7 +6,6 @@ export async function createCatagory(req:Request,res:Response){
     await connectDB();
     try {
         const {catagoryName} = req.body;
-        console.log("created new ")
         if(!catagoryName){
             return res.status(400).json({message:'All fields are required'});
         }

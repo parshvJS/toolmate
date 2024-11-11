@@ -76,7 +76,7 @@ export default function Aichat(
 
 
   }
-
+  console.log("productData", productData);
 
   return (
     <div className="flex flex-col w-fit">
@@ -113,7 +113,7 @@ export default function Aichat(
           )}
 
           {/* events */}
-          <div className="flex gap-2 flex-wrap w-full items-center">
+          {/* <div className="flex gap-2 flex-wrap w-full items-center">
 
             {
               (isCurrFeatureLoading && (isBunningLoading)) &&
@@ -151,7 +151,7 @@ export default function Aichat(
                 </div>
               </div>
             }
-          </div>
+          </div> */}
 
           {/* event data */}
           <div className="flex  gap-2 flex-wrap items-center my-2">
@@ -217,7 +217,7 @@ export default function Aichat(
                 </div>
                 <div className="p-4 flex flex-col text-left">
                   <p className="font-semibold text-slate-700">Material And Products Suggestion From Vendor</p>
-                  <p className="font-semibold text-slate-500">{productData.length == 1 ? "1 Item" : `${productData.reduce((count, category) => count + category.products.length, 0)} Items`}</p>
+                  <p className="font-semibold text-slate-500">{productData.length == 1 ? "1 Item" : `${(productData.reduce((count, category) => count + category.products.length, 0) == 0) ? productData.reduce((count, category) => count + category.products.length, 0) : 1} Items`}</p>
 
                 </div>
               </div>

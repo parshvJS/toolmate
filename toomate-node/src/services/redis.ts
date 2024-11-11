@@ -77,12 +77,10 @@ function subscribeToKeyExpiration(redis: Redis) {
         try {
             const sessionId = expiredKey.split("USER-CHAT-")[1];
             const userChat = await UserChat.findOne({ sessionId: sessionId }).lean();
-            console.log("User chat found:", userChat);
             if (userChat && userChat.isMateyMemoryOn) {
                 const paymentData = await getRedisData(`USER-PAYMENT-${userChat.userId}`);
                 const plan = paymentData.success ? JSON.parse(paymentData.data).planAccess[2] : false;
                 if (plan) {
-                    console.log("User has plan access, storing chat history in user memory");
                     const tempChat =await Chat?.find({ sessionId: sessionId }).lean();
                     const newChat = tempChat.map((chat:any) => {
                         return {
@@ -93,7 +91,6 @@ function subscribeToKeyExpiration(redis: Redis) {
                     if(newChat.length > 0)
                     {
                         await summarizeAndStoreChatHistory(String(userChat.userId), tempChat);
-                        console.log("Chat history stored in user memory");
 
                     }
                 }
@@ -135,7 +132,6 @@ async function getRedisData(key: string) {
 async function setRedisData(key: string, value: any, expiry: number) {
     try {
         const data = await redisInstance.set(key, JSON.stringify(value), 'EX', expiry);
-        console.log("Data set to Redis with expiry.");
         return data;
     } catch (error: any) {
         console.error('Error setting data to Redis:', error);
@@ -145,10 +141,8 @@ async function setRedisData(key: string, value: any, expiry: number) {
 
 async function appendArrayItemInRedis(key: string, value: any) {
     try {
-        console.log("Overriding data in Redis.");
         const updatedData = [value];
         await redisInstance.set(key, JSON.stringify(updatedData), 'EX', 3600);
-        console.log("Data overridden in Redis.");
         return {
             success: true,
             data: updatedData
@@ -165,7 +159,6 @@ async function appendArrayItemInRedis(key: string, value: any) {
 async function deleteRedisData(key: string) {
     try {
         const data = await redisInstance.del(key);
-        console.log("Data deleted from Redis.");
         return true;
     } catch (error: any) {
         console.error('Error deleting data from Redis:', error);

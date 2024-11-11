@@ -19,12 +19,10 @@ export const createUser = async (userData: any) => {
     amountPaid: 0,
   });
 
-  console.log("New User and new Payment user is created!", newPayment);
 
   try {
     await newUser.save();
     await newPayment.save();
-    console.log("Data saved successfully!");
   } catch (error) {
     console.error("Error saving data:", error);
     throw error;

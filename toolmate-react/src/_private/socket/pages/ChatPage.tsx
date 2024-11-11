@@ -78,7 +78,7 @@ async function fetchChatHistory(
                 bunningsProduct.push(...chatItem.bunningsData);
             }
             if (chatItem.isProductSuggested) {
-                mateyProduct.push(...chatItem.productSuggestionList);
+                mateyProduct.push(...chatItem.productData);
             }
         });
 
@@ -216,6 +216,7 @@ export function ChatPage() {
                     });
                     setIsError(true);
                 } else {
+                    console.log(chatData, "chat data332")
                     massAddAi(chatData.ai);
                     massAddBunnings(chatData.bunnings);
                     massAddVendor(chatData.matey);
@@ -302,46 +303,26 @@ export function ChatPage() {
             try {
                 console.log("Received data:", data);
 
-                // Step 1: Gather all product IDs from the input data
-                const allProductIds = data.flatMap(category => category.products);
 
                 // Step 2: Fetch data for these product IDs from the API
-                const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, allProductIds);
-
+                const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data);
+                console.log(response.data.data, "is 453")
                 if (response.status === 200) {
                     const productData = response.data.data;  // Assuming this contains product details
 
-                    // Step 3: Create a lookup map for product details based on the product ID
-                    const productMap = productData.reduce((acc: Record<string, any>, product: any) => {
-                        acc[product._id] = {
-                            image: getImageUrl(product.imageParams[0]),
-                            title: product.name,
-                            description: product.description,
-                            price: parseInt(product.price) || 0,
-                        };
-                        return acc;
-                    }, {});
-
-                    // Step 4: Map the original categories with detailed product data
-                    const refinedData = data.map(category => ({
-                        categoryName: category.categoryName,
-                        products: category.products.map(productId => productMap[productId]),
-                    }));
-
-                    console.log("Refined product suggestions:", refinedData);
-                    appendVendor(refinedData);
+                    appendVendor(productData);
                     // Update product suggestions and conversation
                     setConversation((prev) => {
                         const lastMessage = prev[prev.length - 1];
                         if (lastMessage.role === "ai") {
                             return [
                                 ...prev.slice(0, -1),
-                                { ...lastMessage, productData: refinedData as unknown as ProductItem[] },
+                                { ...lastMessage, productData: productData as unknown as ProductItem[] },
                             ];
                         }
                         return [
                             ...prev,
-                            { role: "ai", message: "", productData: refinedData as unknown as ProductItem[] },
+                            { role: "ai", message: "", productData: productData as unknown as ProductItem[] },
                         ];
                     });
                 }
@@ -669,91 +650,95 @@ export function ChatPage() {
 
                 <div ref={messagesEndRef} />
             </div>
-            <div className="w-full flex flex-col items-center">
-                {isNotificationOn && (
-                    <motion.div
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="flex items-start w-full max-w-4xl gap-2 text-orange"
-                    >
-                        <CircleDashed className="animate-spin" />
-                        <p className="animate-pulse font-semibold">{notificationText}</p>
-                    </motion.div>
-                )}
-                <div className="max-w-4xl w-full bg-slate-100 border-2 border-lightOrange rounded-lg mt-2 flex flex-col">
-                    <textarea
-                        value={mainInput}
-                        onChange={(e) => setMainInput(e.target.value)}
-                        placeholder="Give Your Idea To Matey."
-                        className="w-full bg-slate-50 rounded-t-lg pr-12 placeholder-slate-900 text-slate-900 outline-none focus:ring-0"
-                        rows={isExpanded ? 9 : 3}
-                        style={{ transition: "height 0.3s ease-in-out" }}
-                    />
-                    <div className="flex justify-between items-center p-2 border-t-2 border-lightOrange h-14">
-                        <MateyExpression expression={mateyExpression} />
-                        <div className="flex gap-4 items-center">
-                            <TooltipProvider>
-                                <Tooltip delayDuration={0}>
-                                    <TooltipTrigger>
-                                        <Switch
-                                            checked={isMateyMemory}
-                                            onCheckedChange={() => handleMateyMemory()}
-                                            defaultChecked={true}
-                                            className="data-[state=checked]:bg-lightOrange data-[state=unchecked]:bg-slate-400"
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="border-2 border-orange shadow-lg">
-                                        <div className="flex flex-col gap-2">
-                                            <p className="font-semibold text-lightOrange text-left">Add to Matey Memory - {isMateyMemory ? "On" : "Off"}</p>
-                                            <Separator orientation="vertical" className="border border-lightOrange w-full" />
-                                            <div className="max-w-sm text-left flex flex-col gap-2">
-                                                <p className="font-semibold">
-                                                    When On, Matey will remember this conversation to give better suggestions in future chats.
-                                                </p>
-                                                <p>{isMateyMemory ? "Turn Off if you don't want Matey to remember this chat" : "Turn On if you do want Matey to remember this chat"}</p>
+            <div className="w-full flex gap-2">
+                <div className="w-[85%] flex flex-col items-center">
+                    {isNotificationOn && (
+                        <motion.div
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.5 }}
+                            className="flex items-start w-full max-w-4xl gap-2 text-orange"
+                        >
+                            <CircleDashed className="animate-spin" />
+                            <p className="animate-pulse font-semibold">{notificationText}</p>
+                        </motion.div>
+                    )}
+                    <div className="max-w-4xl w-full bg-slate-100 border-2 border-lightOrange rounded-lg mt-2 flex flex-col">
+                        <textarea
+                            value={mainInput}
+                            onChange={(e) => setMainInput(e.target.value)}
+                            placeholder="Give Your Idea To Matey."
+                            className="w-full bg-slate-50 rounded-t-lg pr-12 placeholder-slate-900 text-slate-900 outline-none focus:ring-0"
+                            rows={isExpanded ? 9 : 3}
+                            style={{ transition: "height 0.3s ease-in-out" }}
+                        />
+                        <div className="flex justify-between items-center p-2 border-t-2 border-lightOrange h-14">
+                            <MateyExpression expression={mateyExpression} />
+                            <div className="flex gap-4 items-center">
+                                <TooltipProvider>
+                                    <Tooltip delayDuration={0}>
+                                        <TooltipTrigger>
+                                            <Switch
+                                                checked={isMateyMemory}
+                                                onCheckedChange={() => handleMateyMemory()}
+                                                defaultChecked={true}
+                                                className="data-[state=checked]:bg-lightOrange data-[state=unchecked]:bg-slate-400"
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="border-2 border-orange shadow-lg">
+                                            <div className="flex flex-col gap-2">
+                                                <p className="font-semibold text-lightOrange text-left">Add to Matey Memory - {isMateyMemory ? "On" : "Off"}</p>
+                                                <Separator orientation="vertical" className="border border-lightOrange w-full" />
+                                                <div className="max-w-sm text-left flex flex-col gap-2">
+                                                    <p className="font-semibold">
+                                                        When On, Matey will remember this conversation to give better suggestions in future chats.
+                                                    </p>
+                                                    <p>{isMateyMemory ? "Turn Off if you don't want Matey to remember this chat" : "Turn On if you do want Matey to remember this chat"}</p>
+                                                </div>
                                             </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                    <Tooltip delayDuration={10}>
+                                        <TooltipTrigger>
+                                            <ArrowDownToDot className="cursor-pointer text-slate-600 hover:text-orange" onClick={scrollToBottom} />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Scroll To Bottom</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                    <Tooltip delayDuration={10} >
+                                        <TooltipTrigger className="md:flex hidden">
+                                            <ExpandIcon
+                                                className="md:flex hidden cursor-pointer text-slate-600 hover:text-orange"
+                                                onClick={() => setIsExpanded((prev) => !prev)}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Expand Text Area</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <button
+                                    onClick={handleUserPrompt}
+                                    disabled={stateOfButton === 0}
+                                    className={`bg-orange p-2 ${mainInput.length == 0 ? "bg-orange/50 hover:bg-orange/50 cursor-not-allowed" : ""} hover:bg-orange/80 rounded-xl shadow-md text-white hover:shadow-xl`}                            >
+                                    {stateOfButton === 0 ? (
+                                        <div onClick={handleMessageStop}>
+                                            <CircleStop />
                                         </div>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                                <Tooltip delayDuration={10}>
-                                    <TooltipTrigger>
-                                        <ArrowDownToDot className="cursor-pointer text-slate-600 hover:text-orange" onClick={scrollToBottom} />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Scroll To Bottom</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                                <Tooltip delayDuration={10} >
-                                    <TooltipTrigger className="md:flex hidden">
-                                        <ExpandIcon
-                                            className="md:flex hidden cursor-pointer text-slate-600 hover:text-orange"
-                                            onClick={() => setIsExpanded((prev) => !prev)}
-                                        />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Expand Text Area</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                            <button
-                                onClick={handleUserPrompt}
-                                disabled={stateOfButton === 0}
-                                className={`bg-orange p-2 ${mainInput.length == 0 ? "bg-orange/50 hover:bg-orange/50 cursor-not-allowed" : ""} hover:bg-orange/80 rounded-xl shadow-md text-white hover:shadow-xl`}                            >
-                                {stateOfButton === 0 ? (
-                                    <div onClick={handleMessageStop}>
-                                        <CircleStop />
-                                    </div>
-                                ) : (
-                                    <Send />
-                                )}
-                            </button>
+                                    ) : (
+                                        <Send />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div className="bg-yellow w-[15%] mt-2 flex-1 rounded-md" style={{ backgroundImage: 'url(/assets/images/matey-bg.png)', backgroundSize: 'cover' }}>
                 </div>
             </div>
         </div>

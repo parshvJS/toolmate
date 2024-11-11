@@ -6,7 +6,6 @@ export async function createnewUserChatInstace({ sessionId, userId, chatName }: 
     userId: string,
     chatName: string
 }) {
-    console.log("createnewUserChatInstace called");
     await connectDB();
     const userChat = new UserChat({
         userId,

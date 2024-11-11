@@ -72,31 +72,7 @@ export async function produceNewMessage(
 			}
 		]
 	});
-	console.log("New message created----------------------", {
-		message,
-		sessionId,
-		isProductSuggested,
-		isMateyProduct,
-		isBunningsProduct,
-		productSuggestionList,
-		mateyProduct,
-		bunningsProductList,
-		isCommunitySuggested,
-		communityId,
-		role,
-	}, "New message created----------------------",JSON.stringify({
-		message,
-		sessionId,
-		isProductSuggested,
-		isMateyProduct,
-		isBunningsProduct,
-		productSuggestionList,
-		mateyProduct,
-		bunningsProductList,
-		isCommunitySuggested,
-		communityId,
-		role,
-	}));
+	
 	return true;
 }
 
@@ -114,7 +90,6 @@ export async function startNewMessageConsumer() {
 			try {
 				await connectDB();
 				const stringifiedMessage = message.value?.toString();
-				console.log(JSON.parse(stringifiedMessage || "").bunningsProductList.map((id: string) => new mongoose.Types.ObjectId(id)),"Stringified message 6780")
 				// Parse the message
 				const {
 					message: msg,
@@ -130,13 +105,10 @@ export async function startNewMessageConsumer() {
 					role,
 					createdAt
 				} = JSON.parse(stringifiedMessage || "{}");
-				console.log(bunningsProductList, "Bunnings porduct 678")
 				if (!msg) {
-					console.log('No message found');
 					return;
 				}
 
-				console.log(`New Message Recv: ${msg}, Session ID: ${sessionId}`);
 
 
 				const data = {
@@ -154,10 +126,8 @@ export async function startNewMessageConsumer() {
 					createdAt
 				}
 
-				console.log(data, "Data 67800")
 				// Insert message into the database with all the fields
 				await Chat.create(data);
-				console.log("Data inserted successfully");
 			} catch (err) {
 				console.error('Error processing message:', err);
 				pause(); // Pause processing
@@ -187,11 +157,9 @@ export async function produceMessage(
 		],
 		topic: 'PREV-MESSAGES',
 	});
-	console.log('creating new message----------------------');
 	return true;
 }
 export async function startMessageConsumer() {
-	console.log('Consumer is running..');
 	const consumer: Consumer = kafka.consumer({ groupId: 'new-message-group' });
 	await consumer.connect();
 	await consumer.subscribe({ topic: 'PREV-MESSAGES', fromBeginning: true });
@@ -209,14 +177,10 @@ export async function startMessageConsumer() {
 				} = JSON.parse(message.value?.toString() || '{}');
 
 				if (!msg) {
-					console.log('No message found');
 					return;
 				}
 
-				console.log(
-					`New Message Recv: ${msg}, Session ID: ${sessionId}`
-				);
-
+		
 				// Insert message into the database
 				await Chat.create({
 					message: msg,

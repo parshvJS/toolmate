@@ -432,19 +432,19 @@ export default function ImprovedAnimatedSidebar({
             {/* New Chat Button (Expanded View) */}
 
 
-            <div className="">
+            <div className="w-full  ">
                 <Dialog open={newChatDialogOpen} onOpenChange={setNewChatDialogOpen} >
-                    <DialogTrigger className="md:flex hidden">
+                    <DialogTrigger className="md:flex hidden w-full">
                         <div
-                            className={`${collabsable ? "hidden" : "md:flex hidden"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out`}>
+                            className={`${collabsable ? "hidden" : "md:flex hidden"} px-3 items-center gap-3 hover:bg-softYellow cursor-pointer rounded-lg bg-lighterYellow transition duration-300 ease-in-out w-full`}>
                             <img src="/assets/matey-emoji/tool.svg" alt="new chat" className="w-12 h-12" />
                             <p className="font-semibold">New Chat</p>
                         </div>
                     </DialogTrigger>
-                    <DialogContent className="[&>button]:hidden md:flex hidden">
-                        <DialogHeader>
+                    <DialogContent className="w-full [&>button]:hidden md:flex hidden">
+                        <DialogHeader className="w-full">
                             <DialogDescription>
-                                <div className="flex gap-1 flex-col">
+                                <div className="flex gap-1 w-full flex-col">
                                     {/* title */}
                                     <h4 className="text-orange text-xl">Create New Chat </h4>
 

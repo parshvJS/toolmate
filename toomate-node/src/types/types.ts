@@ -36,7 +36,7 @@ export interface IBunningsChat {
         price: number,
         description: string,
         personalUsage: string,
-        rating: number,
+        rating: string,
         imageUrl: string,
         link: string,
     }[]

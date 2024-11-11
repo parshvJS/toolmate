@@ -1,9 +1,11 @@
 import { RightSidebarContext } from "@/context/rightSidebarContext"
-import { Grid2x2Plus, ListPlus, Plus, ReceiptText, Scan, Shapes, SquareDashedBottom, SquarePlus } from "lucide-react"
-import { useContext, useState } from "react"
+import { Calendar, Grid2x2Plus, ListPlus, Plus, ReceiptText, Scan, Shapes, SquareDashedBottom, SquarePlus, Tag } from "lucide-react"
+import { useContext, useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Separator } from "../ui/separator"
 import MateyExpression from "./MateyExpression"
+import { Star, ExternalLink, DollarSign, Info } from 'lucide-react';
+
 import CustomSlider from "@/components/custom/Slider"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -14,6 +16,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel"
+
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import {
@@ -23,6 +33,10 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import BunningProduct from "./BunningProduct"
+import { AIProduct } from "./AIProduct"
+import { VendorProduct } from "./VendorProduct"
+import { ZodStringDef } from "zod"
+import { getImageUrl } from "@/lib/utils"
 
 const productSuggestionsTabs = [
     {
@@ -56,6 +70,9 @@ export function ToolSpread() {
     const [currOpenIndex, setCurrOpenIndex] = useState<number>(-1)
     const [currActiveTab, setCurrActiveTab] = useState<string>("bunnings")
     const [currActiveProductId, setCurrActiveProductId] = useState<string>("")
+    const [isProductDetails, setIsProductDetails] = useState<boolean>(false)
+    const [sidebarProductDetails, setSidebarProductDetails] = useState<any>(null)
+    const [currActiveProductDetailsTab, setCurrActiveProductDetailsTab] = useState("")
     function handleElementClick(index: number) {
         if (currOpenIndex === index) {
             setCurrOpenIndex(-1)
@@ -63,6 +80,41 @@ export function ToolSpread() {
         }
         setCurrOpenIndex(index)
     }
+
+    useEffect(() => {
+        if (currActiveProductId !== "") {
+            if (currActiveTab == "bunnings") {
+                bunningProduct.map((item: any) => {
+                    const eachProductFinder = item.products.find((pro: { _id: string }) => pro._id == currActiveProductId);
+                    if (eachProductFinder) {
+                        setIsProductDetails(true)
+                        setCurrActiveProductDetailsTab(currActiveTab)
+                        setSidebarProductDetails(eachProductFinder)
+                        console.log(eachProductFinder, "is 882")
+                        return;
+                    }
+
+                })
+            }
+            else if (currActiveTab == "vendor") {
+                vendorProduct.map((item: any) => {
+                    const eachProductFinder = item.products.find((pro: { _id: string }) => pro._id == currActiveProductId)
+                    if (eachProductFinder) {
+                        setIsProductDetails(true)
+                        setCurrActiveProductDetailsTab(currActiveTab)
+                        setSidebarProductDetails(eachProductFinder)
+                        console.log(eachProductFinder, "is 773")
+                        return;
+                    }
+                })
+            }
+        }
+        return () => {
+            setIsProductDetails(false);
+            setCurrActiveProductDetailsTab("")
+            setSidebarProductDetails(null)
+        }
+    }, [currActiveProductId])
 
     return (
         <>
@@ -115,9 +167,8 @@ export function ToolSpread() {
                     {/*  catagory */}
                     <Dialog>
                         <DialogTrigger className="w-full h-full">
-                            <div className="-m-2 my-2  ">
-
-                                <div className="flex border-2 border-softYellow relative gap-2 items-center bg-whiteYellow  px-2 py-1 text-left hover:bg-paleYellow transition-all duration-150 cursor-pointer rounded-md ml-2 mt-2">
+                            <div className="-m-2 my-2">
+                                <div className="flex border-2 border-softYellow gap-2 items-center bg-whiteYellow px-2 py-1 text-left hover:bg-paleYellow transition-all duration-150 cursor-pointer rounded-md ml-2 mt-2">
                                     <img
                                         src="/assets/icons/prod-placeholder.svg"
                                         alt="bunnings"
@@ -125,59 +176,78 @@ export function ToolSpread() {
                                     />
                                     <div>
                                         <p className="font-semibold">Click To View Suggestions</p>
-                                        <p className="text-slate-500">{totalProductSuggestions} suggestion </p>
+                                        <p className="text-slate-500">{totalProductSuggestions} suggestion</p>
                                     </div>
                                 </div>
                             </div>
                         </DialogTrigger>
+
                         <DialogContent className="h-[calc(100%-10rem)] lg:max-w-screen-xl max-w-screen-lg md:max-w-screen-md sm:max-w-screen-sm p-0 overflow-hidden">
                             <div className="flex">
-                                <div className="flex flex-col gap-2 border-r-2 border-yellow p-2 sticky">
-                                    {
-                                        productSuggestionsTabs.map((product, index) => {
-                                            return (
-                                                <TooltipProvider>
-                                                    <Tooltip delayDuration={0}>
-                                                        <TooltipTrigger>
-                                                            <div
-                                                                onClick={() => setCurrActiveTab(product.name)}
-                                                                key={index} className="flex gap-2 items-center rounded-md cursor-pointer hover:bg-mangoYellow transition-all duration-200">
-                                                                <img
-                                                                    src={product.img}
-                                                                    alt={product.name}
-                                                                    className="w-12 h-12 rounded-md shadow-xl"
-                                                                />
-                                                            </div>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="right" className="bg-mangoYellow z-50">
-                                                            <p>{product.tooltip}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            )
-                                        })
-                                    }
-
+                                <div className="flex flex-col gap-2 border-r-2 border-yellow p-2 sticky z-[99]">
+                                    {productSuggestionsTabs.map((product, index) => (
+                                        <TooltipProvider key={index}>
+                                            <Tooltip delayDuration={0}>
+                                                <TooltipTrigger>
+                                                    <div
+                                                        onClick={() => setCurrActiveTab(product.name)}
+                                                        className="flex gap-2 items-center rounded-md cursor-pointer hover:bg-mangoYellow transition-all duration-200"
+                                                    >
+                                                        <img
+                                                            src={product.img}
+                                                            alt={product.name}
+                                                            className="w-12 h-12 rounded-md shadow-xl"
+                                                        />
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right" className="bg-mangoYellow z-[99] border-2 border-black">
+                                                    <p>{product.tooltip}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    ))}
                                 </div>
-
 
                                 <div className="flex-1 h-full overflow-hidden">
                                     {HeadingName(currActiveTab)}
                                     <hr className="border border-lightYellow mt-2" />
+
                                     <div className="flex h-full w-full">
-                                        <ScrollArea type="scroll" className="w-3/4 md:h-[550px] hide-scrollbar overflow-scroll">
-                                            {/* bunning product */}
-                                            {currActiveTab === "bunnings" && <BunningProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />}
+                                        <ScrollArea type="scroll" className="md:h-[550px] hide-scrollbar w-full overflow-scroll">
+                                            {currActiveTab === "bunnings" && (
+                                                <BunningProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />
+                                            )}
+                                            {currActiveTab === "ai" && <AIProduct />}
+                                            {currActiveTab === "vendor" && (
+                                                <VendorProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />
+                                            )}
                                         </ScrollArea>
-                                        <div className="w-1/4 p-4 border-l-2 border-yellow h-full flex flex-col items-center justify-center">
-                                            <img src="/assets/icons/empty-placeholder.svg" alt="empty-placeholder" className="w-72 h-72" />
-                                            <p className="text-center">Select Product To View Details Of Item</p>
-                                        </div>
+
+                                        {currActiveTab !== "ai" && (
+                                            <div className="w-2/5 p-2 border-l-2 border-yellow h-full flex flex-col items-center justify-center">
+                                                {isProductDetails ? (
+                                                    <>
+                                                        {currActiveProductDetailsTab === "bunnings" && (
+                                                            <ProductDetails sidebarProductDetails={sidebarProductDetails} />
+                                                        )}
+                                                        {currActiveProductDetailsTab === "vendor" && (
+                                                            <VendorProductDetails sidebarProductDetails={sidebarProductDetails} />
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <img src="/assets/icons/empty-placeholder.svg" alt="empty-placeholder" className="w-72 h-72" />
+                                                        <p className="text-center">Select Product To View Details Of Item</p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         </DialogContent>
                     </Dialog>
+
 
 
 
@@ -269,19 +339,157 @@ export function ToolSpread() {
 const HeadingName = (currState: string) => {
     switch (currState) {
         case "bunnings":
-            return <div className="flex flex-col text-left px-4 py-1">
+            return <div className="flex flex-col text-left px-4 py-1 w-fit">
                 <p className="font-semibold text-left text-xl">Bunnings Product Suggestion</p>
-                <p>Matey Have picked this Products From Bunnings</p>
+                <div className="flex gap-2">
+                    <p className="">Matey Have picked this Products From Bunnings</p>
+                    <p className="text-slate-500 font-semibold">Click To Active </p>
+                </div>
             </div>
         case "ai":
             return <div className="flex flex-col text-left px-4 py-1">
                 <p className="font-semibold text-left text-xl">Matey's Product Suggestions</p>
-                <p>Matey Have Created This Product</p>
+                <div className="flex gap-2">
+                    <p>Matey Have Created This Product</p>
+                </div>
             </div>
         case "vendor":
             return <div className="flex flex-col text-left px-4 py-1">
                 <p className="font-semibold text-left text-xl">Vendor Product Suggestions</p>
-                <p>Matey Have Picked This Products From Vendors Listed On Toolmate</p>
+                <div className="flex gap-2">
+                    <p>Matey Have Picked This Products From Vendors Listed On Toolmate</p>
+                    <p className="text-slate-500 font-semibold">Click To Active </p>
+                </div>
             </div>
     }
 }
+const ProductDetails = ({ sidebarProductDetails }: any) => (
+    <div className="flex flex-col gap-2 w-full h-full overflow-scroll hide-scrollbar p-3 rounded-lg">
+        {/* Image Section */}
+        <div className="relative">
+            <img
+                src={sidebarProductDetails?.image}
+                alt={sidebarProductDetails?.name}
+                className="w-full h-48 object-contain rounded-lg border-2 border-softYellow bg-white shadow-md"
+            />
+            {/* Price Tag */}
+            <div className="absolute top-2 right-2 bg-yellow px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                <DollarSign className="w-4 h-4 text-gray" />
+                <span className="font-bold text-gray">${sidebarProductDetails?.price || 'N/A'}</span>
+            </div>
+        </div>
+
+        {/* Title */}
+        <h2 className="text-lg font-bold text-gray leading-tight">
+            {sidebarProductDetails?.name || 'No Name'}
+        </h2>
+
+        {/* View Product Link */}
+        <a
+            href={sidebarProductDetails?.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-lightYellow hover:bg-yellow transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 text-gray"
+        >
+            <span>View Product</span>
+            <ExternalLink className="w-4 h-4" />
+        </a>
+
+        {/* Details Section */}
+        <div className="flex flex-col gap-2 mt-1">
+            {/* Rating */}
+            <div className="flex items-center gap-2 p-2 rounded-md bg-lighterYellow">
+                <Star className="w-5 h-5 text-darkYellow" />
+                <span className="font-semibold text-gray">Rating: {sidebarProductDetails?.rating || 'N/A'}</span>
+            </div>
+            {/* Usage/Description */}
+            <div className="p-2 rounded-md flex gap-2 bg-paleYellow">
+                <Info className="w-5 h-5 flex-shrink-0 text-deepYellow text-left" />
+                <div className="text-left">
+                    <span className="font-semibold text-gray">Usage: </span> <br />
+                    <span className="text-gray">{sidebarProductDetails?.personalUsage || 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+
+
+
+
+
+const VendorProductDetails = ({ sidebarProductDetails }: any) => (
+    <div className="flex flex-col gap-2 w-full h-full overflow-scroll hide-scrollbar p-3 rounded-lg">
+        {/* Image Section with Carousel */}
+        <div className="relative">
+            <Carousel>
+                <CarouselContent>
+                    {sidebarProductDetails?.imageParams.map((image: string, index: number) => (
+                        <CarouselItem key={index}>
+                            <img
+                                src={getImageUrl(image)}
+                                alt={sidebarProductDetails?.name}
+                                className="w-full h-48 object-contain rounded-lg border-2 border-softYellow bg-white shadow-md"
+                            />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-2" />
+                <CarouselNext className="absolute right-2" />
+            </Carousel>
+
+            {/* Price Tag */}
+            <div className="absolute top-2 right-2 bg-yellow px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                <DollarSign className="w-4 h-4 text-gray" />
+                <span className="font-bold text-gray">${sidebarProductDetails?.price || 'N/A'}</span>
+            </div>
+        </div>
+
+        {/* Title */}
+        <h2 className="text-lg font-bold text-gray leading-tight">
+            {sidebarProductDetails?.name || 'No Name'}
+        </h2>
+
+        {/* View Product Link */}
+        <a
+            href={sidebarProductDetails?.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-lightYellow hover:bg-yellow transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 text-gray"
+        >
+            <span>View Live</span>
+            <ExternalLink className="w-4 h-4" />
+        </a>
+
+        {/* Details Section */}
+        <div className="flex flex-col gap-2 mt-1">
+            {/* Description */}
+            <div className="p-2 rounded-md bg-lighterYellow">
+                <div className="flex gap-2">
+                    <Info className="w-5 h-5 flex-shrink-0 text-darkYellow mt-1" />
+                    <p className="text-gray text-left">{sidebarProductDetails?.description || 'No description available'}</p>
+                </div>
+            </div>
+
+            {/* Special Offer */}
+            {sidebarProductDetails?.offerDescription && (
+                <div className="p-2 rounded-md bg-mangoYellow flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-deepYellow" />
+                    <span className="text-gray font-semibold">{sidebarProductDetails.offerDescription}</span>
+                </div>
+            )}
+
+            {/* Created Date */}
+            <div className="p-2 rounded-md flex gap-2 bg-paleYellow">
+                <Calendar className="w-5 h-5 flex-shrink-0 text-deepYellow" />
+                <div>
+                    <span className="font-semibold text-gray">Listed on: </span>
+                    <span className="text-gray">
+                        {new Date(sidebarProductDetails?.createdAt).toLocaleDateString()}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+);

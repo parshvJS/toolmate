@@ -18,7 +18,6 @@ export async function handleSocketSerivce(socket: Socket) {
     //   this event will create session in database | check current user paid plan and server as per their plan
     socket.on('createSession', async (message) => {
         const ObjectId = new mongoose.Types.ObjectId();
-        console.log('Session Created', ObjectId, socket.id);
         socket.emit('acknowledgement', {
             sessionId: ObjectId,
         });
@@ -29,7 +28,6 @@ export async function handleSocketSerivce(socket: Socket) {
         sessionId: string
     }) => {
         const { prompt, sessionId } = message;
-        console.log(prompt);
         await GetAnswerFromPrompt(prompt, sessionId, socket);
         await produceMessage(prompt, sessionId, '', 'user');
     });
@@ -63,7 +61,6 @@ export async function handleSocketSerivce(socket: Socket) {
             )
             // Setup stop handler early
             socket.once('stop', () => {
-                console.log('Stop signal received');
                 controller.abort();
             });
 
@@ -104,13 +101,11 @@ export async function handleSocketSerivce(socket: Socket) {
             const userPlanCacheKey = `USER-PAYMENT-${data.userId}`;
             const currentPlan = await getRedisData(userPlanCacheKey).then(async (redisUserData) => {
                 if (redisUserData.success) {
-                    console.log(data.userId, 'User payment details found in Redis');
                     const plan = JSON.parse(redisUserData.data).planAccess;
                     return plan[2] ? 2 : plan[1] ? 1 : 0;
                 }
 
                 await connectDB();
-                console.log(data.userId, 'User payment details not found in Redis');
 
                 const user = await User.findOne({ clerkUserId: data.userId });
                 if (!user) {
@@ -129,7 +124,6 @@ export async function handleSocketSerivce(socket: Socket) {
             // Process based on plan type
             switch (currentPlan) {
                 case 1: {
-                    console.log("Processing basic plan...");
                     const intendList = await getUserIntend(data.message, newChatContext, currentPlan);
                     socket.emit('intendList', intendList);
 
@@ -147,18 +141,7 @@ export async function handleSocketSerivce(socket: Socket) {
                     );
 
                     if (messageStream) {
-                        console.log({
-                            message: messageStream.message,
-                            isProductSuggested: messageStream.isProductSuggested,
-                            isMateyProduct: messageStream.isMateyProduct,
-                            isBunningsProduct: messageStream.isBunningsProduct,
-                            mateyProduct: messageStream.mateyProduct,
-                            productSuggestionList: messageStream.productSuggestionList,
-                            bunningsProductList: messageStream.bunningsProductList,
-                            isCommunitySuggested: messageStream.isCommunitySuggested,
-                            communityId: messageStream.communityId,
-                            emo: messageStream.emo
-                        }, "-------------------messageStream 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 ");
+                   
                         await Promise.all([
                             produceNewMessage(
                                 messageStream.message,
@@ -249,7 +232,6 @@ export async function handleSocketSerivce(socket: Socket) {
                 }
 
                 default:
-                    console.log('No valid plan found');
                     socket.emit('error', "No valid plan found");
             }
 
@@ -275,7 +257,6 @@ export async function handleSocketSerivce(socket: Socket) {
 async function handleCreateNewSession(socket: Socket) {
 
     const newSessionId = uuidv4();
-    console.log("created new session ", newSessionId);
     socket.emit('newSessionAcknowledge', {
         sessionId: newSessionId,
     });

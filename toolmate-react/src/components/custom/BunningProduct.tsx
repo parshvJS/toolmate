@@ -42,7 +42,7 @@ export default function BunningProduct({
         : products;
 
     return (
-        <div className="w-3/4">
+        <div className="z-40">
             {/* // 33% of the carousel width. */}
             <Carousel className="h-full max-w-[95%]">
 
@@ -78,7 +78,7 @@ export default function BunningProduct({
                     <CarouselNext className="absolute left-14 bg-lighterYellow" />
                 </div>
             </Carousel>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 p-4 -z-40">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-4 -z-40">
                 {
                     filteredProducts.map((item: any, index: number) => {
                         return (

@@ -10,7 +10,6 @@ export async function updateChatHistory(req:Request,res:Response){
                 message:"Please provide userId and newHistory"
             })
         }
-        console.log("updateChatHistory called",userId,newHistory);
         return res.json({
             success:false
         })
