@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { abstractChathistory, executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getUserIntend, inititalSummurizeChat } from "./langchain/langchain.js";
+import { abstractChathistory, executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getMateyExpession, getUserIntend, inititalSummurizeChat } from "./langchain/langchain.js";
 import { produceMessage, produceNewMessage } from "./kafka.js";
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -32,7 +32,7 @@ export async function handleSocketSerivce(socket: Socket) {
         await produceMessage(prompt, sessionId, '', 'user');
     });
 
-
+  
     // this service creates new session for user
     socket.on('createNewUserSession', () => { handleCreateNewSession(socket) });
 
@@ -41,6 +41,7 @@ export async function handleSocketSerivce(socket: Socket) {
 
     socket.on('userMessage', async (data: INewUserMessage) => {
         try {
+            console.log("budgetDetails in socket","budgetDetails",data.budgetSliderValue, "isBudgetSliderChangable", data.isBudgetSliderChangable, "isBudgetSliderPresent", data.isBudgetSliderPresent);
             // Initialize controller for stream handling
             const controller = new AbortController();
             const { signal } = controller;
@@ -124,6 +125,7 @@ export async function handleSocketSerivce(socket: Socket) {
             // Process based on plan type
             switch (currentPlan) {
                 case 1: {
+                    await getMateyExpession(data.message, socket);
                     const intendList = await getUserIntend(data.message, newChatContext, currentPlan);
                     socket.emit('intendList', intendList);
 
@@ -181,6 +183,8 @@ export async function handleSocketSerivce(socket: Socket) {
                 }
 
                 case 2: {
+                    await getMateyExpession(data.message, socket);
+
                     const intendListPro = await getUserIntend(data.message, newChatContext, currentPlan);
                     socket.emit('intendList', intendListPro);
 
@@ -227,7 +231,10 @@ export async function handleSocketSerivce(socket: Socket) {
                             )
                         ]);
                     }
+
+                    if(data.isBudgetSliderChangable){
                         await FindNeedOfBudgetSlider(data.message,newChatContext, socket);
+                    }
                     break;
                 }
 

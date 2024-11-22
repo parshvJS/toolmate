@@ -23,8 +23,6 @@ export function ChatPageNew() {
         }
     }, [socket]);
 
-
-
     return (
         <div>
             <Chat role="user" message={localStorage.getItem("userPrompt") || "Hey Matey!"} />

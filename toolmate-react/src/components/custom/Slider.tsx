@@ -7,7 +7,37 @@ import { Tag } from "lucide-react";
 import { RightSidebarContext } from "@/context/rightSidebarContext";
 import MateyExpression from "./MateyExpression";
 
+// Separate component for tooltip
+const ToolTipExpose = ({ tooltip, showTooltip }: { tooltip: string, showTooltip: boolean }) => {
+    const [isReadExpand, setIsReadExpand] = useState(false);
+    useEffect(() => {
+        if (!showTooltip) {
+            setIsReadExpand(false);
+        }
+    }, [showTooltip])
+    return (
+        <div className="max-w-lg text-wrap">
+            {tooltip.length > 45 ? (
+                <div>
+                    <p>
+                        {isReadExpand ? tooltip : `${tooltip.slice(0, 45)}...`}
+                        <span
+                            className="text-black font-semibold underline cursor-pointer ml-1"
+                            onClick={() => setIsReadExpand(!isReadExpand)}
+                        >
+                            {isReadExpand ? "Read Less" : "Read More"}
+                        </span>
+                    </p>
+                </div>
+            ) : (
+                <p>{tooltip}</p>
+            )}
+        </div>
+    );
+};
+
 export default function CustomSlider() {
+
     const {
         sliderValue,
         setSliderValue,
@@ -19,10 +49,13 @@ export default function CustomSlider() {
     const [showTooltip, setShowTooltip] = useState(false);
     const [min, setMin] = useState(Infinity);
     const [max, setMax] = useState(0);
+    let hideTooltipTimeout: NodeJS.Timeout;
 
     useEffect(() => {
-        console.log("sliderValue", sliderValue, "value", value, "Min", min, "Max", max);
-    }, []);
+        setValue([sliderValue]);
+        // handleMouseEnter();
+        // handleMouseLeave(2000);
+    }, [sliderValue])
 
     useEffect(() => {
         setMin(breakpoints.reduce((acc, curr) => {
@@ -57,12 +90,21 @@ export default function CustomSlider() {
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = Math.min(
-            Math.max(parseInt(e.target.value) || 0, min),
-            max
-        ); // Enforce min and max
-        setValue([newValue]);
-        setSliderValue(newValue); // Update the context value
+        const inputValue = parseInt(e.target.value);
+        const boundedValue = Math.min(inputValue, max);
+        setValue([boundedValue]);
+        setSliderValue(boundedValue);
+    };
+
+    const handleMouseLeave = (delay: number) => {
+        hideTooltipTimeout = setTimeout(() => {
+            setShowTooltip(false);
+        }, delay); // Use the delay argument
+    };
+
+    const handleMouseEnter = () => {
+        clearTimeout(hideTooltipTimeout);
+        setShowTooltip(true);
     };
 
     if (isSliderBreakPointEmpty) {
@@ -80,15 +122,17 @@ export default function CustomSlider() {
                     animate={{ opacity: showTooltip ? 1 : 0, scale: showTooltip ? 1 : 0.9 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
                     className="w-full bg-lightYellow border-2 border-black shadow-lg rounded-lg text-left text-md font-semibold text-black"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={() => handleMouseLeave(2000)} // Pass the delay duration here
                 >
                     <div className="p-2">{getCurrentTooltip().label}</div>
 
                     <hr className="border border-black w-full" />
 
-                    <div className="p-2 font-medium">{getCurrentTooltip().tooltip}</div>
+                    <div className="p-2 font-medium h-full"><ToolTipExpose tooltip={getCurrentTooltip().tooltip} showTooltip={showTooltip} /></div>
                 </motion.div>
 
-                <div className="flex items-center gap-4 mb-4 mt-5">
+                <div className="flex items-center gap-4 mb-4 mt-5 cursor-pointer">
                     <SliderPrimitive.Root
                         className="relative mr-1 flex items-center select-none touch-none w-full h-5"
                         value={value}
@@ -96,11 +140,14 @@ export default function CustomSlider() {
                             const boundedValue = [Math.max(min, Math.min(newValue[0], max))];
                             setValue(boundedValue);
                             setSliderValue(boundedValue[0]); // Update the context value
+                            setShowTooltip(true); // Show tooltip while changing value
                         }} // Enforce min and max
                         min={min}
                         max={max}
-                        onMouseEnter={() => setShowTooltip(true)}
-                        onMouseLeave={() => setShowTooltip(false)}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={() => handleMouseLeave(2000)} // Pass the delay duration here
+                        onTouchStart={handleMouseEnter} // Show tooltip on touch start
+                        onTouchEnd={() => handleMouseLeave(2000)} // Pass the delay duration here
                     >
                         <SliderPrimitive.Track className="bg-slate-700 relative grow rounded-full h-2">
                             <SliderPrimitive.Range className="absolute bg-yellow-500 rounded-full h-full" />
@@ -142,5 +189,3 @@ export default function CustomSlider() {
         </div>
     );
 }
-
-

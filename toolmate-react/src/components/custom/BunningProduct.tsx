@@ -42,9 +42,9 @@ export default function BunningProduct({
         : products;
 
     return (
-        <div className="z-40">
+        <div className="flex-1 h-full overflow-hidden w-screen md:max-w-4xl"> {/* Ensures container doesn’t exceed its bounds */}
             {/* // 33% of the carousel width. */}
-            <Carousel className="h-full max-w-[95%]">
+            <Carousel className="h-full">
 
 
                 <CarouselContent className=" flex gap-2 px-4 py-2 border-b border-gray-200">
@@ -67,8 +67,6 @@ export default function BunningProduct({
                                         {category.categoryName}
                                     </button>
                                 </CarouselItem>
-
-
                             );
                         })
                     }

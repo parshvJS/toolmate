@@ -17,6 +17,7 @@ import { MyCommunity } from "./_private/pages/MyCommunity";
 import { CommunityCreationForm } from "./components/custom/CommunityCreationForm";
 import { useUser } from "@clerk/clerk-react";
 import MyInventory from "./_private/pages/MyInventory";
+import Pricing from "./_open/pages/Pricing";
 
 function App() {
   const { user } = useUser()
@@ -29,6 +30,7 @@ function App() {
           <Route index path="/" element={<Landing />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/pricing" element={<Pricing />} />
         </Route>
 
         {/* Preview page can be accessed without authentication but without standard navigation */}

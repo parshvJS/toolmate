@@ -78,7 +78,7 @@ export default function Dashboard() {
         navigate("/c");
     }
     return (
-        <div className="w-full h-full ">
+        <div className="w-full h-full md:mt-0  mt-16 ">
             <div className="absolute top-2 right-2">
                 <UserButton />
             </div>
@@ -87,20 +87,25 @@ export default function Dashboard() {
           </div> */}
             {/* top section  */}
             <div
-                className="w-full min-h-[50vh] bg-cover bg-center px-14 py-10 gap-0 flex flex-col justify-start"
+                className="w-full min-h-[50vh] bg-cover bg-center p-4 md:px-14 py-10 gap-0 flex flex-col justify-start"
                 style={{ backgroundImage: "url('/assets/images/dashBG.jpg')" }}
             >
                 {/* content */}
 
-                <p className=" text-left
-                font-bold text-4xl -mb-4 bg-gradient-to-r from-orange to-lightOrange bg-clip-text text-transparent">
+                <p className="flex gap-2 items-center md:block mb-2 text-left font-bold text-3xl md:-mb-4 bg-gradient-to-r from-orange to-lightOrange bg-clip-text text-transparent">
                     Hello There!
+                    <div className="block md:hidden w-12 h-12">
+                    <MateyExpression expression="tool" />
+
+                    </div>
                 </p>
 
-                <div className="flex items-center gap-2 -mb-2">
-                    <p className="text-left text-4xl font-black">Ask Matey About Your Latest DIY Plan!</p>
-
+                <div className="flex items-center gap-2 md:-mb-2">
+                    <p className="text-left text-2xl font-black">Ask Matey About Your Latest DIY Plan!</p>
+                    <div className="hidden md:block">
                     <MateyExpression expression="tool" />
+
+                    </div>
                 </div>
 
                 <p className="text-left text-md text-slate-600 font-semibold">Share your DIY project ideas with Matey for expert advice!</p>
@@ -110,10 +115,10 @@ export default function Dashboard() {
 
                 {/* input */}
 
-                <div className="mt-6 flex gap-2">
+                <div className="mt-6 flex md:flex-row flex-col md:w-fit w-full gap-2">
                     <div
                         onClick={() => navigate("/my-inventory")}
-                        className=" flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-orange/80  hover:to-lightOrange/80 cursor-pointer from-orange to-lightOrange p-2 px-4 gap-3 w-fit ">
+                        className="w-full md:w-fit flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-orange/80  hover:to-lightOrange/80 cursor-pointer from-orange to-lightOrange p-2 px-4 gap-3">
                         <Package2 className="text-white" />
                         <p>Your Tool Inventory </p>
                     </div>
@@ -121,7 +126,7 @@ export default function Dashboard() {
                         <DialogTrigger>
                             <div
                                 onClick={handleGetTooltip}
-                                className=" flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-lightOrange/80  hover:to-orange/80 cursor-pointer from-lightOrange to-orange p-2 px-4 gap-3 w-fit ">
+                                className="w-full md:w-fit flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-lightOrange/80  hover:to-orange/80 cursor-pointer from-lightOrange to-orange p-2 px-4 gap-3 w-fit ">
                                 <CalendarDays className="text-white" />
                                 <p>Tooltip Of the Day </p>
                             </div>
@@ -205,18 +210,18 @@ export default function Dashboard() {
                             to Dive Back In?
                         </h1>
 
-
                         {/* card */}
-
-                        <div className="flex gap-1 items-center">
-                            {cache.map((item: ChatItem, index) => (
-                                <Link to={`/matey/${item.sessionId}`} key={index} className="md:h-60 bg-gradient-to-tr from-slate-100 to-slate-300 hover:to-softYellow hover:from-white hover:border-yellow transition-all duration-300 ease-in-out cursor-pointer max-w-52 w-1/6 justify-between flex flex-col p-2 text-left rounded-md border-2 border-slate-300">
-                                    <Anvil color="#ff6600" />
-                                    <p className="text-slate-700 max-h-[70%] overflow-hidden">
-                                        {typeof item.chatName === 'string' && item.chatName.length > 130 ? `${item.chatName.slice(0, 130)}...` : item.chatName}
-                                    </p>
-                                </Link>
-                            ))}
+                        <div className="overflow-x-auto pb-4">
+                            <div className="flex gap-1 items-center min-w-min">
+                                {cache.slice(0,5).map((item: ChatItem, index) => (
+                                    <Link to={`/matey/${item.sessionId}`} key={index} className="h-60 bg-gradient-to-tr from-slate-100 to-slate-300 hover:to-softYellow hover:from-white hover:border-yellow transition-all duration-300 ease-in-out cursor-pointer md:max-w-52 min-w-[200px] md:w-1/6 justify-between flex flex-col p-2 text-left rounded-md border-2 border-slate-300">
+                                        <Anvil color="#ff6600" />
+                                        <p className="text-slate-700 max-h-[70%] overflow-hidden">
+                                            {typeof item.chatName === 'string' && item.chatName.length > 130 ? `${item.chatName.slice(0, 130)}...` : item.chatName}
+                                        </p>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
 
                     </div>

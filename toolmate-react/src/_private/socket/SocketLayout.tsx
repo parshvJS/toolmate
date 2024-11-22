@@ -28,7 +28,7 @@ export function SocketLayout() {
                     <div className="md:w-3/5 p-0">
                         <Outlet />
                     </div>
-                    <div className={`md:w-1/3 w-full md:block hidden`}>
+                    <div className={`md:w-[36%] w-full md:block hidden`}>
                         <ToolSpread />
                     </div>
                 </div>

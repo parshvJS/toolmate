@@ -15,11 +15,12 @@ dotenv.config();
  */
 async function startRedisConnection(): Promise<Redis> {
     try {
+        console.log("REDIS_URL", process.env.REDIS_URL,"REDIS_PORT", process.env.REDIS_PORT,"REDIS_PASSWORD", process.env.REDIS_PASSWORD,"REDIS_USERNAME", process.env.REDIS_USERNAME);
         const redis = new Redis({
-            host: process.env.REDIS_HOST,
+            username:process.env.REDIS_USERNAME,
+            host: process.env.REDIS_URL,
             port: parseInt(process.env.REDIS_PORT || "6379"),
             password: process.env.REDIS_PASSWORD,
-            db: 0
         });
 
         redis.on('connect', () => {
@@ -45,21 +46,12 @@ const redisInstance = await startRedisConnection();
  * @param {Redis} redis - The Redis instance.
  */
 function subscribeToKeyExpiration(redis: Redis) {
-    // Enable keyspace notifications for expired keys
-    redis.config('SET', 'notify-keyspace-events', 'Ex', (err, res) => {
-        if (err) {
-            console.error('Failed to set notify-keyspace-events:', err);
-            return;
-        }
-        console.log('Keyspace notifications enabled for expired keys.');
-    });
-
     // Create a separate Redis instance to subscribe to expiration events
     const expirationSubscriber = new Redis({
-        host: process.env.REDIS_HOST,
+        host: process.env.REDIS_URL,
         port: parseInt(process.env.REDIS_PORT || "6379"),
         password: process.env.REDIS_PASSWORD,
-        db: 0
+        username: process.env.REDIS_USERNAME,
     });
     console.log('Created expiration subscriber');
 
@@ -81,22 +73,16 @@ function subscribeToKeyExpiration(redis: Redis) {
                 const paymentData = await getRedisData(`USER-PAYMENT-${userChat.userId}`);
                 const plan = paymentData.success ? JSON.parse(paymentData.data).planAccess[2] : false;
                 if (plan) {
-                    const tempChat =await Chat?.find({ sessionId: sessionId }).lean();
-                    const newChat = tempChat.map((chat:any) => {
-                        return {
-                            role: chat.role,
-                            message: chat.message
-                        }
-                    })
-                    if(newChat.length > 0)
-                    {
+                    const tempChat = await Chat?.find({ sessionId: sessionId }).lean();
+                    const newChat = tempChat.map((chat: any) => ({
+                        role: chat.role,
+                        message: chat.message,
+                    }));
+                    if (newChat.length > 0) {
                         await summarizeAndStoreChatHistory(String(userChat.userId), tempChat);
-
                     }
                 }
             }
-
-
         } catch (error: any) {
             console.error('Error setting data to Redis:', error);
         }

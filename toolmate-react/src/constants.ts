@@ -68,7 +68,7 @@ export const pricing = [
           title: "Toolmate Pro",
           tabName: "year",
           icons: "/assets/icons/toolbox.svg",
-          color: ["#FBDF29", "#EF5401"],
+          color: ["#FBDF29", "#FFD709"],
           isActivePlan: false,
           featureList: [
             {

@@ -226,7 +226,7 @@ export default function ImprovedAnimatedSidebar({
             {/* Logo */}
 
 
-            <div className="flex fixed flex-1 w-screen bg-white z-30 mb-28 justify-between items-center md:hidden px-5 py-2 border-b-2 border-yellow">
+            <div className="flex fixed flex-1 w-screen bg-white z-30  justify-between items-center md:hidden px-5 py-2 border-b-2 border-yellow">
                 <div className="flex items-center gap-2">
                     <Sheet>
                         <SheetTrigger>
@@ -405,8 +405,6 @@ export default function ImprovedAnimatedSidebar({
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-
-
                 </div>
             </div>
 

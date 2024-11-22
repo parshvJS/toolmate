@@ -13,7 +13,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Disc3 } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Disc3, Box, BadgeDollarSign, DollarSign, ExternalLink, Star, Info, Lock } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { ProductItem } from "@/types/types";
@@ -22,6 +22,33 @@ import { getImageUrl } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@radix-ui/react-separator";
 import { useUser } from "@clerk/clerk-react";
+import FullMateyExpression from "@/components/custom/FullMateyExpression";
+import {
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer"
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel"
+
+import CustomSlider from "@/components/custom/Slider";
+import { ProductDetails, productSuggestionsTabs, VendorProductDetails } from "@/components/custom/ToolSpread";
+import BunningProduct from "@/components/custom/BunningProduct";
+import { AIProduct } from "@/components/custom/AIProduct";
+import { VendorProduct } from "@/components/custom/VendorProduct";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import classNames from "classnames";
+import { Button } from "@/components/ui/button";
 
 interface Message {
     role: string;
@@ -71,13 +98,14 @@ async function fetchChatHistory(
         const bunningsProduct: any[] = [];
 
         response.data.data.forEach((chatItem: any) => {
-            if (chatItem.isMateyProduct) {
+            console.log("chatItem", chatItem.mateyProduct, chatItem.bunningsData, chatItem.productData, [chatItem.isMateyProduct, chatItem.isBunningsProduct, chatItem.isProductSuggested])
+            if (chatItem.isMateyProduct && chatItem.mateyProduct) {
                 aiProduct.push(...chatItem.mateyProduct);
             }
-            if (chatItem.isBunningsProduct) {
+            if (chatItem.isBunningsProduct && chatItem.bunningsData) {
                 bunningsProduct.push(...chatItem.bunningsData);
             }
-            if (chatItem.isProductSuggested) {
+            if (chatItem.isProductSuggested && chatItem.productData) {
                 mateyProduct.push(...chatItem.productData);
             }
         });
@@ -115,14 +143,14 @@ export function ChatPage() {
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
     const { userId, userData, unshiftiChatname } = useContext(UserContext);
-    const { clearAllTool, setBreakpoints, sliderValue, breakpoints, massAddAi, massAddBunnings, massAddVendor, appendAi, appendBunnings, appendVendor } = useContext(RightSidebarContext);
+    const { isBudgetChangable, clearAllTool, setBreakpoints, sliderValue, breakpoints, massAddAi, massAddBunnings, massAddVendor, appendAi, appendBunnings, appendVendor, aiProduct, bunningProduct, vendorProduct, setIsBudgetChangable, setIsBudgetOn, isBudgetOn } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
     const [isNotificationOn, setIsNotificationOn] = useState(false);
     const [notificationText, setNotificationText] = useState("Matey is Adding...");
     const [mainInput, setMainInput] = useState("");
     const [isExpanded, setIsExpanded] = useState(false);
-    const [mateyExpression, setMateyExpression] = useState("");
+    const [mateyExpression, setMateyExpression] = useState("smile");
     const [stateOfButton, setStateOfButton] = useState(-1);
     const [pagination, setPagination] = useState({ page: 1, limit: 10 });
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -135,49 +163,18 @@ export function ChatPage() {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [currLoadingProductFeature, setCurrLoadingProductFeature] = useState<number[]>([]);
     const [currLoadingProductFeatureIndex, setCurrLoadingProductFeatureIndex] = useState(-1);
+    const [isMateyOpen, setIsMateyOpen] = useState(false)
     const { toast } = useToast();
-
+    // mobile
+    const [currOpenIndex, setCurrOpenIndex] = useState<number>(-1)
+    const [currActiveTab, setCurrActiveTab] = useState("bunnings");
+    const [currActiveProductId, setCurrActiveProductId] = useState<string>("")
+    const [isProductDetails, setIsProductDetails] = useState<boolean>(false)
+    const [sidebarProductDetails, setSidebarProductDetails] = useState<any>(null)
+    const [currActiveProductDetailsTab, setCurrActiveProductDetailsTab] = useState("")
+    const [currActiveCategory, setCurrActiveCategory] = useState<string>('');
     const handleScroll = () => { }
-    // const handleScroll = async () => {
-    //     if (!chatContainerRef.current || isLoadingMore || !hasMore) return;
 
-    //     const { scrollTop } = chatContainerRef.current;
-
-    //     // Check if we're near the top (within 100px)
-    //     if (scrollTop < 100) {
-    //         setIsLoadingMore(true);
-
-    //         // Save current scroll height
-    //         const scrollHeight = chatContainerRef.current.scrollHeight;
-
-    //         // Fetch more messages
-    //         const nextPage = pagination.page + 1;
-    //         const chatData = await fetchChatHistory(sessionId, userData?.id, {
-    //             page: nextPage,
-    //             limit: pagination.limit
-    //         });
-
-    //         if (chatData.success && chatData.data.length > 0) {
-    //             // Update pagination
-    //             setPagination(prev => ({ ...prev, page: nextPage }));
-
-    //             // Prepend new messages to conversation
-    //             setConversation(prev => [...chatData.data, ...prev]);
-
-    //             // Restore scroll position after new content is loaded
-    //             setTimeout(() => {
-    //                 if (chatContainerRef.current) {
-    //                     const newScrollHeight = chatContainerRef.current.scrollHeight;
-    //                     chatContainerRef.current.scrollTop = newScrollHeight - scrollHeight;
-    //                 }
-    //             }, 0);
-    //         } else {
-    //             setHasMore(false);
-    //         }
-
-    //         setIsLoadingMore(false);
-    //     }
-    // };
 
     // Add scroll event listener
     useEffect(() => {
@@ -244,7 +241,6 @@ export function ChatPage() {
 
         const handleMessage = (data: { text: string }) => {
             setCurrStreamingRes((prev) => prev + data.text);
-
         };
 
 
@@ -409,6 +405,9 @@ export function ChatPage() {
         socket?.on("productList", handleProductIdLoading)
         socket?.on("aiProducts", handleMateyProducts)
         // socket?.on("vendorProducts", handleVendorProducts);
+        socket?.on("mateyExpression", (ex: string) => {
+            setMateyExpression(ex || "laugh")
+        })
         socket?.on("terminate", () => {
             setStateOfButton(-1);
             setCurrStreamingRes("");
@@ -532,13 +531,24 @@ export function ChatPage() {
         if (stateOfButton === 0) return;
         setStateOfButton(0);
         setConversation([...conversation, { role: "user", message: mainInput }]);
-        const userMessage = {
-            sessionId,
-            message: mainInput,
-            userId,
-            isBudgetSliderPresent: userData?.planAccess[2] ? breakpoints.length > 0 : undefined,
-            budgetSliderValue: userData?.planAccess[2] ? sliderValue : undefined,
-        };
+        let userMessage;
+        if (userData?.planAccess[2]) {
+            userMessage = {
+                sessionId,
+                message: mainInput,
+                userId,
+                isBudgetSliderPresent: breakpoints.length > 0,
+                budgetSliderValue: sliderValue,
+                isBudgetSliderChangable: isBudgetChangable
+            }
+        }
+        else {
+            userMessage = {
+                sessionId,
+                message: mainInput,
+                userId,
+            }
+        }
         console.log("senting user message -", userMessage);
         socket?.emit("userMessage", userMessage);
 
@@ -591,12 +601,13 @@ export function ChatPage() {
             </div>
         );
     }
-    { console.log(conversation) }
+    const filteredProducts = currActiveTab == "bunnings" ? bunningProduct.filter((product: any) => product.categoryName === currActiveCategory) : currActiveTab == "ai" ? aiProduct.filter((product: any) => product.categoryName === currActiveCategory) : vendorProduct.filter((product: any) => product.categoryName === currActiveCategory)
+
     return (
-        <div className={`flex flex-col h-screen py-4 md:pl-4 px-2 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
+        <div className={`flex flex-col md:w-auto  w-screen  h-screen py-4 md:pl-4 px-2 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
             <div
                 ref={chatContainerRef}
-                className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4 pr-4 relative w-full"
+                className="flex-grow overflow-y-scroll max-w-4xl flex flex-col gap-4 pr-4 relative w-full md:mt-0 mt-14"
             >
                 {isLoadingMore && (
                     <div className="flex justify-center py-4">
@@ -619,12 +630,12 @@ export function ChatPage() {
                                 isAiProductLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(3)}
                             />
                         ) : (
-                            <div>
+                            <div className="w-full">
 
                                 <div className="w-full flex justify-start  rounded-md items-center">
                                     <hr className="h-1 border-2 border-slate-300 " />
-                                    <div className="flex gap-4 w-full items-center rounded-md px-1 py-2 ">
-                                        <div className="w-8 h-8">
+                                    <div className="flex gap-4 w-full items-start rounded-md px-1 py-2 ">
+                                        <div className="min-w-8 min-h-8">
                                             {
                                                 (!user?.hasImage) ?
                                                     <Avatar>
@@ -651,7 +662,7 @@ export function ChatPage() {
                 <div ref={messagesEndRef} />
             </div>
             <div className="w-full flex gap-2">
-                <div className="w-[85%] flex flex-col items-center">
+                <div className={`${isMateyOpen ? "w-[85%]" : "w-full"} flex flex-col items-center`}>
                     {isNotificationOn && (
                         <motion.div
                             initial={{ y: 10, opacity: 0 }}
@@ -663,7 +674,7 @@ export function ChatPage() {
                             <p className="animate-pulse font-semibold">{notificationText}</p>
                         </motion.div>
                     )}
-                    <div className="max-w-4xl w-full bg-slate-100 border-2 border-lightOrange rounded-lg mt-2 flex flex-col">
+                    <div className="min-w-full w-full bg-slate-100 border-2 border-lightOrange rounded-lg mt-2 flex flex-col">
                         <textarea
                             value={mainInput}
                             onChange={(e) => setMainInput(e.target.value)}
@@ -673,8 +684,415 @@ export function ChatPage() {
                             style={{ transition: "height 0.3s ease-in-out" }}
                         />
                         <div className="flex justify-between items-center p-2 border-t-2 border-lightOrange h-14">
-                            <MateyExpression expression={mateyExpression} />
-                            <div className="flex gap-4 items-center">
+                            <TooltipProvider>
+                                <Tooltip delayDuration={0}>
+                                    <TooltipTrigger onClick={() => setIsMateyOpen(!isMateyOpen)} className="md:block hidden">
+                                        <MateyExpression expression={mateyExpression} />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{isMateyOpen ? "Close" : "Open"} Matey Section</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <div className="block  md:hidden">
+
+                                <MateyExpression expression={mateyExpression} />
+                            </div>
+
+                            <div className="flex gap-2 items-center">
+                                <TooltipProvider>
+                                    <Tooltip delayDuration={10}>
+                                        <TooltipTrigger className="">
+                                            <Drawer>
+                                                <DrawerTrigger className="p-2 rounded-xl bg-orange/40 md:hidden block">
+                                                    <BadgeDollarSign className="text-white" />
+                                                </DrawerTrigger>
+                                                <DrawerContent className="p-4 h-[calc(100%-10rem)]">
+                                                    {
+                                                        userData?.planAccess[2] ? <div className="flex gap-2 flex-col">
+                                                            <CustomSlider />
+                                                            <hr className="border-2 border-yellow" />
+                                                            <div className="p-4 flex gap-2 flex-col">
+                                                                <div className="flex gap-3">
+                                                                    <Switch
+                                                                        checked={isBudgetOn}
+                                                                        onChange={() => setIsBudgetOn(!isBudgetOn)}
+                                                                    />
+                                                                    <p>Apply Budget Slider</p>
+                                                                </div>
+
+                                                                <div className="flex gap-3">
+                                                                    <Switch
+                                                                        checked={isBudgetChangable}
+                                                                        onChange={() => setIsBudgetChangable(!isBudgetChangable)}
+                                                                    />
+                                                                    <p>Change Budget Slider</p>
+                                                                </div>
+
+                                                            </div>
+                                                        </div> : <div className="flex flex-col items-center justify-center p-4 bg-paleYellow rounded-md mt-5 gap-5">
+                                                            <Lock />
+                                                            <p>Access Only In Pro Plan</p>
+                                                            <Button>Upgrade</Button>
+                                                        </div>
+                                                    }
+                                                </DrawerContent>
+                                            </Drawer>
+
+
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Budget Slider</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                    <Tooltip delayDuration={10}>
+                                        <TooltipTrigger className="">
+                                            <Drawer onOpenChange={(value) => {
+                                                if (value && currActiveCategory == "") setCurrActiveCategory(bunningProduct[0]?.categoryName)
+                                            }
+
+                                            } >
+                                                <DrawerTrigger className="p-2 rounded-xl bg-orange/40 md:hidden block">
+                                                    <Box className="text-white" />
+
+                                                </DrawerTrigger>
+                                                <DrawerContent className="h-[calc(100%-2rem)] ">
+                                                    <div className="flex flex-col gap-2 border-y-2 p-2 border-slate-300">
+
+                                                        <div className="flex gap-2">
+                                                            {productSuggestionsTabs.map((product, index) => (
+                                                                <TooltipProvider key={index}>
+                                                                    <Tooltip delayDuration={0}>
+                                                                        <TooltipTrigger className="w-fit">
+                                                                            <div
+                                                                                onClick={() => {
+                                                                                    console.log("clicked", product.name);
+                                                                                    setCurrActiveTab(product.name)
+                                                                                    if (product.name === "ai") {
+                                                                                        setCurrActiveCategory(aiProduct[0].categoryName)
+                                                                                    }
+                                                                                    if (product.name === "bunnings") {
+                                                                                        setCurrActiveCategory(bunningProduct[0].categoryName)
+                                                                                    }
+                                                                                    if (product.name === "vendor") {
+                                                                                        setCurrActiveCategory(vendorProduct[0].categoryName)
+                                                                                    }
+                                                                                }}
+                                                                                className="flex w-fit gap-2 items-center rounded-md cursor-pointer hover:bg-mangoYellow transition-all duration-200"
+                                                                            >
+                                                                                <img
+                                                                                    src={product.img}
+                                                                                    alt={product.name}
+                                                                                    className="w-12 h-12 rounded-md shadow-lg"
+                                                                                />
+                                                                            </div>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent side="right" className="bg-mangoYellow z-[99] border-2 border-black">
+                                                                            <p>{product.tooltip}</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            ))}
+                                                        </div>
+
+                                                    </div>
+                                                    {
+                                                        currActiveTab === "bunnings" && <div>
+                                                            <Carousel className="mb-4">
+
+
+                                                                <CarouselContent className=" flex gap-2 px-4 py-2 border-b border-gray-200">
+
+                                                                    {
+                                                                        currActiveTab == "bunnings" && bunningProduct.map((category: any, index: number) => {
+                                                                            return (
+                                                                                <CarouselItem className="w-fit basis-auto">
+                                                                                    <button
+                                                                                        className={classNames(
+                                                                                            "px-4 py-2 rounded-lg font-semibold text-[5px] transition-colors duration-300",
+                                                                                            {
+                                                                                                "bg-lighterYellow ": category.categoryName === currActiveCategory,
+                                                                                                "bg-gray-200 text-gray-700": category.categoryName !== currActiveCategory,
+                                                                                            }
+                                                                                        )}
+                                                                                        onClick={() => setCurrActiveCategory(category.categoryName)}
+                                                                                    >
+                                                                                        {category.categoryName}
+                                                                                    </button>
+                                                                                </CarouselItem>
+                                                                            );
+                                                                        })
+                                                                    }
+
+                                                                </CarouselContent>
+                                                                <div className="w-full h-10 relative flex justify-between items-center p-2  ">
+                                                                    <CarouselPrevious className="absolute left-4 bg-lighterYellow" />
+                                                                    <CarouselNext className="absolute left-14 bg-lighterYellow" />
+                                                                </div>
+                                                            </Carousel>
+
+                                                            <p className="text-left px-4 py-2 font-thin text-slate-400">Click To View Details Of Product</p>
+                                                            <div className=" w-screen gap-4 p-4">
+                                                                <ScrollArea className="w-full h-[380px]">
+                                                                    {
+                                                                        currActiveTab === "bunnings" && filteredProducts.map((product) => {
+
+                                                                            return <div className="grid grid-cols-2 gap-2">
+                                                                                {
+                                                                                    product.products.map((product) => {
+                                                                                        console.log(product, "productsd")
+                                                                                        return (
+
+                                                                                            <Drawer>
+                                                                                                <DrawerTrigger>
+                                                                                                    <div className="border border-slate-300 rounded-md p-4">
+                                                                                                        <img src={product.image} />
+                                                                                                    </div>
+                                                                                                </DrawerTrigger>
+                                                                                                <DrawerContent className="h-[calc(100%-5rem)]">
+                                                                                                    <div className="flex gap-2 flex-col items-center justify-center p-4">
+                                                                                                        <img src={product.image} className="max-w-48 max-h-48" />
+                                                                                                        <hr className="border-2 border-slate-400 w-full" />
+                                                                                                        <div className="absolute top-14 right-2 bg-yellow px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                                                                                                            <DollarSign className="w-4 h-4 text-gray" />
+                                                                                                            <span className="font-bold text-gray">${product?.price || 'N/A'}</span>
+                                                                                                        </div>
+                                                                                                        <h2 className="text-lg text-left font-bold text-gray leading-tight">
+                                                                                                            {product?.name || 'No Name'}
+                                                                                                        </h2>
+                                                                                                        {/* View Product Link */}
+                                                                                                        <a
+                                                                                                            href={product?.link}
+                                                                                                            target="_blank"
+                                                                                                            rel="noopener noreferrer"
+                                                                                                            className="bg-lightYellow w-full hover:bg-yellow transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 text-gray"
+                                                                                                        >
+                                                                                                            <span>View Product</span>
+                                                                                                            <ExternalLink className="w-4 h-4" />
+                                                                                                        </a>
+                                                                                                        {/* Details Section */}
+                                                                                                        <div className="flex flex-col w-full gap-2 mt-1">
+                                                                                                            {/* Rating */}
+                                                                                                            <div className="flex  w-full items-center gap-2 p-2 rounded-md bg-lighterYellow">
+                                                                                                                <Star className="w-5 h-5 text-darkYellow" />
+                                                                                                                <span className="font-semibold text-gray">Rated By: {product?.rating || 'N/A'}</span>
+                                                                                                            </div>
+                                                                                                            {/* Usage/Description */}
+                                                                                                            <div className="p-2 w-full rounded-md flex gap-2 bg-paleYellow">
+                                                                                                                <Info className="w-5 h-5 flex-shrink-0 text-deepYellow text-left" />
+                                                                                                                <div className="text-left">
+                                                                                                                    <span className="font-semibold text-gray">Usage: </span> <br />
+                                                                                                                    <span className="text-gray">{product?.personalUsage || 'N/A'}</span>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </DrawerContent>
+                                                                                            </Drawer>
+                                                                                        )
+                                                                                    })
+                                                                                }
+                                                                            </div>
+                                                                        })
+                                                                    }
+
+                                                                </ScrollArea>
+
+                                                            </div>
+                                                        </div>
+                                                    }
+
+
+                                                    {
+                                                        currActiveTab === "ai" && <div>
+                                                            <Carousel className="">
+
+
+                                                                <CarouselContent className=" flex gap-2 px-4 py-2 border-b border-gray-200">
+
+                                                                    {
+                                                                        aiProduct.map((category: any, index: number) => {
+                                                                            return (
+                                                                                <CarouselItem className="w-fit basis-auto">
+                                                                                    <button
+                                                                                        key={index}
+                                                                                        className={classNames(
+                                                                                            "px-4 py-2 rounded-lg font-semibold text-[5px] transition-colors duration-300",
+                                                                                            {
+                                                                                                "bg-lighterYellow ": category.categoryName === currActiveCategory,
+                                                                                                "bg-gray-200 text-gray-700": category.categoryName !== currActiveCategory
+                                                                                            }
+                                                                                        )}
+                                                                                        onClick={() => setCurrActiveCategory(category.categoryName)}
+                                                                                    >
+                                                                                        {category.categoryName}
+                                                                                    </button>
+                                                                                </CarouselItem>
+
+
+                                                                            );
+                                                                        })
+                                                                    }
+                                                                </CarouselContent>
+                                                                <div className="w-full h-10 relative flex justify-between items-center p-4">
+                                                                    <CarouselPrevious className="absolute left-4 bg-lighterYellow" />
+                                                                    <CarouselNext className="absolute left-14 bg-lighterYellow" />
+                                                                </div>
+                                                            </Carousel>
+                                                            <p className="text-left px-4 py-2 font-thin text-slate-400">Click To View Details Of Product</p>
+                                                            <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3 bg-gray-100">
+                                                                {filteredProducts.map((product: any, index: number) => (
+                                                                    <div className="grid grid-cols-2 gap-2">
+
+                                                                        {
+                                                                            product.products.map((product: any, index: number) => (
+                                                                                <Drawer>
+                                                                                    <DrawerTrigger>
+                                                                                        <div
+                                                                                            key={index}
+                                                                                            className="cursor-pointer border border-slate-300 flex flex-col items-start text-left bg-white rounded-xl shadow-md p-6 transform transition-all hover:scale-105 hover:shadow-xl hover:bg-gray-50"
+                                                                                        >
+                                                                                            <p className="text-lg font-semibold text-gray-900 mb-2">{product.name.length > 10 ? product.name.slice(0, 10) + "..." : product.name}</p>
+
+                                                                                            <p className="text-sm font-semibold text-gray-500">Estimated: {product.price} AUD</p>
+                                                                                        </div>
+                                                                                    </DrawerTrigger>
+                                                                                    <DrawerContent className="h-[calc(100%-10rem)]">
+                                                                                        <div
+                                                                                            key={index}
+                                                                                            className="cursor-pointer  flex flex-col items-start text-left bg-white rounded-xl  p-6 transform transition-all hover:scale-105 hover:shadow-xl hover:bg-gray-50"
+                                                                                        >
+                                                                                            <p className="text-2xl font-semibold text-gray-900 mb-2">{product.name}</p>
+                                                                                            <p className="text-base text-gray-600 mb-4">{product.description}</p>
+                                                                                            <p className="text-sm text-gray-700 mb-4">
+                                                                                                <span className="font-semibold text-orange-500">Tip From Matey:</span>
+                                                                                                <span className="text-gray-800 font-medium"> {product.personalUsage}</span>
+                                                                                            </p>
+                                                                                            <p className="text-sm font-semibold text-gray-500">Estimated: {product.price} AUD</p>
+                                                                                        </div>
+                                                                                    </DrawerContent>
+                                                                                </Drawer>
+
+
+                                                                            ))
+                                                                        }
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                        </div>
+                                                    }
+
+                                                    {
+                                                        currActiveTab === "vendor" && <div>
+                                                            <Carousel className=" max-w-[95%]">
+                                                                <CarouselContent className="flex gap-2 px-4 py-2 border-b border-gray-200">
+                                                                    {vendorProduct.map((category: any, index: number) => (
+                                                                        <CarouselItem key={index} className="w-fit basis-auto">
+                                                                            <button
+                                                                                className={classNames(
+                                                                                    "px-4 py-2 rounded-lg font-semibold text-[5px] transition-colors duration-300",
+                                                                                    {
+                                                                                        "bg-lighterYellow ": category.categoryName === currActiveCategory,
+                                                                                        "bg-gray-200 text-gray-700": category.categoryName !== currActiveCategory,
+                                                                                    }
+                                                                                )}
+                                                                                onClick={() => setCurrActiveCategory(category.categoryName)}
+                                                                            >
+                                                                                {category.categoryName}
+                                                                            </button>
+                                                                        </CarouselItem>
+                                                                    ))}
+                                                                </CarouselContent>
+                                                                <div className="w-full h-10 relative flex justify-between items-center p-4">
+                                                                    <CarouselPrevious className="absolute left-4 bg-lighterYellow" />
+                                                                    <CarouselNext className="absolute left-14 bg-lighterYellow" />
+                                                                </div>
+                                                            </Carousel>
+                                                            <p className="text-left px-4 py-2 font-thin text-slate-400">Click To View Details Of Product</p>
+                                                            {/* Product grid */}
+                                                            <div className="gap-4 p-4 ">
+                                                                {filteredProducts.map((product: any, index: number) => (
+                                                                    <div className="gap-2 grid grid-cols-2">
+                                                                        {
+                                                                            product.products.map((product: any, index: number) => (
+                                                                                <Drawer>
+                                                                                    <DrawerTrigger>
+                                                                                        <div
+                                                                                            key={index}
+                                                                                            className="cursor-pointer border border-slate-300 flex flex-col items-start text-left bg-white rounded-xl shadow-md p-6 transform transition-all hover:scale-105 hover:shadow-xl hover:bg-gray-50"
+                                                                                        >
+                                                                                            <img src={product.imageParams[0] ? getImageUrl(product.imageParams[0]) : '/assets/images/no-image.svg'} onError={(e) => {
+                                                                                                e.currentTarget.src = '/assets/images/no-image.svg';
+                                                                                            }
+                                                                                            } alt={product.name} className="w-full h-40 " />
+
+                                                                                        </div>
+                                                                                    </DrawerTrigger>
+                                                                                    <DrawerContent className="h-[calc(100%-10rem)]">
+
+                                                                                        <div className="flex gap-2 flex-col items-center justify-center p-4">
+                                                                                            <img src={product.imageParams[0] ? getImageUrl(product.imageParams[0]) : '/assets/images/no-image.svg'} onError={(e) => {
+                                                                                                e.currentTarget.src = '/assets/images/no-image.svg';
+                                                                                            }} alt={product.name} className="max-w-48 max-h-48" />
+                                                                                            <hr className="border-2 border-slate-400 w-full" />
+                                                                                            <div className="absolute top-14 right-2 bg-yellow px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                                                                                                <DollarSign className="w-4 h-4 text-gray" />
+                                                                                                <span className="font-bold text-gray">${product?.price || 'N/A'}</span>
+                                                                                            </div>
+                                                                                            <h2 className="text-lg text-left font-bold text-gray leading-tight">
+                                                                                                {product?.name || 'No Name'}
+                                                                                            </h2>
+                                                                                            <a
+                                                                                                href={product?.url}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                className="bg-lightYellow w-full hover:bg-yellow transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 text-gray"
+                                                                                            >
+                                                                                                <span>View Product</span>
+                                                                                                <ExternalLink className="w-4 h-4" />
+                                                                                            </a>
+                                                                                            <div className="flex flex-col w-full gap-2 mt-1">
+                                                                                                <div className="flex w-full items-center gap-2 p-2 rounded-md bg-lighterYellow">
+                                                                                                    <Star className="w-5 h-5 text-darkYellow" />
+                                                                                                    <span className="font-semibold text-gray">Rated By: {product?.rating || 'N/A'}</span>
+                                                                                                </div>
+                                                                                                <div className="p-2 w-full rounded-md flex gap-2 bg-paleYellow">
+                                                                                                    <Info className="w-5 h-5 flex-shrink-0 text-deepYellow text-left" />
+                                                                                                    <div className="text-left">
+                                                                                                        <span className="font-semibold text-gray">Usage: </span> <br />
+                                                                                                        <span className="text-gray">{product?.description || 'N/A'}</span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </DrawerContent>
+                                                                                </Drawer>
+                                                                            ))
+                                                                        }
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+
+                                                        </div>
+                                                    }
+                                                </DrawerContent>
+                                            </Drawer>
+
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Product Suggestion</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+
+                                </TooltipProvider>
+
+
+                                <Separator orientation="vertical" className="border border-lightOrange w-full h-10 md:hidden block" />
                                 <TooltipProvider>
                                     <Tooltip delayDuration={0}>
                                         <TooltipTrigger>
@@ -699,10 +1117,11 @@ export function ChatPage() {
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
+
                                 <TooltipProvider>
                                     <Tooltip delayDuration={10}>
-                                        <TooltipTrigger>
-                                            <ArrowDownToDot className="cursor-pointer text-slate-600 hover:text-orange" onClick={scrollToBottom} />
+                                        <TooltipTrigger className="">
+                                            <ArrowDownToDot className="cursor-pointer hover:text-orange text-slate-600" onClick={scrollToBottom} />
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>Scroll To Bottom</p>
@@ -738,8 +1157,12 @@ export function ChatPage() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-yellow w-[15%] mt-2 flex-1 rounded-md" style={{ backgroundImage: 'url(/assets/images/matey-bg.png)', backgroundSize: 'cover' }}>
-                </div>
+                {
+                    isMateyOpen &&
+                    <div className="bg-yellow w-[15%] mt-2 rounded-md flex justify-center items-center" style={{ backgroundImage: 'url(/assets/images/matey-bg.png)', backgroundSize: 'cover' }}>
+                        <FullMateyExpression expression={mateyExpression} />
+                    </div>
+                }
             </div>
         </div>
     );

@@ -685,9 +685,9 @@ async function handleMateyProduct(prompt: string, chatHistory: string, sessionId
 	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
 	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
+	console.log(products, "is here")
 	try {
-
-		socket.emit('mateyProduct', JSON.parse(products));
+		JSON.parse(products);
 	} catch (error) {
 
 		socket.emit('error', 'Error occurred while fetching product intent.');
@@ -1560,4 +1560,43 @@ export async function generateUsefulFact(userState: string, userPreference: stri
 	});
 
 	return fact.trim();
+}
+
+export async function getMateyExpession(prompt: string, socket: Socket) {
+	const MateyExpressionPrompt = `Based on your prompt Generate 1 matey expression and return that in array 
+	
+	-prompt : {prompt}
+	- Expression catelog : "laugh" , "hello" , "smile" , "offer" , "1thumb" , "2thumb" , "tool" , "thinking"
+
+	output format: ["expression"]
+
+	keep in mind  
+	- return only one expression
+	- no additional text in response
+	- only return array of string
+	- no comments or any other unnecessary text in the response, only the array of objects.
+
+	`
+	const MateyExpressionTemplate = PromptTemplate.fromTemplate(MateyExpressionPrompt);
+
+	const MateyExpressionLLMChain = MateyExpressionTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfMateyExpression = RunnableSequence.from([
+
+		MateyExpressionLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	const MateyExpression = await runnableChainOfMateyExpression.invoke({
+		prompt: prompt
+	});
+	try {
+
+		const parsedMateyExpression = JSON.parse(MateyExpression);
+		socket.emit('mateyExpression', parsedMateyExpression[0]);
+	} catch (error: any) {
+		socket.emit("mateyExpression", "smile")
+	}
 }

@@ -4,6 +4,8 @@ import axios from 'axios';
 import { env } from "@/lib/environment";
 import { useAuth } from "@clerk/clerk-react";
 import { ChatItem, iChatname } from '@/types/types';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface UserData {
@@ -43,6 +45,8 @@ const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
 function UserContextProvider({ children }: { children: ReactNode }) {
     const { userId } = useAuth();
     const queryClient = useQueryClient();
+    const {toast} = useToast()
+    const navigate = useNavigate()
     const { data: userData, isLoading, isError, isFetching } = useQuery<UserData, Error>({
         queryKey: ['user', userId],
         queryFn: async () => {
@@ -54,6 +58,15 @@ function UserContextProvider({ children }: { children: ReactNode }) {
             });
             console.log(response.data.data, "response.data.data");
             const res = response.data.data;
+            const isFreeUser=  response.data.data.planAccess[0];
+            if(isFreeUser){
+                toast({
+                    title:"Access To Full Toolmate Access Denied!",
+                    description:"Please Move To Pro Plan For Full Toolmate Access Or Use Free Credit",
+                    variant:"destructive"
+                })
+                navigate('/price')
+            }
             return res;
         },
         enabled: !!userId,                  // Only run the query if userId exists

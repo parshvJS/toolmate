@@ -84,17 +84,26 @@ const navItems: NavItem[] = [
     href: "/",
     icon: "/assets/mobileNavIcons/home.svg"
   },
-  {
-    name: "Products", // Dropdown example
-    dropdown: components,
-    icon: "/assets/mobileNavIcons/box.svg"
-  },
+  // {
+  //   name: "Products", // Dropdown example
+  //   dropdown: components,
+  //   icon: "/assets/mobileNavIcons/box.svg"
+  // },
   {
     name: "Pricing",
     href: "/pricing",
     icon: "/assets/mobileNavIcons/percentage.svg"
   },
-
+  {
+    name: "Impact",
+    href: "#impact",
+    icon: "/assets/mobileNavIcons/impact.svg"
+  },
+  {
+    name: "Features",
+    href: "#features",
+    icon: "/assets/mobileNavIcons/impact.svg"
+  },
 
   {
     name: "Blog",
@@ -102,19 +111,46 @@ const navItems: NavItem[] = [
     icon: "/assets/mobileNavIcons/blog.svg"
   },
   {
-    name: "More",
-    dropdown: info,
-    icon: "/assets/mobileNavIcons/info.svg"
+    name: "About",
+    href: "/about",
+    icon: "/assets/mobileNavIcons/about.svg"
   }
-
+];
+const navItemsOther: NavItem[] = [
+  {
+    name: "Home",
+    href: "/",
+    icon: "/assets/mobileNavIcons/home.svg"
+  },
+  {
+    name: "Pricing",
+    href: "/pricing",
+    icon: "/assets/mobileNavIcons/percentage.svg"
+  },
+  {
+    name: "Blog",
+    href: "/blog",
+    icon: "/assets/mobileNavIcons/blog.svg"
+  },
+  {
+    name: "About",
+    href: "/about",
+    icon: "/assets/mobileNavIcons/about.svg"
+  }
 ];
 
 export default function Navbar() {
   const [isProductDropdownOpen, setIsProductDropdownOpen] = React.useState(false);
-
-
+  const [renderNavItem, setRenderNavItem] = React.useState(navItemsOther);
   const location = useLocation();
   const currentRoute = location.pathname;
+  React.useEffect(() => {
+    if (currentRoute === "/") {
+      setRenderNavItem(navItems)
+    } else {
+      setRenderNavItem(navItemsOther)
+    }
+  }, [currentRoute])
   return (
     <div className="fixed top-0 left-0 md:pt-0 pt-2 w-full right-0 z-50 bg-white/50 backdrop-blur-md shadow-md  ">
       {/* desktop navigation menu */}
@@ -123,7 +159,7 @@ export default function Navbar() {
 
         <NavigationMenu>
           <NavigationMenuList>
-            {navItems.map((item) => (
+            {renderNavItem.map((item) => (
               <NavigationMenuItem
                 key={item.name}
                 className="bg-transparent text-black"

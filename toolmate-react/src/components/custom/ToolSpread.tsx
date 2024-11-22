@@ -1,5 +1,5 @@
 import { RightSidebarContext } from "@/context/rightSidebarContext"
-import { Calendar, Grid2x2Plus, ListPlus, Plus, ReceiptText, Scan, Shapes, SquareDashedBottom, SquarePlus, Tag } from "lucide-react"
+import { Calendar, CircleHelp, Grid2x2Plus, ListPlus, Lock, Plus, ReceiptText, Scan, Shapes, SquareDashedBottom, SquarePlus, Tag } from "lucide-react"
 import { useContext, useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Separator } from "../ui/separator"
@@ -37,8 +37,10 @@ import { AIProduct } from "./AIProduct"
 import { VendorProduct } from "./VendorProduct"
 import { ZodStringDef } from "zod"
 import { getImageUrl } from "@/lib/utils"
+import { useSocket } from "@/context/socketContext"
+import { UserContext } from "@/context/userContext"
 
-const productSuggestionsTabs = [
+export const productSuggestionsTabs = [
     {
         img: "/assets/icons/new-placeholder.svg",
         name: "bunnings",
@@ -66,7 +68,24 @@ export default function Notify({ index }: {
     )
 }
 export function ToolSpread() {
-    const { isSliderBreakPointEmpty, setIsBudgetOn, isBudgetOn, totalProductSuggestions, aiProduct, vendorProduct, bunningProduct } = useContext(RightSidebarContext)
+    const socket = useSocket();
+    const { userData } = useContext(UserContext);
+    const {
+        sliderValue,
+        breakpoints,
+        isSliderBreakPointEmpty,
+        setIsBudgetOn,
+        isBudgetOn,
+        totalProductSuggestions,
+        aiProduct,
+        notificationRemove,
+        vendorProduct,
+        bunningProduct,
+        notification,
+        isBudgetChangable,
+        setIsBudgetChangable,
+        setSliderValue,
+    } = useContext(RightSidebarContext);
     const [currOpenIndex, setCurrOpenIndex] = useState<number>(-1)
     const [currActiveTab, setCurrActiveTab] = useState<string>("bunnings")
     const [currActiveProductId, setCurrActiveProductId] = useState<string>("")
@@ -80,6 +99,8 @@ export function ToolSpread() {
         }
         setCurrOpenIndex(index)
     }
+
+    const isBudgetSliderAccessable = userData?.planAccess[2]
 
     useEffect(() => {
         if (currActiveProductId !== "") {
@@ -109,50 +130,13 @@ export function ToolSpread() {
                 })
             }
         }
-        return () => {
-            setIsProductDetails(false);
-            setCurrActiveProductDetailsTab("")
-            setSidebarProductDetails(null)
-        }
+
     }, [currActiveProductId])
 
     return (
         <>
             {/* budget slider suggestion */}
             <div className="w-full p-2 flex-col flex gap-2">
-                {/*  lable */}
-                <div className="border-softYellow shadow-md border rounded-md p-4">
-
-                    <div className="flex rounded-lg mb-2 gap-2 flex-col">
-                        <div className="flex items-center gap-2 justify-between">
-                            <div className="flex gap-2 items-center">
-                                <img src="/assets/icons/Tick.svg" alt="" className="w-5 h-5" />
-                                <p className="font-semibold ">Budget Selection</p>
-
-                            </div>
-                            <div className="flex gap-2 items-center font-semibold ">
-                                <p >Apply Budget</p>
-                                <Switch
-                                    checked={isBudgetOn}
-                                    onCheckedChange={(value) => setIsBudgetOn(value)}
-                                    className="data-[state=checked]:bg-lightOrange data-[state=unchecked]:bg-slate-400" />
-                            </div>
-
-
-                        </div>
-                        <Separator className="border border-slate-700" />
-                    </div>
-                    <div className={`${isSliderBreakPointEmpty ? "block" : "hidden"} my-2 rounded-lg`}>
-                        <div className="w-full h-32 bg-paleYellow flex flex-col gap-2 items-center rounded-lg">
-                            <MateyExpression expression="laugh" />
-                            <p className=" w-3/4">Keep Chating ! Matey Will Create personalized Budget Slider So !</p>
-                        </div>
-                    </div>
-
-                    <div className={`${isSliderBreakPointEmpty ? "hidden" : "block"} `}>
-                        <CustomSlider />
-                    </div>
-                </div>
                 {/*  lable */}
                 <div className="border-softYellow shadow-md border rounded-md p-4">
                     <div className="flex rounded-lg mb-2 gap-2 flex-col">
@@ -166,9 +150,13 @@ export function ToolSpread() {
 
                     {/*  catagory */}
                     <Dialog>
-                        <DialogTrigger className="w-full h-full">
+                        <DialogTrigger className="w-full h-full" onClick={() => notificationRemove()}>
                             <div className="-m-2 my-2">
-                                <div className="flex border-2 border-softYellow gap-2 items-center bg-whiteYellow px-2 py-1 text-left hover:bg-paleYellow transition-all duration-150 cursor-pointer rounded-md ml-2 mt-2">
+                                <div className=" relative    flex border-2 border-softYellow gap-2 items-center bg-whiteYellow px-2 py-1 text-left hover:bg-paleYellow transition-all duration-150 cursor-pointer rounded-md ml-2 mt-2">
+                                    <div className={`${notification == 0 ? "hidden" : ""} text-white font-semibold  animate-pulse bg-red-500 absolute -top-2 -right-2 py-1 px-2 rounded-full`}>
+                                        {notification}
+
+                                    </div>
                                     <img
                                         src="/assets/icons/prod-placeholder.svg"
                                         alt="bunnings"
@@ -186,7 +174,7 @@ export function ToolSpread() {
                             <div className="flex">
                                 <div className="flex flex-col gap-2 border-r-2 border-yellow p-2 sticky z-[99]">
                                     {productSuggestionsTabs.map((product, index) => (
-                                        <TooltipProvider key={index}>
+                                        <TooltipProvider delayDuration={0} key={index}>
                                             <Tooltip delayDuration={0}>
                                                 <TooltipTrigger>
                                                     <div
@@ -208,32 +196,34 @@ export function ToolSpread() {
                                     ))}
                                 </div>
 
-                                <div className="flex-1 h-full overflow-hidden">
+                                <div className="flex-1 h-full overflow-hidden w-[80%]">
                                     {HeadingName(currActiveTab)}
                                     <hr className="border border-lightYellow mt-2" />
 
                                     <div className="flex h-full w-full">
-                                        <ScrollArea type="scroll" className="md:h-[550px] hide-scrollbar w-full overflow-scroll">
-                                            {currActiveTab === "bunnings" && (
-                                                <BunningProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />
-                                            )}
-                                            {currActiveTab === "ai" && <AIProduct />}
-                                            {currActiveTab === "vendor" && (
-                                                <VendorProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />
-                                            )}
-                                        </ScrollArea>
+                                        {/* Left Section */}
+                                        <div> {/* Reduced width from 3/5 */}
+                                            <ScrollArea className="md:h-[550px]">
+                                                {currActiveTab === "bunnings" && (<BunningProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />)}
+                                                {currActiveTab === "ai" && <AIProduct />}
+                                                {currActiveTab === "vendor" && (
+                                                    <VendorProduct activeValue={currActiveProductId} setActiveValue={setCurrActiveProductId} />
+                                                )}
+                                            </ScrollArea>
+                                        </div>
 
+                                        {/* Right Section */}
                                         {currActiveTab !== "ai" && (
-                                            <div className="w-2/5 p-2 border-l-2 border-yellow h-full flex flex-col items-center justify-center">
+                                            <div className="p-2 border-l-2 border-yellow h-full flex flex-col overflow-auto"> {/* Reduced width from 2/5 and added overflow-auto */}
                                                 {isProductDetails ? (
-                                                    <>
+                                                    <div className="w-full max-w-full"> {/* Added max-w-full */}
                                                         {currActiveProductDetailsTab === "bunnings" && (
                                                             <ProductDetails sidebarProductDetails={sidebarProductDetails} />
                                                         )}
                                                         {currActiveProductDetailsTab === "vendor" && (
                                                             <VendorProductDetails sidebarProductDetails={sidebarProductDetails} />
                                                         )}
-                                                    </>
+                                                    </div>
                                                 ) : (
                                                     <>
                                                         <img src="/assets/icons/empty-placeholder.svg" alt="empty-placeholder" className="w-72 h-72" />
@@ -244,17 +234,137 @@ export function ToolSpread() {
                                         )}
                                     </div>
                                 </div>
+
                             </div>
                         </DialogContent>
                     </Dialog>
-
-
-
-
-
-
                     {/* product */}
                 </div>
+
+                {/*  lable */}
+                {
+                    !isBudgetSliderAccessable ? (
+                        <div className="flex rounded-lg mb-2 gap-2 flex-col px-4 py-2">
+                            <div className="flex items-center gap-2 justify-between">
+                                <div className="flex gap-2 items-center">
+                                    <img src="/assets/icons/Tick.svg" alt="" className="w-5 h-5" />
+                                    <p className="font-semibold ">Budget Selection</p>
+                                </div>
+                                <div className="rounded-full flex gap-2 bg-whiteYellow px-2 py-1 border border-slate-500">
+                                    <p className="font-semibold">Access In Pro Plan</p>
+
+                                    <Lock className="w-5 h-5" />
+                                </div>
+                            </div>
+                            <Separator className="border border-slate-700" />
+                        </div>
+                    ) : (
+                        <div className="border-softYellow shadow-md border rounded-md">
+
+                            <div className="flex rounded-lg mb-2 gap-2 flex-col px-4 py-2">
+                                <div className="flex items-center gap-2 justify-between">
+                                    <div className="flex gap-2 items-center">
+                                        <img src="/assets/icons/Tick.svg" alt="" className="w-5 h-5" />
+                                        <p className="font-semibold ">Budget Selection</p>
+                                    </div>
+                                </div>
+                                <Separator className="border border-slate-700" />
+                            </div>
+                            <div className={`${isSliderBreakPointEmpty ? "block" : "hidden"} my-2 rounded-lg p-4`}>
+                                <div className="w-full  bg-paleYellow flex flex-col gap-2 items-center rounded-lg p-4">
+                                    <MateyExpression expression="laugh" />
+                                    <p className=" w-3/4">Keep Chating ! Matey Will Create personalized Budget Slider Soon !</p>
+                                </div>
+                            </div>
+
+                            <div className={`${isSliderBreakPointEmpty ? "hidden" : "block"} p-4`}>
+                                <CustomSlider />
+                            </div>
+
+                            <div className="border-t-2 border-softYellow p-5 flex flex-col gap-2">
+                                <div className="flex gap-2 items-center font-semibold ">
+                                    <Switch
+                                        checked={isBudgetOn}
+                                        onCheckedChange={(value) => {
+                                            socket?.emit("tempTest", {
+                                                isBudgetOn: value,
+                                                budget: sliderValue,
+                                                isBudgetChangable: isBudgetChangable
+                                            })
+                                            setIsBudgetOn(value)
+                                        }}
+                                        className="data-[state=checked]:bg-lightOrange data-[state=unchecked]:bg-slate-400" />
+                                    <p>Lock Budget</p>
+                                    <div>
+                                        <TooltipProvider delayDuration={0}>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <CircleHelp className="w-4 h-4 mt-1" />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-mangoYellow border border-slate-400">
+                                                    <p className="max-w-md text-wrap">When enabled, Matey will suggest materials and products based on your budget. Turn it off if you don't want budget-based suggestions.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 items-center font-semibold ">
+                                    <Switch
+                                        checked={isBudgetChangable}
+                                        onCheckedChange={(value) => {
+                                            socket?.emit("tempTest", {
+                                                isBudgetOn: value,
+                                                budget: sliderValue,
+                                                isBudgetChangable: isBudgetChangable
+                                            })
+                                            setIsBudgetChangable(value)
+                                        }}
+                                        className="data-[state=checked]:bg-lightOrange data-[state=unchecked]:bg-slate-400" />
+                                    <p>Adjust Budget</p>
+                                    <div>
+                                        <TooltipProvider delayDuration={0}>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <CircleHelp className="w-4 h-4 mt-1" />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-mangoYellow border border-slate-400">
+                                                    <p className="max-w-md text-wrap ">When "Adjust Budget" is enabled, Matey can adjust the current budget slider. Turn it off to prevent Matey from changing the budget slider Formats.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            { !isSliderBreakPointEmpty && <div className="border-t-2 border-softYellow p-5 grid grid-cols-2">
+                                {
+                                    breakpoints.map((item, index) => {
+                                        const activePoint = item.value == sliderValue
+                                        return (
+                                            <div
+                                                onClick={() => {
+                                                    console.log(item.value, "is 123")
+                                                    setSliderValue(item.value)
+                                                }}
+                                                className={`flex flex-col px-2 bg-paleYellow cursor-pointer p-2 rounded-md transition-all duration-200 border-2 border-white text-left  ${activePoint ? "bg-softYellow " : "hover:bg-paleYellow"}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-lg">{item.value}</p>
+                                                    <p className="text-sm text-gray-600">{item.label}</p>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                }
+
+                            </div>}
+                        </div>
+
+                    )
+                }
 
                 {/* <div className={`${productSuggestions.length == 0 ? "flex" : "hidden"} my-2 rounded-lg`}>
                     <div className="w-full h-32 bg-paleYellow flex flex-col gap-2 items-center rounded-lg">
@@ -363,8 +473,8 @@ const HeadingName = (currState: string) => {
             </div>
     }
 }
-const ProductDetails = ({ sidebarProductDetails }: any) => (
-    <div className="flex flex-col gap-2 w-full h-full overflow-scroll hide-scrollbar p-3 rounded-lg">
+export const ProductDetails = ({ sidebarProductDetails }: any) => (
+    <div className="flex flex-col gap-2 w-full h-full p-4 hide-scrollbar rounded-lg">
         {/* Image Section */}
         <div className="relative">
             <img
@@ -400,7 +510,7 @@ const ProductDetails = ({ sidebarProductDetails }: any) => (
             {/* Rating */}
             <div className="flex items-center gap-2 p-2 rounded-md bg-lighterYellow">
                 <Star className="w-5 h-5 text-darkYellow" />
-                <span className="font-semibold text-gray">Rating: {sidebarProductDetails?.rating || 'N/A'}</span>
+                <span className="font-semibold text-gray">Rated By: {sidebarProductDetails?.rating || 'N/A'}</span>
             </div>
             {/* Usage/Description */}
             <div className="p-2 rounded-md flex gap-2 bg-paleYellow">
@@ -419,8 +529,8 @@ const ProductDetails = ({ sidebarProductDetails }: any) => (
 
 
 
-const VendorProductDetails = ({ sidebarProductDetails }: any) => (
-    <div className="flex flex-col gap-2 w-full h-full overflow-scroll hide-scrollbar p-3 rounded-lg">
+export const VendorProductDetails = ({ sidebarProductDetails }: any) => (
+    <div className="flex flex-col gap-2 w-full h-full hide-scrollbar p-3 rounded-lg">
         {/* Image Section with Carousel */}
         <div className="relative">
             <Carousel>

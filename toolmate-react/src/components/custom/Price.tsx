@@ -84,19 +84,19 @@ export default function Price() {
                   </p>
                 </div>
 
-                <div>
+                <div className="py-4">
                   {item.isActivePlan ? (
                     <Button
                       variant={"outline"}
                       size={"StretchedButton"}
-                      className="w-full"
+                      className="w-full "
                       disabled
                     >
                       Already Unlocked
                     </Button>
                   ) : (
                     <Button
-                      className="bg-orange w-full hover:bg-black"
+                      className="bg-orange w-full hover:bg-lightOrange border-2 border-orange"
                     >
                       Buy Now
                     </Button>

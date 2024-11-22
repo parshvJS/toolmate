@@ -34,8 +34,8 @@ export function AIProduct() {
         : products;
 
     return (
-        <div className="">
-            <Carousel className="h-full max-w-[95%]">
+        <div className="max-w-7xl">
+            <Carousel className="h-full ">
 
 
                 <CarouselContent className=" flex gap-2 px-4 py-2 border-b border-gray-200">
@@ -69,7 +69,7 @@ export function AIProduct() {
                     <CarouselNext className="absolute left-14 bg-lighterYellow" />
                 </div>
             </Carousel>
-            <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8 p-8 bg-gray-100">
+            <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 p-8 bg-gray-100">
                 {filteredProducts.map((product: any, index: number) => (
                     <div
                         key={index}

@@ -41,7 +41,7 @@ export function VendorProduct({
         : products;
     console.log('filteredProducts', filteredProducts);
     return (
-        <div className="z-40">
+        <div className="z-40 max-w-4xl">
             {/* Carousel for categories */}
             <Carousel className="h-full max-w-[95%]">
                 <CarouselContent className="flex gap-2 px-4 py-2 border-b border-gray-200">

@@ -173,17 +173,28 @@ async function processChatEntry(chat: any): Promise<ChatEntry> {
             );
 
             // Remap the productSuggestionList with actual product data
-            newChatItem.productData = chat.productSuggestionList.map((category: ProductSuggestion) => ({
-                categoryName: category.categoryName,
-                products: category.products
+            const mergedProductData: Record<string, AdditionalProduct[]> = {};
+
+            chat.productSuggestionList.forEach((category: ProductSuggestion) => {
+                if (!mergedProductData[category.categoryName]) {
+                    mergedProductData[category.categoryName] = [];
+                }
+                const products = category.products
                     .map(productId => productMap.get(productId))
-                    .filter(product => product !== undefined) as AdditionalProduct[]
+                    .filter(product => product !== undefined) as AdditionalProduct[];
+                mergedProductData[category.categoryName].push(...products);
+            });
+
+            newChatItem.productData = Object.entries(mergedProductData).map(([categoryName, products]) => ({
+                categoryName,
+                products
             }));
         }
     }
 
     return newChatItem;
 }
+
 
 function groupProductsBySearchTerm(products: IBunningsProduct[]): BunningsDataEntry[] {
     const grouped = products.reduce((acc, product) => {

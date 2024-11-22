@@ -43,7 +43,7 @@ export default function Landing() {
 
 
   return (
-    <div className="md:px-20 px-2">
+    <div className="md:px-20 px-2 scroll-smooth">
       <div className="md:mt-28 mt-20">
         {/* hero section */}
         <section className="flex justify-between md:flex-row flex-col md:p-12 p-2 relative">
@@ -207,8 +207,8 @@ export default function Landing() {
         </div>
 
         {/* grid stock video section */}
-
-        <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4 h-full">
+        <div id="impact" className="mb-10 p-6"></div>
+        <p className=" md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4 h-full">
           How
           <span className="text-orange text-left"> Matey </span>
           Simplifies Your <br />
@@ -248,7 +248,7 @@ export default function Landing() {
           </div>
 
           {/* card2 */}
-          <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
+          <div className="relative bg-slate-400 rounded-3xl shadow-md md:h-[440px] h-[200px]">
             <img
               className="absolute inset-0 w-full h-full object-cover rounded-3xl"
               src="/assets/images/tools.jpg"
@@ -258,7 +258,7 @@ export default function Landing() {
             <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
               {/* content */}
               <div>
-                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-w</p>hite">
+                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
                   Your Project, Your Tools, One Click
                 </p>
                 <p className="text-slate-300 text-xl font-semibold mt-4 w</p>-3/4">
@@ -337,6 +337,7 @@ export default function Landing() {
         </div>
 
         {/* feature window section */}
+        <div id="features" className="mb-10 p-6"></div>
 
         <div className="md:my-36 my-20">
           {/* header */}

@@ -18,6 +18,39 @@ export interface ProductGroup {
   products: any[];
 }
 
+const tempBreakPoint = [
+  {
+    value: 50,
+    label: "Budget-Friendly",
+    tooltip: "Budget-Friendly products may include basic wooden materials, simple horse-themed decorations, and standard tools for assembly. Recommended brands: Generic wood suppliers, local craft stores."
+  },
+  {
+    value: 100,
+    label: "Affordable",
+    tooltip: "Affordable options offer sturdier wooden materials, intricate horse-themed embellishments, and beginner-friendly instructions. Recommended brands: Home improvement stores like Home Depot or Lowe's, craft kits from Hobby Lobby."
+  },
+  {
+    value: 150,
+    label: "Mid-Range",
+    tooltip: "Mid-Range selection provides high-quality hardwood materials, detailed horse-inspired designs, and step-by-step guides for intricate structures. Recommended brands: Woodcraft retailers like Rockler, premium craft kits from Michaels."
+  },
+  {
+    value: 200,
+    label: "Quality",
+    tooltip: "Quality products offer premium hardwood options, precise and unique horse-themed accents, and expert-level instructions for a sophisticated horse throne design. Recommended brands: Specialty woodworking suppliers, premium craft brands like Jo-Ann Fabrics."
+  },
+  {
+    value: 250,
+    label: "Luxury",
+    tooltip: "Luxury choices include exotic wood selections, bespoke horse-themed adornments, and professional-grade instructions for an exquisite and regal horse throne creation. Recommended brands: Artisan woodworking studios, custom craft suppliers offering personalized design services."
+  },
+  {
+    value: 300,
+    label: "Ultimate",
+    tooltip: "Ultimate options provide top-tier materials like rare woods, custom-made horse-themed elements, and detailed blueprints for an unparalleled and majestic horse throne masterpiece. Recommended brands: Exclusive woodworking artisans, bespoke craft ateliers providing one-of-a-kind creations."
+  }
+]
+
 interface RightSidebarContextProps {
   sliderValue: number;
   isBudgetOn: boolean;
@@ -28,6 +61,8 @@ interface RightSidebarContextProps {
   notification: number;
   totalProductSuggestions: number;
   isSliderBreakPointEmpty: boolean;
+  isBudgetChangable: boolean;
+  setIsBudgetChangable: (value: boolean) => void;
   setSliderValue: (value: number) => void;
   setIsBudgetOn: (value: boolean) => void;
   setBreakpoints: (breakpoints: Breakpoint[]) => void;
@@ -42,16 +77,18 @@ interface RightSidebarContextProps {
 }
 
 const INITIAL_RIGHT_SIDEBAR_CONTEXT: RightSidebarContextProps = {
-  sliderValue: 500,
+  sliderValue: Infinity,
   isBudgetOn: false,
+  isBudgetChangable: true,
   breakpoints: [],
   vendorProduct: [],
   bunningProduct: [],
   aiProduct: [],
   notification: 0,
   totalProductSuggestions: 0,
-  isSliderBreakPointEmpty: true,
+  isSliderBreakPointEmpty: false,
   setSliderValue: () => { },
+  setIsBudgetChangable: () => { },
   setIsBudgetOn: () => { },
   setBreakpoints: () => { },
   massAddVendor: () => { },
@@ -69,13 +106,13 @@ export const RightSidebarContext = createContext<RightSidebarContextProps>(INITI
 export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sliderValue, setSliderValue] = useState<number>(INITIAL_RIGHT_SIDEBAR_CONTEXT.sliderValue);
   const [isBudgetOn, setIsBudgetOn] = useState<boolean>(INITIAL_RIGHT_SIDEBAR_CONTEXT.isBudgetOn);
-  const [breakpoints, setBreakpoints] = useState<Breakpoint[]>(INITIAL_RIGHT_SIDEBAR_CONTEXT.breakpoints);
+  const [breakpoints, setBreakpoints] = useState<Breakpoint[]>([]);
   const [vendorProduct, setVendorProduct] = useState<ProductGroup[]>([]);
   const [bunningProduct, setBunningProduct] = useState<ProductGroup[]>([]);
   const [aiProduct, setAiProduct] = useState<ProductGroup[]>([]);
   const [notification, setNotification] = useState<number>(0);
   const [totalProductSuggestions, setTotalProductSuggestions] = useState<number>(0);
-
+  const [isBudgetChangable, setIsBudgetChangable] = useState<boolean>(true);
   // Calculate the total number of product suggestions
   const calculateTotalProductSuggestions = () => {
     console.log('calculateTotalProductSuggestions', vendorProduct, bunningProduct, aiProduct);
@@ -104,7 +141,6 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     setVendorProduct((prev) => [...prev, ...products]);
     setNotification((prev) => prev + products.length);
     calculateTotalProductSuggestions();
-
   };
 
   const appendAi = (products: ProductGroup[]) => {
@@ -120,18 +156,13 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     calculateTotalProductSuggestions();
 
   };
-  useEffect(() => {
-    console.log('RightSidebarProvider state:', {
-      sliderValue,
-      isBudgetOn,
-      breakpoints,
-      vendorProduct,
-      bunningProduct,
-      aiProduct,
-      notification,
-      totalProductSuggestions
-    });
-  }, [isBudgetOn, sliderValue, breakpoints, vendorProduct, bunningProduct, aiProduct, notification, totalProductSuggestions]);
+
+// useEffect(()=>{
+//   if(breakpoints.length === 0){
+//     setBreakpoints(tempBreakPoint);
+//   }
+//   console.log('breakpoints123',breakpoints);
+// },[breakpoints])
   // Function to reset notification count
   const notificationRemove = () => {
     setNotification(0);
@@ -141,7 +172,7 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     calculateTotalProductSuggestions();
   }, [vendorProduct, bunningProduct, aiProduct]);
 
-  function clearAllTool(){
+  function clearAllTool() {
     setSliderValue(INITIAL_RIGHT_SIDEBAR_CONTEXT.sliderValue);
     setIsBudgetOn(INITIAL_RIGHT_SIDEBAR_CONTEXT.isBudgetOn);
     setBreakpoints(INITIAL_RIGHT_SIDEBAR_CONTEXT.breakpoints);
@@ -153,15 +184,13 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     console.log('RightSidebarProvider unmounted');
   }
 
-  useEffect(() => {
-    console.log('RightSidebarProvider mounted', sliderValue, isBudgetOn, breakpoints, vendorProduct, bunningProduct, aiProduct, notification, totalProductSuggestions);
-  }, [isBudgetOn, sliderValue, breakpoints, vendorProduct, bunningProduct, aiProduct, notification, totalProductSuggestions]);
 
   return (
     <RightSidebarContext.Provider
       value={{
         sliderValue,
         isBudgetOn,
+        isBudgetChangable,
         breakpoints,
         vendorProduct,
         bunningProduct,
@@ -169,6 +198,7 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
         notification,
         totalProductSuggestions,
         isSliderBreakPointEmpty: breakpoints.length === 0,
+        setIsBudgetChangable,
         setSliderValue,
         setIsBudgetOn,
         setBreakpoints,

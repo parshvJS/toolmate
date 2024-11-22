@@ -10,6 +10,7 @@ export interface INewUserMessage {
     userId:string,
     isBudgetSliderPresent?: boolean,
     budgetSliderValue?: number,
+    isBudgetSliderChangable?: boolean,
 }
 export interface ChatSession {
     sessionId: string;

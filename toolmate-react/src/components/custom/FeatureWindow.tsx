@@ -4,28 +4,6 @@ import ButtonCustom from "./ButtonCustom";
 export default function FeatureWindow() {
   const largeFeatureCardsContent = [
     {
-      tag: "Community",
-      title: "Collaborative Creative Space",
-      desc: "Join workshops, get expert advice, and grow together.",
-      windowExampleImage: "/assets/images/yellow-bg.png",
-      CTA: "Find People Like You",
-      lineBelowSection: true,
-      featuresList: [
-        {
-          icon: "/assets/icons/orageGrid.svg",
-          title: "Creative Workshop",
-          desc: "Boost Your Projects with Tailored Ideas and Support",
-          lineBelow: true,
-        },
-        {
-          icon: "/assets/icons/orangeMoon.svg",
-          title: "Pro Guidance",
-          desc: "Access expert advice to elevate your projects.",
-          lineBelow: false,
-        },
-      ],
-    },
-    {
       tag: "Personalization",
       title: "Your DIY Guide",
       desc: "Get Expert Tips for Every Project",
@@ -53,6 +31,29 @@ export default function FeatureWindow() {
         },
       ],
     },
+    {
+      tag: "Community",
+      title: "Collaborative Creative Space",
+      desc: "Join workshops, get expert advice, and grow together.",
+      windowExampleImage: "/assets/images/yellow-bg.png",
+      CTA: "Find People Like You",
+      lineBelowSection: true,
+      featuresList: [
+        {
+          icon: "/assets/icons/orageGrid.svg",
+          title: "Creative Workshop",
+          desc: "Boost Your Projects with Tailored Ideas and Support",
+          lineBelow: true,
+        },
+        {
+          icon: "/assets/icons/orangeMoon.svg",
+          title: "Pro Guidance",
+          desc: "Access expert advice to elevate your projects.",
+          lineBelow: false,
+        },
+      ],
+    },
+   
   ];
 
   return (
@@ -109,10 +110,10 @@ export default function FeatureWindow() {
                     {/* text content */}
                     <div>
                       <p className="text-black font-semibold">
-                        Creative Workshops
+                        {feauteItem.title}
                       </p>
                       <p className="text-gray">
-                        Boost Your Projects with Tailored Ideas and Support
+                        {feauteItem.desc}
                       </p>
                     </div>
                   </div>
