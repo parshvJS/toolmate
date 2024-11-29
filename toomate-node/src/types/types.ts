@@ -28,6 +28,8 @@ export interface IPaymentPlan extends Document {
     proPrice: number;
     discountOnSixMonth: number;
     discountOnYearly: number;
+    essentialProductId?: string[];
+    proProductId?: string[];
 }
 
 export interface IBunningsChat {
@@ -100,3 +102,38 @@ export interface ApiResponse {
         hasMore: boolean; // Indicates if there are more messages
     }; // Pagination information
 }
+export interface PaymentData {
+    essntialPrice: number;
+    proPrice: number;
+    discountOnSixMonth: number;
+    discountOnYearly: number;
+    essentialProductId: string[];
+    proProductId: string[];
+
+}
+
+export interface PriceDetails {
+    monthly: number;
+    sixMonth: number;
+    yearly: number;
+}
+
+export interface Plan {
+    name: string;
+    description: string;
+    price: number;
+    frequency: "MONTH";
+    intervalCount: number;
+    planType: "ESSENTIAL" | "PRO";
+    productId?: string; // Added dynamically
+}
+
+export interface ProductResponse {
+    id: string;
+}
+
+export interface BillingPlanResponse {
+    id: string;
+}
+
+export type AccessToken = string;

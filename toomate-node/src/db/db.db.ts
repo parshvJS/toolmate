@@ -14,8 +14,8 @@ const connectDB = async () => {
 	} catch (error: any) {
 		if (retryCount > 0) {
 			console.log('Retrying to connect database !');
-			setTimeout(() => {
-				connectDB();
+			setTimeout(async () => {
+				await connectDB();
 			}, 5000);
 			retryCount--;
 			return;

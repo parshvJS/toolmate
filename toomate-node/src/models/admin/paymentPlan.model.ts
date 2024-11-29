@@ -22,7 +22,16 @@ const PaymentPlanSchema = new mongoose.Schema<IPaymentPlan>({
         type: Number,
         required: true,
         default: 30
-    }
+    },
+    // product id for default plans
+    essentialProductId: {
+        type: [String],
+        default: []
+    },
+    proProductId: {
+        type: [String],
+        default: []
+    },
 });
 
 export const PaymentPlan = mongoose.model<IPaymentPlan>('PaymentPlan', PaymentPlanSchema);

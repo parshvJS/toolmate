@@ -15,7 +15,10 @@ import { TooltipGeneration } from '../../controller/_private/TooltipGeneration.c
 import { addToUsertoolInventory } from '../../controller/_private/addToUserToolInventory.controller.js';
 import { deleteFromUsertoolInventory } from '../../controller/_private/deleteFromUsertoolInventory.controller.js';
 import { getUserToolInventory } from '../../controller/_private/getUserToolInventory.controller.js';
+import { Payment } from '../../controller/paymentAndPrice/payment.controller.js';
 import { editToUserToolInventory } from '../../controller/_private/editToUserToolInventory.controller.js';
+import { getCurrPrice } from '../../controller/paymentAndPrice/getCurrPrice.controller.js';
+import { couponCodeValidator } from '../../controller/paymentAndPrice/couponCodeValidator.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -35,4 +38,8 @@ paidDashbaord.route('/createNewToolItem').post(addToUsertoolInventory);
 paidDashbaord.route('/deleteToolItem').post(deleteFromUsertoolInventory);
 paidDashbaord.route('/getUserToolItem').post(getUserToolInventory);
 paidDashbaord.route('/editToolItem').post(editToUserToolInventory);
+// payment
+paidDashbaord.route('/payment').post(Payment)
+paidDashbaord.route('/getCurrPrice').get(getCurrPrice)
+paidDashbaord.route('/getCouponCodeValidation').post(couponCodeValidator)
 export { paidDashbaord }

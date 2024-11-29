@@ -1,142 +1,535 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@radix-ui/react-separator";
-import { ArrowRight, Link } from "lucide-react";
+import { ArrowRight, Link, Loader } from "lucide-react";
 import { Button, buttonVariants } from "../ui/button";
 import { pricing } from "@/constants";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { useUser } from "@clerk/clerk-react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  useForm
+} from "react-hook-form"
+import {
+  zodResolver
+} from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useDebounce } from 'use-debounce';
+import { Input } from "../ui/input";
+import { calculateDiscountedPrice, calculateImpact, extractBAToken } from "@/lib/utils";
+import { UserContext } from "@/context/userContext";
+
+
 
 export default function Price() {
+  const { redirected } = useParams();
+  const { isSignedIn } = useUser();
+  const { userId, userData } = useContext(UserContext)
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("month");
+  const [activePlan, setActivePlan] = useState<any>(null);
+  const [showCheckoutPopup, setShowCheckoutPopup] = useState(false);
+  const [isPriceLoading, setIsPriceLoading] = useState(true);
+  const [priceData, setPriceData] = useState<any>(null);
+  const [sixMonthDiscount, setSixMonthDiscount] = useState(0);
+  const [yearlyDiscount, setYearlyDiscount] = useState(0);
+  const [continueToDashboard, setContinueToDashboard] = useState(false);
+  // couponCode
+  const [couponCode, setCouponCode] = useState("");
+  const [couponCodeDebouce] = useDebounce(couponCode, 1000);
+  const [couponCodeValidationLoading, setCouponCodeValidationLoading] = useState(false);
+  const [couponCodeError, setCouponCodeError] = useState("");
+  const [couponCodeMessage, setCouponCodeMessage] = useState("");
+  const [isCouponApplied, setIsCouponApplied] = useState(false);
+  const [isCouponActive, setIsCouponActive] = useState(false);
+  const [couponCodeDiscountPrice, setCouponCodeDiscountPrice] = useState(0);
+  const [couponCodeImpact, setCouponCodeImpact] = useState(0);
+  const [couponCodeDiscountPercentage, setCouponCodeDiscountPercentage] = useState(0);
 
-  const handleTabChange = (value: any) => {
-    setActiveTab(value);
+  // get paypal url
+  const [paypalUrl, setPaypalUrl] = useState("");
+  const [paypalLoading, setPaypalLoading] = useState(false);
+
+
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (redirected) {
+      setContinueToDashboard(true);
+    }
+  }, [redirected]);
+
+  useEffect(() => {
+    async function fetchPriceData() {
+      try {
+        const { data } = await axios.get(`${import.meta.env.VITE_SERVER_URL}/api/v1/getCurrPrice`);
+        const { month, sixMonth, year, discountOnSixMonth, discountOnYearly, productId } = data;
+        setSixMonthDiscount(discountOnSixMonth);
+        setYearlyDiscount(discountOnYearly);
+
+        const newPriceData = pricing.map((priceItem) => {
+          if (priceItem.tabName === "month") {
+            priceItem.list[1].priceSetter = { price: month[0] };
+            priceItem.list[2].priceSetter = { price: month[1] };
+            priceItem.list[1].productIdSetter = productId.month[0];
+            priceItem.list[2].productIdSetter = productId.month[1];
+          }
+          if (priceItem.tabName === "months") {
+            priceItem.list[1].priceSetter = { price: sixMonth[0], discount: discountOnSixMonth };
+            priceItem.list[2].priceSetter = { price: sixMonth[1], discount: discountOnSixMonth };
+            priceItem.list[1].productIdSetter = productId.sixMonth[0];
+            priceItem.list[2].productIdSetter = productId.sixMonth[1];
+          }
+          if (priceItem.tabName === "year") {
+            priceItem.list[1].priceSetter = { price: year[0], discount: discountOnYearly };
+            priceItem.list[2].priceSetter = { price: year[1], discount: discountOnYearly };
+
+            priceItem.list[1].productIdSetter = productId.year[0];
+            priceItem.list[2].productIdSetter = productId.year[1];
+          }
+          return priceItem;
+        });
+
+        setPriceData(newPriceData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch price data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsPriceLoading(false);
+      }
+    }
+    fetchPriceData();
+  }, []);
+
+  const handleTabChange = (value: any) => setActiveTab(value);
+
+  const handleBuyNow = (planValue: string) => {
+    if (!isSignedIn) {
+      toast({
+        title: "Error",
+        description: "Please Sign In To Complete The Purchase",
+        variant: "destructive",
+      });
+      navigate('/signup');
+      return;
+    }
+
+    const activeTabObject = priceData.find((item: any) => item.tabName === activeTab);
+    const activePlanObject = activeTabObject.list.find((item: any) => item.planValue === planValue);
+
+    setActivePlan({ ...activePlanObject, duration: activeTabObject.tabName });
+    console.log("activePlanObject", {
+      ...activePlanObject,
+      duration: activeTabObject.tabName,
+    });
+    setShowCheckoutPopup(true);
   };
 
+  const handleCouponCode = (data: string) => setCouponCode(data);
+
+  useEffect(() => {
+    async function validateCouponCode() {
+      setCouponCodeMessage("");
+      setCouponCodeError("");
+      setCouponCodeValidationLoading(true);
+
+      try {
+        const { data } = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getCouponCodeValidation`, { code: couponCodeDebouce });
+        const { success, validationMessage, discount } = data;
+
+        if (!success) {
+          resetCouponState(validationMessage);
+          return;
+        }
+
+        const priceDiscountImpact = calculateImpact(activePlan.priceInt, discount);
+        const finalPrice = calculateDiscountedPrice(activePlan.priceInt, discount);
+
+        setCouponCodeDiscountPrice(Number(finalPrice));
+        setCouponCodeDiscountPercentage(discount);
+        setCouponCodeImpact(Number(priceDiscountImpact));
+        setCouponCodeMessage(validationMessage);
+        setIsCouponApplied(true);
+      } catch (error) {
+        resetCouponState("Something went wrong. Please try again later.");
+      } finally {
+        setCouponCodeValidationLoading(false);
+      }
+    }
+
+    if (couponCodeDebouce.length !== 0) {
+      validateCouponCode();
+    }
+  }, [couponCodeDebouce]);
+
+  const resetCouponState = (message: string) => {
+    setCouponCodeValidationLoading(false);
+    setCouponCodeMessage("");
+    setCouponCodeDiscountPrice(0);
+    setCouponCodeDiscountPercentage(0);
+    setCouponCodeImpact(0);
+    setCouponCodeError(message);
+    setIsCouponActive(false);
+    setIsCouponApplied(false);
+  };
+
+  const handleCouponApplied = () => {
+    if (isCouponApplied) {
+      setIsCouponActive(!isCouponActive);
+    }
+  };
+
+  const handlePriceDialogClose = (value: boolean) => {
+    if (!value) {
+      resetCouponState("");
+      setShowCheckoutPopup(false);
+    }
+  };
+
+  async function getPaypalUrl() {
+    setPaypalLoading(true);
+    try {
+      console.log("isCouponApplied", isCouponApplied, "isCouponActive", isCouponActive);
+      if (isCouponApplied && isCouponActive) {
+        // Handle coupon applied case
+      } else {
+        console.log("activePlan", activePlan);
+        const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/payment`, {
+          productId: activePlan.productId,
+          userId: userData?.id,
+          isCouponCodeApplied: false,
+          CouponCode: null
+        });
+        const url = res.data.url;
+        console.log("url", url);
+        const urlBaValue = extractBAToken(url);
+        const localValue = {
+          ba: urlBaValue,
+          Packname: activePlan.title,
+          price: activePlan.price,
+        }
+        localStorage.setItem("paypalData", JSON.stringify(localValue));
+        window.location.href = url; // Redirect to PayPal URL directly
+
+        console.log("res", res);
+      }
+    } catch (error) {
+      console.error("Error fetching PayPal URL", error);
+    } finally {
+      setPaypalLoading(false);
+    }
+  }
   return (
-    <Tabs
-      defaultValue="month"
-      className="w-full my-10 flex flex-col items-center"
-      onValueChange={handleTabChange}
-    >
-      <div className="w-full h-full flex justify-center">
-        <TabsList className="bg-slate-100 border-2 border-slate-600 flex md:flex-row flex-col md:w-fit h-full md:h-fit w-full">
-          <TabsTrigger
-            value="month"
-            className={`md:px-14 flex justify-center items-center gap-2 w-full   ${activeTab === "month" ? "bg-gray-200" : ""
-              }`}
-          >
-            <div className="flex justify-between w-full items-center gap-2">
-              <p className="text-black">1 Months</p>
-              <div className="rounded-full bg-orange text-white px-2"></div>
-            </div>
-          </TabsTrigger>
-          <TabsTrigger
-            value="months"
-            className={`md:px-14 flex md:justify-center  items-center gap-2 w-full    ${activeTab === "months" ? "bg-gray-200" : ""
-              }`}
-          >
-            <div className="flex justify-between w-full items-center gap-2">
-              <p className="text-black">6 Months</p>
-              <div className="rounded-full bg-orange text-white px-2">
-                15% Off
+    <div className="w-full h-full">
+      <Tabs
+        defaultValue="month"
+        className="w-full my-10 flex flex-col items-center"
+        onValueChange={handleTabChange}
+      >
+        <div className="w-full h-full flex justify-center">
+          <TabsList className="bg-slate-100 border-2 border-slate-600 flex md:flex-row flex-col md:w-fit h-full md:h-fit w-full">
+            <TabsTrigger
+              value="month"
+              className={`md:px-14 flex justify-center items-center gap-2 w-full   ${activeTab === "month" ? "bg-gray-200" : ""
+                }`}
+            >
+              <div className="flex justify-between w-full items-center gap-2">
+                <p className="text-black">1 Months</p>
+                <div className="rounded-full bg-orange text-white px-2"></div>
               </div>
-            </div>
-          </TabsTrigger>
-          <TabsTrigger
-            value="year"
-            className={`md:px-14 flex md:justify-center  items-center gap-2 w-full    ${activeTab === "year" ? "bg-gray-200" : ""
-              }`}
-          >
-            <div className="flex justify-between w-full items-center gap-2">
-              <p className="text-black">12 Months</p>
-              <div className="rounded-full bg-orange text-white px-2">
-                30% Off
+            </TabsTrigger>
+            <TabsTrigger
+              value="months"
+              className={`md:px-14 flex md:justify-center  items-center gap-2 w-full    ${activeTab === "months" ? "bg-gray-200" : ""
+                }`}
+            >
+              <div className="flex justify-between w-full items-center gap-2">
+                <p className="text-black">6 Months</p>
+                {
+                  !isPriceLoading && sixMonthDiscount > 0 && <div className="rounded-full bg-orange text-white px-2">
+                    {sixMonthDiscount}% Off
+                  </div>
+                }
               </div>
+            </TabsTrigger>
+            <TabsTrigger
+              value="year"
+              className={`md:px-14 flex md:justify-center  items-center gap-2 w-full    ${activeTab === "year" ? "bg-gray-200" : ""
+                }`}
+            >
+              <div className="flex justify-between w-full items-center gap-2">
+                <p className="text-black">12 Months</p>
+                {
+                  !isPriceLoading && sixMonthDiscount > 0 && <div className="rounded-full bg-orange text-white px-2">
+                    {yearlyDiscount}% Off
+                  </div>
+                }
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <div className="w-full  md:px-16">
+          {pricing.map((priceItem, index) => (
+            <TabsContent
+              value={priceItem.tabName}
+              className={`flex md:flex-row gap-5 flex-col w-full justify-between  ${activeTab === priceItem.tabName ? "tab-content-active" : ""
+                }`}
+              key={index}
+            >
+              {priceItem.list.map((item) => (
+                <div
+                  className="md:flex  md:flex-col w-full md:w-1/3 md:m-2 p-4 text-left rounded-lg "
+                  style={{
+                    background: `linear-gradient(90deg, ${item.color[0]} 0%, ${item.color[1]} 100%)`,
+                  }}
+                >
+                  {/* heading */}
+                  <div className="flex gap-4">
+                    <img src={item.icons} alt="icon" width={30} />
+                    <p className="text-xl md:text-2xl font-bold">{item.title}</p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {
+                      isPriceLoading ? <div>
+                        <Skeleton className="w-full h-[10px] rounded-sm mt-4 mb-1  bg-lightOrange" />
+                        <Skeleton className="w-2/3 h-[10px] rounded-sm mt-2 mb-1  bg-lightOrange" />
+                      </div> :
+                        <p className="text-xl md:text-2xl font-medium">
+                          {item.price}
+                        </p>
+                    }
+
+                  </div>
+
+                  <div className="py-4">
+                    {item.isActivePlan ? (
+                      <Button
+                        variant={"default"}
+                        size={"StretchedButton"}
+                        onClick={() => {
+                          if (isSignedIn) {
+                            navigate('/dashboard')
+                            return;
+                          }
+                          navigate('/signup')
+                        }}
+                        className="w-full bg-slate-300 hover:bg-slate-100  border-black  text-black font-semibold"
+                      >
+                        {
+                          isSignedIn ? "Continue With Free Plan" : "Sign In"
+                        }
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleBuyNow(item.planValue)}
+                        className="bg-orange w-full hover:bg-lightOrange border-2 border-orange"
+                      >
+                        Buy Now
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    {item.featureList.map((feature) => (
+                      <div key={feature.title}>
+                        <div className="flex gap-2 items-start p-2">
+                          {feature.isTicked ? (
+                            <img
+                              src="/assets/icons/check.svg"
+                              className="mt-2 mr-2"
+                              alt="check"
+                              width={20}
+                            />
+                          ) : (
+                            <img
+                              src="/assets/icons/unchecked.svg"
+                              alt="unchecked"
+                            />
+                          )}
+                          <div className="flex flex-col gap-2">
+                            <p className="font-bold">{feature.title}</p>
+                            <p>{feature.desc}</p>
+                          </div>
+                        </div>
+                        <Separator
+                          orientation="horizontal"
+                          className={`${feature.isLineBelow ? "block" : "hidden"
+                            } border border-slate-600`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </TabsContent>
+          ))}
+        </div>
+      </Tabs>
+      {/* {
+    "price": "12$ / Month",
+    "priceInt": 12,
+    "planValue": "essential",
+    "title": "Toolmate Essential",
+    "tabName": "months",
+    "color": [
+        "#FFF2AE",
+        "#FFD700"
+    ],
+    "isActivePlan": false,
+    "icons": "/assets/icons/gear.svg",
+    "featureList": [
+        {
+            "isTicked": true,
+            "title": "Personalized picks",
+            "desc": "Tailored recommendations based on your project.",
+            "isLineBelow": true
+        },
+        {
+            "isTicked": true,
+            "title": "Tool rentals",
+            "desc": "Rental suggestions when needed.",
+            "isLineBelow": true
+        },
+        {
+            "isTicked": true,
+            "title": "Community access",
+            "desc": "Engage with fellow DIYers for tips and advice.",
+            "isLineBelow": true
+        },
+        {
+            "isTicked": true,
+            "title": "Basic AI support",
+            "desc": "Matey helps with straightforward tool advice.",
+            "isLineBelow": false
+        }
+    ]
+} */}
+      {
+        (activePlan && activeTab) && <Dialog open={showCheckoutPopup} onOpenChange={handlePriceDialogClose}>
+          <DialogContent className="h-[calc(100%-10rem)] w-[calc(100%-30rem)] flex max-w-full">
+            <DialogTitle></DialogTitle>
+            <div className="flex gap-2 w-2/5 items-start p-4 h-fit  bg-gradient-to-t from-softYellow to-paleYellow  rounded-lg">
+              <div className="flex gap-4 items-start">
+                <img src={activePlan.icons} alt="icon" width={30} />
+                <div className="flex flex-col items-start">
+                  <p className="font-semibold text-xl">{activePlan.title}</p>
+                  <p>{activePlan.duration == "month" ? "1 Month Plan" : (activePlan.duration == "months" ? "6 Month Plan" : " Yearly Plan")}</p>
+                </div>
+
+              </div>
+
             </div>
-          </TabsTrigger>
-        </TabsList>
-      </div>
+            <div className="flex gap-2 w-3/5 h-full">
+              <div className="w-full flex flex-col items-start">
+                <p className="font-semibold">Enter Coupon Code</p>
+                <div className="border-2 flex gap-2  border-slate-200 w-full h-fit rounded-lg mr-5">
+                  <input
+                    type="text"
+                    placeholder="Coupon Code"
+                    onChange={(e) => handleCouponCode(e.target.value)}
+                    value={couponCode}
+                    className="px-4 py-2 w-full focus-visible:outline-none"
+                  />
+                  <button
+                    onClick={handleCouponApplied}
+                    className="font-semibold px-2">
+                    {isCouponApplied ? (isCouponActive ? "Remove" : "Apply") : "Apply"}
+                  </button>
 
-      <div className="w-full  md:px-16">
-        {pricing.map((priceItem, index) => (
-          <TabsContent
-            value={priceItem.tabName}
-            className={`flex md:flex-row gap-5 flex-col w-full justify-between  ${activeTab === priceItem.tabName ? "tab-content-active" : ""
-              }`}
-            key={index}
-          >
-            {priceItem.list.map((item) => (
-              <div
-                className="md:flex  md:flex-col w-full md:w-1/3 md:m-2 p-4 text-left rounded-lg "
-                style={{
-                  background: `linear-gradient(90deg, ${item.color[0]} 0%, ${item.color[1]} 100%)`,
-                }}
-              >
-                {/* heading */}
-                <div className="flex gap-4">
-                  <img src={item.icons} alt="icon" width={30} />
-                  <p className="text-xl md:text-2xl font-bold">{item.title}</p>
                 </div>
+                {
+                  couponCodeValidationLoading && <div className="flex gap-2 mt-2 items-center">
+                    <Loader className="animate-spin w-6 h-6" />
+                    <p>Checking Coupon...</p>
+                  </div>
+                }
+                {
+                  couponCodeMessage.length > 0 && <div>
+                    <p className="text-green-400">{couponCodeMessage}</p>
+                  </div>
+                }
+                {
+                  couponCodeError.length > 0 && <div>
+                    <p className="text-red-400">{couponCodeError}</p>
+                  </div>
+                }
 
-                <div className="flex flex-col gap-2">
-                  <p className="text-xl md:text-2xl font-medium">
-                    {item.price}
-                  </p>
-                </div>
 
-                <div className="py-4">
-                  {item.isActivePlan ? (
-                    <Button
-                      variant={"outline"}
-                      size={"StretchedButton"}
-                      className="w-full "
-                      disabled
-                    >
-                      Already Unlocked
-                    </Button>
-                  ) : (
-                    <Button
-                      className="bg-orange w-full hover:bg-lightOrange border-2 border-orange"
-                    >
-                      Buy Now
-                    </Button>
-                  )}
-                </div>
-                <div className="flex flex-col gap-4">
-                  {item.featureList.map((feature) => (
-                    <div key={feature.title}>
-                      <div className="flex gap-2 items-start p-2">
-                        {feature.isTicked ? (
-                          <img
-                            src="/assets/icons/check.svg"
-                            className="mt-2 mr-2"
-                            alt="check"
-                            width={20}
-                          />
-                        ) : (
-                          <img
-                            src="/assets/icons/unchecked.svg"
-                            alt="unchecked"
-                          />
-                        )}
-                        <div className="flex flex-col gap-2">
-                          <p className="font-bold">{feature.title}</p>
-                          <p>{feature.desc}</p>
+                <div className="h-full w-full flex flex-col gap-2 items-start mt-6">
+                  {/* total */}
+                  <div>
+                    <p className="font-semibold text-xl">Subscription Summary</p>
+                  </div>
+                  <div className="w-full mt-2 mb-2 flex justify-between px-4 py-2  ">
+                    <div className="flex flex-col items-start ">
+                      <div className="flex items-center justify-center  gap-2">
+                        <p className="font-semibold text-lg ">{activePlan.title}</p>
+                        <div className="bg-black rounded-full w-[6px] h-[6px]"></div>
+                        <p className=" text-lg text-slate-400">{activePlan.duration == "month" ? "1 Month Plan" : (activePlan.duration == "months" ? "6 Month Plan" : " Yearly Plan")}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <p className="text-lg">{activePlan.price}</p>
+                    </div>
+                  </div>
+                  {
+                    isCouponApplied && isCouponActive &&
+                    <div className="w-full">
+                      <hr className="border w-full border-slate-200" />
+                      <div className="flex justify-between w-full items-center px-4 py-2   ">
+                        <div className="flex gap-2 items-center ">
+                          <p className="font-semibold">{couponCode}</p>
+                          <div className="bg-black rounded-full w-[6px] h-[6px] font-semibold"></div>
+                          <p className="text-lg text-slate-400">{couponCodeDiscountPercentage}%</p>
+                        </div>
+                        <div>
+                          <p className="text-lg">- {couponCodeImpact} $</p>
                         </div>
                       </div>
-                      <Separator
-                        orientation="horizontal"
-                        className={`${feature.isLineBelow ? "block" : "hidden"
-                          } border border-slate-600`}
-                      />
                     </div>
-                  ))}
+                  }
+                  <hr className="border w-full border-slate-700" />
+                  <div className="flex justify-between items-center w-full px-4 ">
+                    <p className="font-semibold text-lg">Total</p>
+                    <p className="text-lg">{isCouponActive ? couponCodeDiscountPrice : activePlan.priceInt} $</p>
+
+                  </div>
                 </div>
+                <button
+                  onClick={getPaypalUrl}
+                  className="bg-softYellow w-full flex items-center justify-center py-3 font-semibold border border-yellow hover:bg-lightYellow transition-all rounded-lg"
+                >
+                  {
+                    paypalLoading ? <div className="flex gap-2 ">
+                      <Loader className="animate-spin w-6 h-6" />
+                      <p>Loading Payment Page...</p>
+                    </div> :
+                      <div className="flex gap-2">
+                        Complete The Order
+                        <ArrowRight className="w-6 h-6" />
+
+                      </div>
+                  }
+                </button>
               </div>
-            ))}
-          </TabsContent>
-        ))}
-      </div>
-    </Tabs>
+            </div>
+          </DialogContent>
+        </Dialog>
+      }
+    </div>
   );
 }

@@ -1,11 +1,11 @@
-import { SignIn } from "@clerk/clerk-react";
+import { SignIn, useUser } from "@clerk/clerk-react";
 
 export default function Signup() {
-
+    const {isSignedIn} = useUser();
     return (
         <div className="my-32  flex justify-center items-center">
             <SignIn
-                forceRedirectUrl={'/dashboard'}
+                forceRedirectUrl={'/pricing?redirected=true'}
                 signUpUrl="/signup"
             />
         </div>
