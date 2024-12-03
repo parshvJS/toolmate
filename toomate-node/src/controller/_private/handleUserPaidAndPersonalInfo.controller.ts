@@ -6,6 +6,7 @@ import { getRedisData, setRedisData } from "../../services/redis.js";
 
 export async function handleUserPaidAndPersonalInfo(req: Request, res: Response) {
     try {
+        console.log("handleUserPaidAndPersonalInfo");
         const { clerkUserId } = req.body;
         if (!clerkUserId) {
             return res.status(400).json({
@@ -26,9 +27,6 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
         }
 
         await connectDB();
-
-
-
         // Retrieve user info
         const user = await User.findOne({ clerkUserId });
         if (!user) {

@@ -11,6 +11,7 @@ export interface IUser extends Document {
   toolInventory?: mongoose.Types.ObjectId[];
   wishList: { toolId: string; count: number }[];
   bookmarked: mongoose.Types.ObjectId[];
+  currActiveSubscription: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,7 +52,7 @@ const UserSchema = new mongoose.Schema<IUser>({
   bookmarked: {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'UserChat' }],
     default: [],
-  },
+  }
 }, { timestamps: true });
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);

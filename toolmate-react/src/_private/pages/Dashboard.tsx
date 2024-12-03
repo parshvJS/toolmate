@@ -1,7 +1,7 @@
 import MateyExpression from "@/components/custom/MateyExpression";
 
 import { useContext, useEffect, useState } from "react";
-import { Anvil, CalendarDays, LoaderPinwheel, Package2, Send } from "lucide-react";
+import { Anvil, CalendarDays, CreditCard, DotIcon, LoaderPinwheel, Package2, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "@/context/userContext";
 import { ChatItem, iChatname } from "@/types/types";
@@ -80,7 +80,15 @@ export default function Dashboard() {
     return (
         <div className="w-full h-full md:mt-0  mt-16 ">
             <div className="absolute top-2 right-2">
-                <UserButton />
+                <UserButton>
+                    <UserButton.MenuItems>
+                        <UserButton.Action
+                            label="Manage Your Subscription"
+                            labelIcon={<CreditCard width={15} />}
+                            onClick={() => navigate('/manage-subscription')}
+                        />
+                    </UserButton.MenuItems>
+                </UserButton>
             </div>
             {/* <div className="flex justify-center items-center w-full p-10">
           <TradingVolumeSlider/>
@@ -95,7 +103,7 @@ export default function Dashboard() {
                 <p className="flex gap-2 items-center md:block mb-2 text-left font-bold text-3xl md:-mb-4 bg-gradient-to-r from-orange to-lightOrange bg-clip-text text-transparent">
                     Hello There!
                     <div className="block md:hidden w-12 h-12">
-                    <MateyExpression expression="tool" />
+                        <MateyExpression expression="tool" />
 
                     </div>
                 </p>
@@ -103,7 +111,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 md:-mb-2">
                     <p className="text-left text-2xl font-black">Ask Matey About Your Latest DIY Plan!</p>
                     <div className="hidden md:block">
-                    <MateyExpression expression="tool" />
+                        <MateyExpression expression="tool" />
 
                     </div>
                 </div>
@@ -213,7 +221,7 @@ export default function Dashboard() {
                         {/* card */}
                         <div className="overflow-x-auto pb-4">
                             <div className="flex gap-1 items-center min-w-min">
-                                {cache.slice(0,5).map((item: ChatItem, index) => (
+                                {cache.slice(0, 5).map((item: ChatItem, index) => (
                                     <Link to={`/matey/${item.sessionId}`} key={index} className="h-60 bg-gradient-to-tr from-slate-100 to-slate-300 hover:to-softYellow hover:from-white hover:border-yellow transition-all duration-300 ease-in-out cursor-pointer md:max-w-52 min-w-[200px] md:w-1/6 justify-between flex flex-col p-2 text-left rounded-md border-2 border-slate-300">
                                         <Anvil color="#ff6600" />
                                         <p className="text-slate-700 max-h-[70%] overflow-hidden">

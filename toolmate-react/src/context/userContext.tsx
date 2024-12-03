@@ -53,20 +53,14 @@ function UserContextProvider({ children }: { children: ReactNode }) {
             if (!userId) {
                 throw new Error("User ID is not available");
             }
+            console.log(userId, "userId");
             const response = await axios.post<{ data: UserData }>(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
                 clerkUserId: userId,
             });
             console.log(response.data.data, "response.data.data");
             const res = response.data.data;
-            const isFreeUser=  response.data.data.planAccess[0];
-            if(isFreeUser){
-                toast({
-                    title:"Access To Full Toolmate Access Denied!",
-                    description:"Please Move To Pro Plan For Full Toolmate Access Or Use Free Credit",
-                    variant:"destructive"
-                })
-                navigate('/price')
-            }
+            // const isFreeUser=  response.data.data.planAccess[0];
+            console.log(res, "res");
             return res;
         },
         enabled: !!userId,                  // Only run the query if userId exists

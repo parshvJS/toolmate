@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@radix-ui/react-separator";
-import { ArrowRight, Link, Loader } from "lucide-react";
+import { ArrowRight, Loader } from "lucide-react";
 import { Button, buttonVariants } from "../ui/button";
 import { pricing } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useUser } from "@clerk/clerk-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import {
   useForm
 } from "react-hook-form"
@@ -28,11 +28,15 @@ import { useDebounce } from 'use-debounce';
 import { Input } from "../ui/input";
 import { calculateDiscountedPrice, calculateImpact, extractBAToken } from "@/lib/utils";
 import { UserContext } from "@/context/userContext";
+import FAQSection from "./FAQ";
 
 
 
 export default function Price() {
-  const { redirected } = useParams();
+  const location = useLocation()
+  const queryParams = new URLSearchParams(location.search)
+  const redirected = queryParams.get('redirected');
+  const [isShowContinueWithFree, setIsShowContinueWithFree] = useState(false)
   const { isSignedIn } = useUser();
   const { userId, userData } = useContext(UserContext)
   const navigate = useNavigate();
@@ -55,10 +59,18 @@ export default function Price() {
   const [couponCodeDiscountPrice, setCouponCodeDiscountPrice] = useState(0);
   const [couponCodeImpact, setCouponCodeImpact] = useState(0);
   const [couponCodeDiscountPercentage, setCouponCodeDiscountPercentage] = useState(0);
-
   // get paypal url
   const [paypalUrl, setPaypalUrl] = useState("");
   const [paypalLoading, setPaypalLoading] = useState(false);
+
+  useEffect(() => {
+    if (redirected) {
+      setIsShowContinueWithFree(true)
+    }
+    return () => {
+      setIsShowContinueWithFree(false)
+    }
+  }, [redirected])
 
 
   const { toast } = useToast();
@@ -200,20 +212,45 @@ export default function Price() {
   };
 
   async function getPaypalUrl() {
+    if (paypalLoading) {
+      return;
+    }
+    if (!isSignedIn) {
+      toast({
+        title: "Error",
+        description: "Please Sign In To Complete The Purchase",
+        variant: "destructive",
+      });
+      navigate('/signup');
+      return;
+    }
     setPaypalLoading(true);
     try {
       console.log("isCouponApplied", isCouponApplied, "isCouponActive", isCouponActive);
+      let url;
       if (isCouponApplied && isCouponActive) {
-        // Handle coupon applied case
+        console.log("activePlan", activePlan, userData);
+        const discountPayPal = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/payment`, {
+          productId: activePlan.productId,
+          userId: userData?.id,
+          isCouponCodeApplied: true,
+          planName: activePlan.title,
+          CouponCode: couponCode
+        })
+
+        url = discountPayPal.data.url
+
+
       } else {
-        console.log("activePlan", activePlan);
+        console.log("activePlan", activePlan, userData);
         const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/payment`, {
           productId: activePlan.productId,
           userId: userData?.id,
           isCouponCodeApplied: false,
-          CouponCode: null
+          CouponCode: null,
+          planName: activePlan.title
         });
-        const url = res.data.url;
+        url = res.data.url;
         console.log("url", url);
         const urlBaValue = extractBAToken(url);
         const localValue = {
@@ -419,6 +456,13 @@ export default function Price() {
     ]
 } */}
       {
+        isShowContinueWithFree && <div
+          onClick={() => navigate('/dashboard')}
+        >
+          <p className="font-semibold text-slate-500 underline -mt-10 cursor-pointer">Continue With Free Plan</p>
+        </div>
+      }
+      {
         (activePlan && activeTab) && <Dialog open={showCheckoutPopup} onOpenChange={handlePriceDialogClose}>
           <DialogContent className="h-[calc(100%-10rem)] w-[calc(100%-30rem)] flex max-w-full">
             <DialogTitle></DialogTitle>
@@ -446,7 +490,7 @@ export default function Price() {
                   />
                   <button
                     onClick={handleCouponApplied}
-                    className="font-semibold px-2">
+                    className={`${couponCode.length !== 0 ? "block" : "hidden"} font-semibold px-2`}>
                     {isCouponApplied ? (isCouponActive ? "Remove" : "Apply") : "Apply"}
                   </button>
 
@@ -509,6 +553,9 @@ export default function Price() {
 
                   </div>
                 </div>
+                <div className="w-full mt-4 flex flex-wrap gap-2 leading-3 my-3">
+                  By clicking on the button below, you agree to our <Link target="_blank" to="/terms-of-service" className="font-semibold underline">Terms of Service</Link>, <Link target="_blank" to="/privacy-policy" className="font-semibold underline">Privacy Policy</Link> and <Link to="/refund-policy" target="_blank" className="font-semibold underline">Refund Policy</Link>
+                </div>
                 <button
                   onClick={getPaypalUrl}
                   className="bg-softYellow w-full flex items-center justify-center py-3 font-semibold border border-yellow hover:bg-lightYellow transition-all rounded-lg"
@@ -530,6 +577,7 @@ export default function Price() {
           </DialogContent>
         </Dialog>
       }
+      <FAQSection />
     </div>
   );
 }

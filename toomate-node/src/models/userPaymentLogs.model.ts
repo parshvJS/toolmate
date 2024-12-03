@@ -17,9 +17,18 @@ const userPaymentLogsSchema = new mongoose.Schema({
     couponCode: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'couponCode',
-        default: null
+        default: null,
+        set: (v:String) => v === "" ? null : v
     },
-})
+    baseBillingPlanId: {
+        type: String,
+        default:null
+    },
+    planName: {
+        type: String,
+        required: true
+    }
+}, { timestamps: true });
 
 const userPaymentLogs = mongoose.model('userPaymentLogs', userPaymentLogsSchema);
 export default userPaymentLogs;

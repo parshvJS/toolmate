@@ -7,13 +7,36 @@ import { Outlet, useNavigate } from "react-router-dom";
 import ErrorPage from "@/components/custom/ErrorPage";
 import { UserContext } from '@/context/userContext';
 import { RightSidebarProvider } from "@/context/rightSidebarContext";
+import { useToast } from "@/hooks/use-toast";
 
 const DashboardLayout: React.FC = () => {
-    const { isLoading, isError } = useContext(UserContext);
+    const { isLoading, isError, userData } = useContext(UserContext);
     const { isLoaded, userId } = useAuth();
     const [collapsed, setSidebarCollapsed] = useState<boolean>(true);
     const navigate = useNavigate();
+    const { toast } = useToast()
+    // useEffect(() => {
+    //     if (userData && userData.planAccess) {
+    //         const isFreeUser = userData.planAccess[0];
+    //         if (isFreeUser) {
+    //             toast({
+    //                 title: "You Dont Have Access To Paid Feature!",
+    //                 description: "Please Subscride to Premium Plan for Full Access To Matey",
+    //                 variant: "destructive"
+    //             })
+    //             navigate('/pricing')
+    //             return;
+    //         }
+    //     }
+    // }, [isLoading,userId])
 
+    useEffect(() => {
+        const isFirstLogin = JSON.parse(localStorage.getItem('isFirstTimeLogin') || "false")
+        if (!isFirstLogin) {
+            localStorage.setItem('isFirstTimeLogin', "true")
+            navigate('/pricing?redirected=true')
+        }
+    })
     useEffect(() => {
         if (isLoaded && !userId) {
             navigate("/signin");
@@ -44,7 +67,7 @@ const DashboardLayout: React.FC = () => {
                     }
                 )}
             >
-               
+
                 <div className="">
                     <Sidebar collabsable={collapsed} setCollabsable={setSidebarCollapsed} />
                 </div>

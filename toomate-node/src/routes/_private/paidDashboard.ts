@@ -19,6 +19,8 @@ import { Payment } from '../../controller/paymentAndPrice/payment.controller.js'
 import { editToUserToolInventory } from '../../controller/_private/editToUserToolInventory.controller.js';
 import { getCurrPrice } from '../../controller/paymentAndPrice/getCurrPrice.controller.js';
 import { couponCodeValidator } from '../../controller/paymentAndPrice/couponCodeValidator.controller.js';
+import { paymentConfirmationAndUpdate } from '../../controller/paymentAndPrice/paymentConfirmationAndUpdate.controller.js';
+import { paymentRefundRequest } from '../../controller/paymentAndPrice/paymentRefund.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -41,5 +43,7 @@ paidDashbaord.route('/editToolItem').post(editToUserToolInventory);
 // payment
 paidDashbaord.route('/payment').post(Payment)
 paidDashbaord.route('/getCurrPrice').get(getCurrPrice)
-paidDashbaord.route('/getCouponCodeValidation').post(couponCodeValidator)
+paidDashbaord.route('/getCouponCodeValidation').post(couponCodeValidator);
+paidDashbaord.route('/paymentConfirmationAndUpdate').post(paymentConfirmationAndUpdate);
+paidDashbaord.route('/paymentRefundRequest').post(paymentRefundRequest);
 export { paidDashbaord }

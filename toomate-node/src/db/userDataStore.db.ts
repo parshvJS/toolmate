@@ -16,7 +16,8 @@ export const createUser = async (userData: any) => {
 
   const newPayment = new UserPayment({
     userId: newUser._id,
-    amountPaid: 0,
+    activePlan:'',
+    planAccess:[true, false, false]
   });
 
 

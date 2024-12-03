@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { CircleCheck, CreditCard } from 'lucide-react';
 import MateyExpression from '@/components/custom/MateyExpression';
+import axios from 'axios';
 
 export default function SuccessPayment() {
     const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -22,6 +23,18 @@ export default function SuccessPayment() {
 
 
     useEffect(() => {
+        async function storeSubscriptionLog(){
+            try {
+                const res = await axios.post(`${process.env}`)
+            } catch (error:any) {
+                console.log(error.message);
+
+                
+            }
+        }
+
+
+
         const data = JSON.parse(localStorage.getItem('paypalData') || '{}');
         console.log(data, "data");
         if (ba_token && data) {
@@ -30,7 +43,8 @@ export default function SuccessPayment() {
                 setPlanData(data);
             }
         }
-        console.log(ba_token, subscription_id, planData, "ba_token, subscription_id, planData");
+        
+
     }, [ba_token, subscription_id])
 
 

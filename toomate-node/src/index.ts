@@ -12,7 +12,7 @@ import { startMessageConsumer, startNewMessageConsumer } from './services/kafka.
 import { admin } from './routes/admin/admin.js';
 import { community } from './routes/_private/community.js';
 import Redis from 'ioredis';
-import { startRedisConnection } from './services/redis.js';
+import { startRedisConnection, subscribeToKeyExpiration } from './services/redis.js';
 import { paidService } from './routes/paidService/paidService.js';
 import adsense from './routes/adsense/adsense.js';
 
@@ -54,7 +54,9 @@ console.log("redis connection started");
 // Start Kafka consumer
 startNewMessageConsumer();
 startMessageConsumer();
-startRedisConnection();
+// const redis = await startRedisConnection();
+// const sub = await subscribeToKeyExpiration(redis);
+// startRedisConnection();
 console.log('starting new message consumer');
 // startNewMessageConsumer();
 // Create an HTTP server

@@ -22,7 +22,7 @@ const UserToolInventorySchema = new mongoose.Schema({
         type:[String],
         default:[],
     }
-});
+},{timestamps:true});
 
 const UserToolInventory = mongoose.model("UserToolInventory",UserToolInventorySchema);
 

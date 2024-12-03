@@ -19,6 +19,13 @@ import { useUser } from "@clerk/clerk-react";
 import MyInventory from "./_private/pages/MyInventory";
 import Pricing from "./_open/pages/Pricing";
 import SuccessPayment from "./_private/pages/SuccessPayment";
+import Refundpolicy from "./_open/pages/legalDocs/RefundPolicy";
+import AboutUs from "./_open/pages/legalDocs/AboutUs";
+import CommunityGuideline from "./_open/pages/legalDocs/CommunityGuideline";
+import TermsOfService from "./_open/pages/legalDocs/TermAndCon";
+import PrivacyPolicy from "./_open/pages/legalDocs/PrivacyPolicy";
+import SafetyPolicy from "./_open/pages/legalDocs/SafetyPolicy";
+import ManageSub from "./_private/pages/ManageSub";
 
 function App() {
   const { user } = useUser()
@@ -34,6 +41,13 @@ function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/success" element={<SuccessPayment />} />
         </Route>
+        {/* legal pages */}
+        <Route path="/refund-policy" element={<Refundpolicy />} />
+        <Route path="/AboutUs" element={<AboutUs />} />
+        <Route path="/community-guideline" element={<CommunityGuideline />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/safety-policy" element={<SafetyPolicy />} />
 
         {/* Preview page can be accessed without authentication but without standard navigation */}
         <Route path="/preview" element={<PreviewChat />} />
@@ -45,7 +59,7 @@ function App() {
           <Route path="/my-community" element={<MyCommunity />} />
           <Route path="/createCommunity" element={<CommunityCreationForm />} />
           <Route path="/my-inventory" element={<MyInventory />} />
-
+        <Route path="/manage-subscription" element={<ManageSub/>}/>
           {/* Wrap the routes that need the SocketProvider */}
           <Route element={<SocketLayout />}>
             <Route path="/matey/:sessionId" element={<ChatPage />} />
