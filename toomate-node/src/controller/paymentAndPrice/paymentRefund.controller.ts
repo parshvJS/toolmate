@@ -1,3 +1,4 @@
+import userRefundLogs from "../../models/userRefundLogs.model.js";
 import connectDB from "../../db/db.db.js";
 import getPaypalAccessToken from "../../utils/paypalUtils.js";
 import axios from "axios";
@@ -6,10 +7,32 @@ import { Request, Response } from "express";
 // Constants
 const BASE_PAYPAL_URL = process.env.PAYPAL_API_BASE_URL;
 const DEFAULT_CURRENCY = "USD";
+const accessToken = await getPaypalAccessToken();
+
+async function deactivateSubscription(subscriptionId: string, accessToken: string) {
+    try {
+        const response = await axios.post(
+            `${BASE_PAYPAL_URL}/v1/billing/subscriptions/${subscriptionId}/cancel`,
+            {
+                reason: "User requested cancellation.",
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                },
+            }
+        );
+        return { success: true, data: response.data || "Subscription cancelled successfully." };
+    } catch (error: any) {
+        return { success: false, data: `Error cancelling subscription: ${error.response?.data || error.message}` };
+    }
+}
 
 // Function to get subscription details
 async function getSubscriptionDetails(subscriptionId: string, accessToken: string) {
     try {
+        console.log(`Fetching subscription details for ID: ${subscriptionId}`);
         const response = await axios.get(
             `${BASE_PAYPAL_URL}/v1/billing/subscriptions/${subscriptionId}`,
             {
@@ -18,8 +41,10 @@ async function getSubscriptionDetails(subscriptionId: string, accessToken: strin
                 },
             }
         );
+        console.log(`Subscription details fetched successfully: ${JSON.stringify(response.data)}`);
         return { success: true, data: response.data };
     } catch (error: any) {
+        console.error(`Failed to get subscription details: ${error.response?.data || error.message}`);
         return { success: false, data: `Failed to get subscription details: ${error.response?.data || error.message}` };
     }
 }
@@ -31,6 +56,7 @@ async function getSubscriptionTransactions(subscriptionId: string, accessToken: 
         startTime.setDate(startTime.getDate() - 7); // 7-day range
         const endTime = new Date();
 
+        console.log(`Fetching transactions for subscription ID: ${subscriptionId} from ${startTime.toISOString()} to ${endTime.toISOString()}`);
         const response = await axios.get(
             `${BASE_PAYPAL_URL}/v1/billing/subscriptions/${subscriptionId}/transactions`,
             {
@@ -43,8 +69,10 @@ async function getSubscriptionTransactions(subscriptionId: string, accessToken: 
                 },
             }
         );
+        console.log(`Transactions fetched successfully: ${JSON.stringify(response.data.transactions)}`);
         return { success: true, data: response.data.transactions };
     } catch (error: any) {
+        console.error(`Failed to get subscription transactions: ${error.response?.data || error.message}`);
         return { success: false, data: `Failed to get subscription transactions: ${error.response?.data || error.message}` };
     }
 }
@@ -61,6 +89,7 @@ async function refundPayment(captureId: string, amount: number | null = null, cu
             }
             : {};
 
+        console.log(`Issuing refund for capture ID: ${captureId} with payload: ${JSON.stringify(payload)}`);
         const response = await axios.post(
             `${BASE_PAYPAL_URL}/v2/payments/captures/${captureId}/refund`,
             payload,
@@ -71,15 +100,17 @@ async function refundPayment(captureId: string, amount: number | null = null, cu
                 },
             }
         );
+        console.log(`Refund issued successfully: ${JSON.stringify(response.data)}`);
         return { success: true, data: response.data };
     } catch (error: any) {
+        console.error(`Refund failed: ${error.response?.data || error.message}`);
         return { success: false, data: `Refund failed: ${error.response?.data || error.message}` };
     }
 }
 
 // Main function to refund based on subscription ID
 async function refundSubscription(subscriptionId: string) {
-    const accessToken = await getPaypalAccessToken();
+    console.log(`Starting refund process for subscription ID: ${subscriptionId}`);
 
     // Step 1: Get subscription details
     const subscriptionResult = await getSubscriptionDetails(subscriptionId, accessToken);
@@ -119,22 +150,46 @@ async function refundSubscription(subscriptionId: string) {
         return { success: false, data: refundResult.data };
     }
 
+    console.log(`Refund process completed successfully for subscription ID: ${subscriptionId}`);
     return { success: true, data: refundResult.data };
 }
 
 export async function paymentRefundRequest(req: Request, res: Response) {
-    await connectDB();
-    const { subscriptionId } = req.body;
+    const { subscriptionId, userId } = req.body;
 
     if (!subscriptionId) {
         return res.status(400).json({ message: "Subscription ID is required." });
     }
 
+    console.log(`Received refund request for subscription ID: ${subscriptionId} and user ID: ${userId}`);
     const refundResult = await refundSubscription(subscriptionId);
     if (!refundResult.success) {
         console.error("Refund Subscription Error:", refundResult.data);
         return res.status(400).json({ message: "Refund failed.", error: refundResult.data });
     }
 
+    // deactive the plan
+
+    const deactivePlan = await deactivateSubscription(subscriptionId, accessToken);
+    if (!deactivePlan.success) {
+        console.error("Deactivate Subscription Error:", deactivePlan.data);
+        return res.status(400).json({ message: "Deactivate failed.", error: deactivePlan.data });
+    }
+    await connectDB();
+
+    const refundLog = {
+        refundId: refundResult.data.id,
+        userId: userId,
+    }
+    // Log the refund details
+    console.log("Refund successful:", refundResult.data);
+    const refund = await userRefundLogs.create(refundLog);
+    if (!refund) {
+        return res.status(500).json({ message: "Refund successful but failed to log refund details." });
+    }
+
     return res.status(200).json({ message: "Refund successful.", refund: refundResult.data });
 }
+
+
+

@@ -3,6 +3,32 @@ import User from "../../models/user.model.js";
 import { UserPayment } from "../../models/userPayment.model.js";
 import { Request, Response } from "express";
 import { getRedisData, setRedisData } from "../../services/redis.js";
+import updateSubscriptionQueue from "../../models/updateSubscriptionQueue.model.js";
+import axios from "axios";
+import getPaypalAccessToken from "@/utils/paypalUtils.js";
+
+export async function verifyCurrUserPayment(subscriptionId:string){
+    const accessToken  = await getPaypalAccessToken();
+    const BASE_API_URL = process.env.PAYPAL_API_BASE_URL;
+    const subDetails = await axios.get(`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}`,{
+        headers:{
+            Authorization:`Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        }
+    })
+
+    if(!subDetails){
+        return false
+    }
+
+    const currDate = new Date();
+    const nextBillingCycleDate = new Date(subDetails.data.billing_info.next_billing_time);
+    if(currDate > nextBillingCycleDate){
+        return false
+    }
+
+    return true
+}
 
 export async function handleUserPaidAndPersonalInfo(req: Request, res: Response) {
     try {
@@ -37,6 +63,16 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
             });
         }
 
+        // check the queue for pause request
+        // TODO: change the format
+        const currDate = new Date()
+        const queueData = await updateSubscriptionQueue.findOne({ userId: user._id });
+        if (queueData) {
+
+        }
+
+
+
         // Retrieve payment info
         const paidUser = await UserPayment.findOne({ userId: user._id });
         if (!paidUser) {
@@ -47,7 +83,8 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
             });
         }
 
-
+        // check the payment of curr User 
+        // TODO:
 
         // set the data to redis
         await setRedisData(`USER-PAYMENT-${clerkUserId}`, JSON.stringify({

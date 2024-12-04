@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-let retryCount = 15;
+let retryCount = 10;
 const connectDB = async () => {
 	try {
 		if (mongoose.connection.readyState === 1) {
@@ -20,7 +20,13 @@ const connectDB = async () => {
 			retryCount--;
 			return;
 		}
-
+		if (retryCount === 0) {
+			console.error('Database connection failed !');
+			setTimeout(() => {
+				retryCount = 10;
+				connectDB();
+			}, 3600000);
+		}
 	}
 };
 

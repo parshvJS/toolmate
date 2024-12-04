@@ -21,6 +21,9 @@ import { getCurrPrice } from '../../controller/paymentAndPrice/getCurrPrice.cont
 import { couponCodeValidator } from '../../controller/paymentAndPrice/couponCodeValidator.controller.js';
 import { paymentConfirmationAndUpdate } from '../../controller/paymentAndPrice/paymentConfirmationAndUpdate.controller.js';
 import { paymentRefundRequest } from '../../controller/paymentAndPrice/paymentRefund.controller.js';
+import { getSubscriptionLogs } from '../../controller/paymentAndPrice/getPaymentLogs.controller.js';
+import { getSubscriptionDetails } from '../../controller/paymentAndPrice/getPaymentLogInfo.controller.js';
+import { requestSubscriptionPause } from '../../controller/paymentAndPrice/requestSubscriptionPause.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -46,4 +49,13 @@ paidDashbaord.route('/getCurrPrice').get(getCurrPrice)
 paidDashbaord.route('/getCouponCodeValidation').post(couponCodeValidator);
 paidDashbaord.route('/paymentConfirmationAndUpdate').post(paymentConfirmationAndUpdate);
 paidDashbaord.route('/paymentRefundRequest').post(paymentRefundRequest);
+paidDashbaord.route('/getSubscriptionLogs').post(getSubscriptionLogs);
+paidDashbaord.route('/getSubscriptionDetails').post(getSubscriptionDetails);
+// this api is for user to request to pause their subscription
+paidDashbaord.route('/requestSubscriptionPause').post(requestSubscriptionPause);
+// paidDashbaord.route('/suspendSubscription').post(suspendSubscription);
+// paidDashbaord.route('/cancelSubscription').post(cancelSubscription);
+// paidDashbaord.route('/resumeSubscription').post(resumeSubscription);
+// paidDashbaord.route('/changeSubscriptionPlan').post(changeSubscriptionPlan);
+
 export { paidDashbaord }

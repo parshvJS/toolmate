@@ -1,17 +1,21 @@
 import Confetti from 'react-confetti'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { CircleCheck, CreditCard } from 'lucide-react';
 import MateyExpression from '@/components/custom/MateyExpression';
 import axios from 'axios';
+import { UserContext } from '@/context/userContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SuccessPayment() {
+    const { userData } = useContext(UserContext);
     const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
     const queryParams = new URLSearchParams(window.location.search);
     const ba_token = queryParams.get('ba_token');
     const subscription_id = queryParams.get('subscription_id');
     const [planData, setPlanData] = useState<any>();
     const navigate = useNavigate();
+    const { toast } = useToast();
     useEffect(() => {
         const handleResize = () => {
             setDimensions({ width: window.innerWidth, height: window.innerHeight });
@@ -23,18 +27,6 @@ export default function SuccessPayment() {
 
 
     useEffect(() => {
-        async function storeSubscriptionLog(){
-            try {
-                const res = await axios.post(`${process.env}`)
-            } catch (error:any) {
-                console.log(error.message);
-
-                
-            }
-        }
-
-
-
         const data = JSON.parse(localStorage.getItem('paypalData') || '{}');
         console.log(data, "data");
         if (ba_token && data) {
@@ -43,9 +35,39 @@ export default function SuccessPayment() {
                 setPlanData(data);
             }
         }
-        
 
-    }, [ba_token, subscription_id])
+
+        async function storeSubscriptionLog() {
+            if (!userData) return;
+            try {
+                const apiData = {
+                    subscriptionId: subscription_id,
+                    planName: planData.Packname,
+                    ba: ba_token,
+                    userId: userData?.id
+                }
+                const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/paymentConfirmationAndUpdate`, apiData)
+                console.log(res.data, "res.data");
+                if (res.status !== 200) {
+                    toast({
+                        title: "Error",
+                        description: res.data.message,
+                        variant: 'destructive',
+                    })
+                    return;
+                }
+                localStorage.removeItem('paypalData');
+            } catch (error: any) {
+                console.log(error.message);
+                toast({
+                    title: "Error",
+                    description: error.message,
+                    variant: 'destructive',
+                })
+            }
+        }
+        storeSubscriptionLog();
+    }, [ba_token, subscription_id, userData])
 
 
     return (
@@ -87,7 +109,7 @@ export default function SuccessPayment() {
                     <div
                         onClick={() => navigate('/manage-subscription')}
                         className='flex justify-center items-center mt-2 gap-2 bg-yellow/40 px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer'>
-                        <CreditCard  size={22} />
+                        <CreditCard size={22} />
                         Manage Subscription
                     </div>
                 </div>

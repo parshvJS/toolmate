@@ -267,7 +267,7 @@ async function paypalApiRequest(url: string, data: any, headers: any, retry = tr
     } catch (error: any) {
         if (error.response?.status === 401 && retry) {
             console.warn('401 Unauthorized. Regenerating access token...');
-            await getPaypalAccessToken(true);
+            await getPaypalAccessToken();
             return paypalApiRequest(url, data, headers, false);
         }
         console.error('PayPal API request error:', error.message);

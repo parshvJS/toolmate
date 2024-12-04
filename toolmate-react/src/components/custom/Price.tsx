@@ -236,11 +236,20 @@ export default function Price() {
           isCouponCodeApplied: true,
           planName: activePlan.title,
           CouponCode: couponCode
-        })
+        });
 
-        url = discountPayPal.data.url
+        url = discountPayPal.data.url;
+        console.log("url", url);
+        const urlBaValue = extractBAToken(url);
+        const localValue = {
+          ba: urlBaValue,
+          Packname: activePlan.title,
+          price: activePlan.price,
+        };
+        localStorage.setItem("paypalData", JSON.stringify(localValue));
+        window.location.href = url; // Redirect to PayPal URL directly
 
-
+        console.log("discountPayPal", discountPayPal);
       } else {
         console.log("activePlan", activePlan, userData);
         const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/payment`, {
@@ -257,7 +266,7 @@ export default function Price() {
           ba: urlBaValue,
           Packname: activePlan.title,
           price: activePlan.price,
-        }
+        };
         localStorage.setItem("paypalData", JSON.stringify(localValue));
         window.location.href = url; // Redirect to PayPal URL directly
 

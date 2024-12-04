@@ -37,6 +37,7 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
             baseBillingPlanId: paymentSession.baseBillingPlanId || "",
             planName
         };
+        console.log("newLogData", newLogData);
 
         const newLog = await userPaymentLogs.create(newLogData);
         if (!newLog) {

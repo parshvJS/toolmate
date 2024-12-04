@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const userPaymentLogsSchema = new mongoose.Schema({
+
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
