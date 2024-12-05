@@ -24,6 +24,8 @@ import { paymentRefundRequest } from '../../controller/paymentAndPrice/paymentRe
 import { getSubscriptionLogs } from '../../controller/paymentAndPrice/getPaymentLogs.controller.js';
 import { getSubscriptionDetails } from '../../controller/paymentAndPrice/getPaymentLogInfo.controller.js';
 import { requestSubscriptionPause } from '../../controller/paymentAndPrice/requestSubscriptionPause.controller.js';
+import { suspendSubscription } from '../../controller/paymentAndPrice/suspendSubscription.controller.js';
+import { cancelSubscription } from '@/controller/paymentAndPrice/cancelSubscription.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
@@ -53,8 +55,8 @@ paidDashbaord.route('/getSubscriptionLogs').post(getSubscriptionLogs);
 paidDashbaord.route('/getSubscriptionDetails').post(getSubscriptionDetails);
 // this api is for user to request to pause their subscription
 paidDashbaord.route('/requestSubscriptionPause').post(requestSubscriptionPause);
-// paidDashbaord.route('/suspendSubscription').post(suspendSubscription);
-// paidDashbaord.route('/cancelSubscription').post(cancelSubscription);
+paidDashbaord.route('/suspendSubscription').post(suspendSubscription);
+paidDashbaord.route('/cancelSubscription').post(cancelSubscription);
 // paidDashbaord.route('/resumeSubscription').post(resumeSubscription);
 // paidDashbaord.route('/changeSubscriptionPlan').post(changeSubscriptionPlan);
 

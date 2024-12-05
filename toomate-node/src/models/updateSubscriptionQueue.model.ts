@@ -7,11 +7,12 @@ const updateSubscriptionQueueSchema = new mongoose.Schema({
         required: true,
     },
     updatePlanDate: {
-        type: Date,
+        type: String,
         required: true
     },
     type: {
-        type: String, // it can be cancel request or suspent request
+        type: String,
+        enum: ['suspend', 'cancel', 'downgrade'], // it can be suspend, cancel, or downgrade request
         required: true
     },
     updatePlanAccessTo: {
@@ -21,8 +22,12 @@ const updateSubscriptionQueueSchema = new mongoose.Schema({
     subscriptionId: {
         type: String,
         required: true
+    },
+    downgradedPlanDuration: {
+        type: Number,
+        default: 1
     }
-},{timestamps:true});
+}, { timestamps: true });
 
 const updateSubscriptionQueue = mongoose.model('updateSubscriptionQueue', updateSubscriptionQueueSchema);
 export default updateSubscriptionQueue;

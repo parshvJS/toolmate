@@ -28,6 +28,10 @@ const userPaymentLogsSchema = new mongoose.Schema({
     planName: {
         type: String,
         required: true
+    },
+    status:{
+        type:String,
+        default:""
     }
 }, { timestamps: true });
 

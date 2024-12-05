@@ -5,25 +5,25 @@ import { Request, Response } from "express";
 import { getRedisData, setRedisData } from "../../services/redis.js";
 import updateSubscriptionQueue from "../../models/updateSubscriptionQueue.model.js";
 import axios from "axios";
-import getPaypalAccessToken from "@/utils/paypalUtils.js";
+import getPaypalAccessToken, { getPaypalFormatDate } from "@/utils/paypalUtils.js";
 
-export async function verifyCurrUserPayment(subscriptionId:string){
-    const accessToken  = await getPaypalAccessToken();
+export async function verifyCurrUserPayment(subscriptionId: string) {
+    const accessToken = await getPaypalAccessToken();
     const BASE_API_URL = process.env.PAYPAL_API_BASE_URL;
-    const subDetails = await axios.get(`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}`,{
-        headers:{
-            Authorization:`Bearer ${accessToken}`,
+    const subDetails = await axios.get(`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
         }
     })
 
-    if(!subDetails){
+    if (!subDetails) {
         return false
     }
 
     const currDate = new Date();
     const nextBillingCycleDate = new Date(subDetails.data.billing_info.next_billing_time);
-    if(currDate > nextBillingCycleDate){
+    if (currDate > nextBillingCycleDate) {
         return false
     }
 
@@ -65,9 +65,12 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
 
         // check the queue for pause request
         // TODO: change the format
-        const currDate = new Date()
+        const currDate = getPaypalFormatDate()
         const queueData = await updateSubscriptionQueue.findOne({ userId: user._id });
-        if (queueData) {
+        if (queueData && queueData.updatePlanDate >= currDate) {
+
+
+
 
         }
 
@@ -113,3 +116,48 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
 
 
 
+
+
+async function performPauseSubscription(operationType: string, subscriptionId: string, userId: string) {
+    switch (operationType) {
+        case "suspend":
+            const suspendUrl = `${process.env.SERVER_URL}/api/v1/suspendSubscription`
+            const suspendResponse = await axios.post(suspendUrl, {
+                subscriptionId,
+                userId
+            });
+            console.log(suspendResponse.data, "pause subscription response");
+            if (suspendResponse.status !== 200) {
+                return {
+                    success: false,
+                    message: suspendResponse.data.message
+                }
+            }
+            return {
+                success: true,
+                message: "Subscription suspended successfully"
+            }
+        case "cancel":
+            const cancelUrl = `${process.env.SERVER_URL}/api/v1/cancelSubscription`
+            const cancelResponse = await axios.post(cancelUrl, {
+                subscriptionId,
+                userId
+            });
+            console.log(cancelResponse.data, "cancel subscription response");
+            if (cancelResponse.status !== 200) {
+                return {
+                    success: false,
+                    message: cancelResponse.data.message
+                }
+            }
+            return {
+                success: true,
+                message: "Subscription canceled successfully"
+            }
+        case "downgrade":
+            // Add downgrade logic here
+            break;
+        default:
+            console.log("Invalid operation type");
+    }
+}

@@ -70,3 +70,8 @@ export async function getSubscriptionDetails(subscriptionId: string) {
         return { success: false, data: `Error fetching subscription details: ${error.response?.data || error.message}` };
     }
 }
+
+export function getPaypalFormatDate(){
+    const currentDate = new Date().toISOString().split('.')[0] + 'Z';
+    return currentDate;
+}

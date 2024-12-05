@@ -4,6 +4,24 @@ import connectDB from "../../db/db.db.js";
 import User from '../../models/user.model.js';
 import PaymentSession from "../../models/paymentSession.model.js";
 import { UserPayment } from "../../models/userPayment.model.js";
+import getPaypalAccessToken from "@/utils/paypalUtils.js";
+import axios from "axios";
+
+async function getSubscriptionStatus(subscriptionId:string){
+    try {
+        const accessToken = await getPaypalAccessToken();
+        const BASE_PAYPAL_URL = process.env.PAYPAL_API_BASE_URL;
+        const response = await axios.get(`${BASE_PAYPAL_URL}/v1/billing/subscriptions/${subscriptionId}`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        return {success:true,status:response.data.status};
+    } catch (error:any) {
+        return {success:false,data:`Error fetching subscription details: ${error.response?.data || error.message}`};
+        
+    }
+}
 
 // Grants access to the user after payment confirmation
 export async function paymentConfirmationAndUpdate(req: Request, res: Response) {
@@ -28,14 +46,20 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
         if (!paymentSession) {
             return res.status(404).json({ message: "Payment Session not found" });
         }
-
+        const status = await getSubscriptionStatus(subscriptionId);
+        if(!status.success){
+            return res.status(400).json({message:status.data});
+        }
+        const paymentStatus = status.status;
         const newLogData: any = {
             subscriptionId,
             userId: user._id,
             isCouponApplied: !!paymentSession.couponCodeId,
             couponCode: paymentSession.couponCodeId ? String(paymentSession.couponCodeId) : "",
             baseBillingPlanId: paymentSession.baseBillingPlanId || "",
-            planName
+            planName,
+            status: paymentStatus,
+
         };
         console.log("newLogData", newLogData);
 
