@@ -1,5 +1,5 @@
-import { Router } from 'express'
-import { handleUserPaidAndPersonalInfo } from '../../controller/_private/handleUserPaidAndPersonalInfo.controller.js'
+import { Router } from 'express';
+import { handleUserPaidAndPersonalInfo } from '../../controller/_private/handleUserPaidAndPersonalInfo.controller.js';
 import { getChatHistory } from '../../controller/_private/getChatHistory.controller.js';
 import { updateChatHistory } from '../../controller/_private/updateChatHistory.controller.js';
 import { getChatConversationHistory } from '../../controller/_private/getChatConversationHistory.controller.js';
@@ -26,30 +26,37 @@ import { getSubscriptionDetails } from '../../controller/paymentAndPrice/getPaym
 import { requestSubscriptionPause } from '../../controller/paymentAndPrice/requestSubscriptionPause.controller.js';
 import { suspendSubscription } from '../../controller/paymentAndPrice/suspendSubscription.controller.js';
 import { cancelSubscription } from '@/controller/paymentAndPrice/cancelSubscription.controller.js';
+import { downGradeSubscription } from '@/controller/paymentAndPrice/downGradeSubscription.controller.js';
 const paidDashbaord = Router();
 
-paidDashbaord.route("/getUserPaidAndPersonalInfo").post(handleUserPaidAndPersonalInfo);
-paidDashbaord.route("/getChatHistory").post(getChatHistory);
-paidDashbaord.route("/updateChatHistory").post(updateChatHistory);
-paidDashbaord.route("/getChatConversationHistory").post(getChatConversationHistory);
-paidDashbaord.route("/changeChatName").post(changeChatName);
-paidDashbaord.route("/deleteChat").post(deleteChat);
-paidDashbaord.route("/bookmarkChat").post(bookmarkChat);
-paidDashbaord.route("/get-s3-presigned-url").post(getPresignedUrl);
-paidDashbaord.route("/get-s3-presigned-delete-url").post(getPresignedDeleteUrl);
-paidDashbaord.route("/getProductFromId").post(getProductFromId);
-paidDashbaord.route("/changeMemoryStatus").post(changeChatMemoryStatus);
-paidDashbaord.route("/getChatMemoryStatus").post(getChatMemoryStatus);
+paidDashbaord
+	.route('/getUserPaidAndPersonalInfo')
+	.post(handleUserPaidAndPersonalInfo);
+paidDashbaord.route('/getChatHistory').post(getChatHistory);
+paidDashbaord.route('/updateChatHistory').post(updateChatHistory);
+paidDashbaord
+	.route('/getChatConversationHistory')
+	.post(getChatConversationHistory);
+paidDashbaord.route('/changeChatName').post(changeChatName);
+paidDashbaord.route('/deleteChat').post(deleteChat);
+paidDashbaord.route('/bookmarkChat').post(bookmarkChat);
+paidDashbaord.route('/get-s3-presigned-url').post(getPresignedUrl);
+paidDashbaord.route('/get-s3-presigned-delete-url').post(getPresignedDeleteUrl);
+paidDashbaord.route('/getProductFromId').post(getProductFromId);
+paidDashbaord.route('/changeMemoryStatus').post(changeChatMemoryStatus);
+paidDashbaord.route('/getChatMemoryStatus').post(getChatMemoryStatus);
 paidDashbaord.route('/getToolTip').post(TooltipGeneration);
 paidDashbaord.route('/createNewToolItem').post(addToUsertoolInventory);
 paidDashbaord.route('/deleteToolItem').post(deleteFromUsertoolInventory);
 paidDashbaord.route('/getUserToolItem').post(getUserToolInventory);
 paidDashbaord.route('/editToolItem').post(editToUserToolInventory);
 // payment
-paidDashbaord.route('/payment').post(Payment)
-paidDashbaord.route('/getCurrPrice').get(getCurrPrice)
+paidDashbaord.route('/payment').post(Payment);
+paidDashbaord.route('/getCurrPrice').get(getCurrPrice);
 paidDashbaord.route('/getCouponCodeValidation').post(couponCodeValidator);
-paidDashbaord.route('/paymentConfirmationAndUpdate').post(paymentConfirmationAndUpdate);
+paidDashbaord
+	.route('/paymentConfirmationAndUpdate')
+	.post(paymentConfirmationAndUpdate);
 paidDashbaord.route('/paymentRefundRequest').post(paymentRefundRequest);
 paidDashbaord.route('/getSubscriptionLogs').post(getSubscriptionLogs);
 paidDashbaord.route('/getSubscriptionDetails').post(getSubscriptionDetails);
@@ -57,7 +64,8 @@ paidDashbaord.route('/getSubscriptionDetails').post(getSubscriptionDetails);
 paidDashbaord.route('/requestSubscriptionPause').post(requestSubscriptionPause);
 paidDashbaord.route('/suspendSubscription').post(suspendSubscription);
 paidDashbaord.route('/cancelSubscription').post(cancelSubscription);
+paidDashbaord.route('/downgradeSubscription').post(downGradeSubscription);
 // paidDashbaord.route('/resumeSubscription').post(resumeSubscription);
 // paidDashbaord.route('/changeSubscriptionPlan').post(changeSubscriptionPlan);
 
-export { paidDashbaord }
+export { paidDashbaord };
