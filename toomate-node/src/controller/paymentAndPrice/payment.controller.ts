@@ -174,8 +174,8 @@ async function checkSubscriptionOfUser(userId: string) {
 			message: 'payment log not fount',
 		};
 	}
-	const isActivePlan = userPaymentLog?.activePlan;
-	if(!isActivePlan){
+	const activePlan = userPaymentLog?.activePlan;
+	if(!activePlan){
 		return {
 			success:false,
 			isSubscribed:false,
@@ -189,7 +189,22 @@ async function checkSubscriptionOfUser(userId: string) {
 	// get the paypal subscription data
 	const accessToken = await getPaypalAccessToken();
 	const BASE_API_URL = process.env.PAYPAL_API_BASE_URL;
-	const url = `${BASE_API_URL}/`
+	const url = `${BASE_API_URL}/v1/billing/subscriptions/${activePlan}`;
+	const paypalSubscription = await axios.get(url, {
+		headers:{
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+		}
+	});
+	if(paypalSubscription.status !== 200){
+		return {
+			success:false,
+			isSubscribed:false,
+			message:"No Active Plan"
+		}
+	}
+	const subscriptionData = paypalSubscription.data.status == "ACTIVE" ? true : false;
+	return subscriptionData;
 }
 
 export async function Payment(req: Request, res: Response) {
