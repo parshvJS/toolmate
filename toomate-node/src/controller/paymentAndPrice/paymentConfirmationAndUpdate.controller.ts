@@ -4,10 +4,10 @@ import connectDB from "../../db/db.db.js";
 import User from '../../models/user.model.js';
 import PaymentSession from "../../models/paymentSession.model.js";
 import { UserPayment } from "../../models/userPayment.model.js";
-import getPaypalAccessToken from "@/utils/paypalUtils.js";
+import getPaypalAccessToken from "../../utils/paypalUtils.js";
 import axios from "axios";
 
-async function getSubscriptionStatus(subscriptionId:string){
+async function getSubscriptionStatus(subscriptionId: string) {
     try {
         const accessToken = await getPaypalAccessToken();
         const BASE_PAYPAL_URL = process.env.PAYPAL_API_BASE_URL;
@@ -16,10 +16,10 @@ async function getSubscriptionStatus(subscriptionId:string){
                 Authorization: `Bearer ${accessToken}`,
             },
         });
-        return {success:true,status:response.data.status};
-    } catch (error:any) {
-        return {success:false,data:`Error fetching subscription details: ${error.response?.data || error.message}`};
-        
+        return { success: true, status: response.data.status };
+    } catch (error: any) {
+        return { success: false, data: `Error fetching subscription details: ${error.response?.data || error.message}` };
+
     }
 }
 
@@ -47,8 +47,8 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
             return res.status(404).json({ message: "Payment Session not found" });
         }
         const status = await getSubscriptionStatus(subscriptionId);
-        if(!status.success){
-            return res.status(400).json({message:status.data});
+        if (!status.success) {
+            return res.status(400).json({ message: status.data });
         }
         const paymentStatus = status.status;
         const newLogData: any = {
@@ -86,7 +86,7 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
             }
         } else {
             if (planAccessToBeGranted >= 0 && planAccessToBeGranted < userPaymentAccess.planAccess.length) {
-                userPaymentAccess.planAccess = [false,false,false]
+                userPaymentAccess.planAccess = [false, false, false]
                 userPaymentAccess.planAccess[planAccessToBeGranted] = true;
             }
             userPaymentAccess.activePlan = subscriptionId;

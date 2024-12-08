@@ -1,6 +1,6 @@
-import connectDB from "@/db/db.db";
-import AdminUser from "@/models/admin/adminUser.model";
-import { PaymentPlan } from "@/models/admin/paymentPlan.model";
+import connectDB from "../../db/db.db.js";
+import AdminUser from "../../models/admin/adminUser.model.js";
+import { PaymentPlan } from "../../models/admin/paymentPlan.model.js";
 import { Request, Response } from "express";
 
 export async function updatePrice(req: Request, res: Response) {

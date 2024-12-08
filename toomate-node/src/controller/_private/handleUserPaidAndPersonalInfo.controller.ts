@@ -7,7 +7,7 @@ import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.
 import axios from 'axios';
 import getPaypalAccessToken, {
 	getPaypalFormatDate,
-} from '@/utils/paypalUtils.js';
+} from '../../utils/paypalUtils.js';
 
 export async function verifyCurrUserPayment(subscriptionId: string) {
 	const accessToken = await getPaypalAccessToken();

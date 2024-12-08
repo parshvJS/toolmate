@@ -9,6 +9,45 @@ const BASE_PAYPAL_URL = process.env.PAYPAL_API_BASE_URL;
 const DEFAULT_CURRENCY = "USD";
 const accessToken = await getPaypalAccessToken();
 
+export async function paymentRefundRequest(req: Request, res: Response) {
+    const { subscriptionId, userId } = req.body;
+
+    if (!subscriptionId) {
+        return res.status(400).json({ message: "Subscription ID is required." });
+    }
+
+    console.log(`Received refund request for subscription ID: ${subscriptionId} and user ID: ${userId}`);
+    const refundResult = await refundSubscription(subscriptionId);
+    if (!refundResult.success) {
+        console.error("Refund Subscription Error:", refundResult.data);
+        return res.status(400).json({ message: "Refund failed.", error: refundResult.data });
+    }
+
+    // deactive the plan
+
+    const deactivePlan = await deactivateSubscription(subscriptionId, accessToken);
+    if (!deactivePlan.success) {
+        console.error("Deactivate Subscription Error:", deactivePlan.data);
+        return res.status(400).json({ message: "Deactivate failed.", error: deactivePlan.data });
+    }
+    await connectDB();
+
+    const refundLog = {
+        refundId: refundResult.data.id,
+        userId: userId,
+    }
+    // Log the refund details
+    console.log("Refund successful:", refundResult.data);
+    const refund = await userRefundLogs.create(refundLog);
+    if (!refund) {
+        return res.status(500).json({ message: "Refund successful but failed to log refund details." });
+    }
+
+    return res.status(200).json({ message: "Refund successful.", refund: refundResult.data });
+}
+
+
+
 async function deactivateSubscription(subscriptionId: string, accessToken: string) {
     try {
         const response = await axios.post(
@@ -19,7 +58,7 @@ async function deactivateSubscription(subscriptionId: string, accessToken: strin
             {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "application/json",
+                    "Content-Type": "application/json",
                 },
             }
         );
@@ -154,42 +193,6 @@ async function refundSubscription(subscriptionId: string) {
     return { success: true, data: refundResult.data };
 }
 
-export async function paymentRefundRequest(req: Request, res: Response) {
-    const { subscriptionId, userId } = req.body;
-
-    if (!subscriptionId) {
-        return res.status(400).json({ message: "Subscription ID is required." });
-    }
-
-    console.log(`Received refund request for subscription ID: ${subscriptionId} and user ID: ${userId}`);
-    const refundResult = await refundSubscription(subscriptionId);
-    if (!refundResult.success) {
-        console.error("Refund Subscription Error:", refundResult.data);
-        return res.status(400).json({ message: "Refund failed.", error: refundResult.data });
-    }
-
-    // deactive the plan
-
-    const deactivePlan = await deactivateSubscription(subscriptionId, accessToken);
-    if (!deactivePlan.success) {
-        console.error("Deactivate Subscription Error:", deactivePlan.data);
-        return res.status(400).json({ message: "Deactivate failed.", error: deactivePlan.data });
-    }
-    await connectDB();
-
-    const refundLog = {
-        refundId: refundResult.data.id,
-        userId: userId,
-    }
-    // Log the refund details
-    console.log("Refund successful:", refundResult.data);
-    const refund = await userRefundLogs.create(refundLog);
-    if (!refund) {
-        return res.status(500).json({ message: "Refund successful but failed to log refund details." });
-    }
-
-    return res.status(200).json({ message: "Refund successful.", refund: refundResult.data });
-}
 
 
 

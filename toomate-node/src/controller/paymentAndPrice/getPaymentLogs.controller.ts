@@ -1,7 +1,6 @@
 import userPaymentLogs from "../../models/userPaymentLogs.model.js";
 import connectDB from "../../db/db.db.js";
 import { Request, Response } from "express";
-import axios from "axios";
 
 export async function getSubscriptionLogs(req: Request, res: Response) {
     await connectDB();
@@ -16,6 +15,7 @@ export async function getSubscriptionLogs(req: Request, res: Response) {
             return res.status(404).json({ message: "No payment logs found." });
         }
 
+        
         return res.status(200).json({ logs: paymentLogs });
     } catch (error: any) {
         return res.status(500).json({ message: error.message });

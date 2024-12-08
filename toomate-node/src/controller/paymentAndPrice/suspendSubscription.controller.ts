@@ -1,7 +1,7 @@
-import connectDB from '@/db/db.db';
-import { UserPayment } from '@/models/userPayment.model';
-import userPaymentLogs from '@/models/userPaymentLogs.model';
-import getPaypalAccessToken from '@/utils/paypalUtils';
+import connectDB from '../../db/db.db.js';
+import { UserPayment } from '../../models/userPayment.model.js';
+import userPaymentLogs from '../../models/userPaymentLogs.model.js';
+import getPaypalAccessToken from '../../utils/paypalUtils.js';
 import axios from 'axios';
 import { Request, Response } from 'express';
 

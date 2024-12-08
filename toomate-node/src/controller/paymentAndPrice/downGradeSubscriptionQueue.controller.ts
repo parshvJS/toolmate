@@ -1,4 +1,4 @@
-import connectDB from '@/db/db.db';
+import connectDB from '../../db/db.db.js';
 import { Request, Response } from 'express';
 export async function downGradeSubscriptionQueue(req: Request, res: Response) {
     await connectDB()

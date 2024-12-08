@@ -1,9 +1,9 @@
 import axios from 'axios';
 import connectDB from '../../db/db.db.js';
 import { Request, Response } from 'express';
-import getPaypalAccessToken from '@/utils/paypalUtils.js';
-import updateSubscriptionQueue from '@/models/updateSubscriptionQueue.model.js';
-import userPaymentLogs from '@/models/userPaymentLogs.model.js';
+import getPaypalAccessToken from '../../utils/paypalUtils.js';
+import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
+import userPaymentLogs from '../../models/userPaymentLogs.model.js';
 // user can suspend their subscription
 
 const accessToken = await getPaypalAccessToken();

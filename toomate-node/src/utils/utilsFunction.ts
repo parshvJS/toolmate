@@ -110,3 +110,17 @@ export  function parseJsonString(input:string) {
         return null;
     }
 }
+
+export function calculateProrationPrice(existingPrice: number, newPrice: number, daysRemaining: number, totalDays: number): number {
+    const dailyExistingPrice = existingPrice / totalDays;
+    const dailyNewPrice = newPrice / totalDays;
+    const prorationPrice = (dailyNewPrice - dailyExistingPrice) * Math.floor(daysRemaining);
+    return parseFloat(prorationPrice.toFixed(2));
+}
+
+export function getDays(prefix:string,duration:number){
+    if(prefix == "MONTH"){
+        return (duration * 30);
+    }
+    return (duration * 365);    
+}
