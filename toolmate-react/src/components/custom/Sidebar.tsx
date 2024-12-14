@@ -274,11 +274,10 @@ export default function ImprovedAnimatedSidebar({
                                                                     const isActive = sessionId === chat.sessionId;
 
                                                                     return <motion.div
+                                                                        key={chat.id}
                                                                         onClick={() => {
-
                                                                             handleChatClick(chat.sessionId, chat.id)
                                                                         }}
-                                                                        key={chat.chatName}
                                                                         initial={isInitialMount.current ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                                                                         animate={{ opacity: 1, x: 0 }}
                                                                         exit={{ opacity: 0, x: -20 }}
@@ -287,7 +286,7 @@ export default function ImprovedAnimatedSidebar({
                                                                             delay: chatIndex * 0.05,
                                                                             ease: [0.25, 0.1, 0.25, 1]
                                                                         }}
-                                                                        className={`${isActive && "bg-paleYellow"} font-normal flex justify-between  py-[7px] px-2 hover:bg-paleYellow transition-all cursor-pointer rounded-lg w-full group`}
+                                                                        className={`${isActive && "bg-paleYellow"} ff font-normal flex justify-between  py-[7px] px-2 hover:bg-paleYellow transition-all cursor-pointer rounded-lg w-full group`}
                                                                     >
                                                                         <p className={`overflow-hidden whitespace-nowrap text-ellipsis flex justify-between`} style={{ maxWidth: '100%' }}>
                                                                             {chat.chatName.length > 28 ? chat.chatName.replace(/"/g, '').slice(0, 28) + " ..." : chat.chatName.replace(/"/g, '')}
@@ -320,13 +319,6 @@ export default function ImprovedAnimatedSidebar({
                                                                                             <span className="font-semibold">Delete</span>
                                                                                         </div>
                                                                                     </DropdownMenuItem>
-                                                                                    {/* <DropdownMenuItem>
-                                                                <Button onClick={() => setDeleteDialog(true)} variant="ghost" className=" flex gap-4 items-center"
-                                                                >
-                                                                    <Trash width={17} height={17} />
-                                                                    <span>Delete</span>
-                                                                </Button>
-                                                            </DropdownMenuItem> */}
                                                                                 </DropdownMenuContent>
 
                                                                             </DropdownMenu>

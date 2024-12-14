@@ -20,7 +20,7 @@ let expirationSubscriber: Redis | null = null;
 async function startRedisConnection(): Promise<Redis> {
     try {
         console.log("REDIS_URL", process.env.REDIS_URL, "REDIS_PORT", process.env.REDIS_PORT, "REDIS_PASSWORD", process.env.REDIS_PASSWORD, "REDIS_USERNAME", process.env.REDIS_USERNAME);
-        
+
         const redis = new Redis({
             username: process.env.REDIS_USERNAME,
             host: process.env.REDIS_URL,

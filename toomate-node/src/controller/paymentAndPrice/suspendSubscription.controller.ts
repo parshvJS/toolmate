@@ -1,3 +1,4 @@
+import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
 import connectDB from '../../db/db.db.js';
 import { UserPayment } from '../../models/userPayment.model.js';
 import userPaymentLogs from '../../models/userPaymentLogs.model.js';
@@ -39,7 +40,7 @@ async function logSuspension(subscriptionId: string, status: string) {
     subscriptionId,
     isCouponApplied: subscriptionData.isCouponApplied,
     couponCode: subscriptionData.couponCode,
-    status,
+    status: `Subscription ${status}`,
     baseBillingPlanId: subscriptionData.baseBillingPlanId,
     planName: subscriptionData.planName,
   };
@@ -61,12 +62,22 @@ export async function suspendSubscription(req: Request, res: Response) {
     const paypalData = await suspendPaypalSubscription(subscriptionId, accessToken);
     const defaultAccess = [true, false, false];
     const paymentLog = await UserPayment.findOneAndUpdate({ userId }, {
-      planAccess: defaultAccess
+      planAccess: defaultAccess,
+      activePlan: "",
     }, { new: true });
+
+    const updateQueue = await updateSubscriptionQueue.findOneAndDelete({
+      subscriptionId,
+      userId
+    }, { new: true });
+
     if (!paymentLog) {
       return res.status(404).json({ message: "Subscription not found" });
     }
 
+    if (!updateQueue) {
+      return res.status(404).json({ message: "Subscription update failed" });
+    }
 
     await logSuspension(subscriptionId, paypalData.status);
 

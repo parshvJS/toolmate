@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 interface UserData {
     planAccess: [boolean, boolean, boolean];
     id: string;
+    activePlan: string;
     sideBarHisotry: iChatname[];
 }
 
@@ -45,7 +46,7 @@ const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
 function UserContextProvider({ children }: { children: ReactNode }) {
     const { userId } = useAuth();
     const queryClient = useQueryClient();
-    const {toast} = useToast()
+    const { toast } = useToast()
     const navigate = useNavigate()
     const { data: userData, isLoading, isError, isFetching } = useQuery<UserData, Error>({
         queryKey: ['user', userId],
@@ -132,7 +133,6 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("tempCache", JSON.stringify(tempCache));
         localStorage.setItem("mainCache", JSON.stringify(mainCache));
     }
-
     function retrieveCache() {
         const mainCache = JSON.parse(localStorage.getItem("mainCache") || "[]");
         console.log("mainCache", mainCache);

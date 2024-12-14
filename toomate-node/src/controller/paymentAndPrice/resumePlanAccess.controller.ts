@@ -53,7 +53,7 @@ export async function resumePlanAccess(req: Request, res: Response) {
       });
     }
 
-    // upate the access
+    // update the access
     const indexToUpdate = await getAccessDetails(newSubscriptionData.data.plan_id);
     const validIndex = [0, 1, 2];
     if (

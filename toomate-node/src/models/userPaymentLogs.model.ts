@@ -19,19 +19,19 @@ const userPaymentLogsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'couponCode',
         default: null,
-        set: (v:String) => v === "" ? null : v
+        set: (v: String) => v === "" ? null : v
     },
     baseBillingPlanId: {
         type: String,
-        default:null
+        default: null
     },
     planName: {
         type: String,
         required: true
     },
-    status:{
-        type:String,
-        default:""
+    status: {
+        type: String,
+        default: ""
     }
 }, { timestamps: true });
 

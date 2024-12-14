@@ -3,6 +3,8 @@ import connectDB from "../../db/db.db.js";
 import getPaypalAccessToken from "../../utils/paypalUtils.js";
 import axios from "axios";
 import { Request, Response } from "express";
+import User from "@/models/user.model.js";
+import { UserPayment } from "../../models/userPayment.model.js";
 
 // Constants
 const BASE_PAYPAL_URL = process.env.PAYPAL_API_BASE_URL;
@@ -38,9 +40,14 @@ export async function paymentRefundRequest(req: Request, res: Response) {
     }
     // Log the refund details
     console.log("Refund successful:", refundResult.data);
-    const refund = await userRefundLogs.create(refundLog);
-    if (!refund) {
-        return res.status(500).json({ message: "Refund successful but failed to log refund details." });
+    const [refund, user] = await Promise.all([
+        userRefundLogs.create(refundLog),
+        UserPayment.findOneAndUpdate({ userId: userId }, { activePlan: "" })
+    ]);
+
+    if (!refund || !user) {
+        console.error("Failed to log refund details or update user payment.");
+        return res.status(500).json({ message: "Refund successful but failed to log refund details or update user payment." });
     }
 
     return res.status(200).json({ message: "Refund successful.", refund: refundResult.data });

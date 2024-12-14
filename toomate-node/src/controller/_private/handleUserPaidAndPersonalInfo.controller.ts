@@ -74,16 +74,28 @@ export async function handleUserPaidAndPersonalInfo(
 		}
 
 		const currDate = getPaypalFormatDate();
+		console.log('currDate', currDate);
 		const queueData = await updateSubscriptionQueue.findOne({
 			userId: user._id,
 		});
-		if (queueData && queueData.updatePlanDate >= currDate) {
-			await performPauseSubscription(
-				queueData.type,
-				queueData.subscriptionId,
-				String(queueData.userId)
-			);
+
+		if (queueData) {
+			const updateDate = new Date(queueData.updatePlanDate);
+			const currDateFormatted = new Date(currDate);
+			console.log('updateDate', updateDate, "currDate", currDateFormatted, "condition", updateDate <= currDateFormatted);
+			if (updateDate <= currDateFormatted) {
+				console.log('inside if condition');
+				await performPauseSubscription(
+					queueData.type,
+					queueData.subscriptionId,
+					String(queueData.userId)
+				);
+			}
 		}
+
+
+
+		console.log('outside if condition');
 		// Retrieve payment info
 		const paidUser = await UserPayment.findOne({ userId: user._id });
 		if (!paidUser) {
@@ -101,6 +113,7 @@ export async function handleUserPaidAndPersonalInfo(
 				id: user._id,
 				clerkUserId: user.clerkUserId,
 				planAccess: paidUser.planAccess,
+				activePlan: paidUser.activePlan,
 			}),
 			60 * 60 * 24
 		);
@@ -111,6 +124,7 @@ export async function handleUserPaidAndPersonalInfo(
 				id: user._id,
 				clerkUserId: user.clerkUserId,
 				planAccess: paidUser.planAccess,
+				activePlan: paidUser.activePlan,
 			},
 		});
 	} catch (error: any) {
@@ -186,3 +200,5 @@ async function performPauseSubscription(
 			console.log('Invalid operation type');
 	}
 }
+
+

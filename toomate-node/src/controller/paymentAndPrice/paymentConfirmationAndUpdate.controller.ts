@@ -6,6 +6,7 @@ import PaymentSession from "../../models/paymentSession.model.js";
 import { UserPayment } from "../../models/userPayment.model.js";
 import getPaypalAccessToken from "../../utils/paypalUtils.js";
 import axios from "axios";
+import { deleteRedisData } from "../../services/redis.js";
 
 async function getSubscriptionStatus(subscriptionId: string) {
     try {
@@ -29,7 +30,7 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
 
     try {
         const { subscriptionId, planName, ba, userId } = req.body;
-
+        console.log("req.body", req.body);
         if (!subscriptionId || !userId) {
             return res.status(400).json({ message: "Subscription Id and User Id are required" });
         }
@@ -58,8 +59,7 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
             couponCode: paymentSession.couponCodeId ? String(paymentSession.couponCodeId) : "",
             baseBillingPlanId: paymentSession.baseBillingPlanId || "",
             planName,
-            status: paymentStatus,
-
+            status: `Subscription ${paymentStatus}`,
         };
         console.log("newLogData", newLogData);
 
@@ -70,7 +70,7 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
 
         const planAccessToBeGranted = paymentSession.planAcccesToBeGranted;
         let userPaymentAccess = await UserPayment.findOne({ userId });
-
+        console.log("userPaymentAccess", userPaymentAccess);
         if (!userPaymentAccess) {
             const planAccess = [false, false, false];
             if (planAccessToBeGranted >= 0 && planAccessToBeGranted < planAccess.length) {
@@ -95,7 +95,9 @@ export async function paymentConfirmationAndUpdate(req: Request, res: Response) 
                 return res.status(500).json({ message: "Internal Server Error" });
             }
         }
+        console.log("userPaymentAccess", userPaymentAccess);
 
+        await deleteRedisData(`USER-PAYMENT-${user.clerkUserId}`);
         return res.status(200).json({ message: "Payment Confirmed" });
     } catch (error: any) {
         console.error(error.message);

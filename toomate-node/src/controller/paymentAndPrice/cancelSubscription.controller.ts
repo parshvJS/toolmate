@@ -1,3 +1,4 @@
+import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
 import connectDB from '../../db/db.db.js';
 import { UserPayment } from '../../models/userPayment.model.js';
 import userPaymentLogs from '../../models/userPaymentLogs.model.js';
@@ -101,6 +102,15 @@ export async function cancelSubscription(req: Request, res: Response) {
 		const changeAccess = await changeThePlatformAccess(userId);
 		if (!changeAccess.success) {
 			return res.status(400).json({ message: changeAccess.message });
+		}
+
+
+		const queueLog = await updateSubscriptionQueue.findOneAndDelete({
+			subscriptionId,
+			userId,
+		});
+		if (!queueLog) {
+			return res.status(404).json({ message: 'Subscription update failed' });
 		}
 		const updateLog = await logCancellation(
 			subscriptionId,

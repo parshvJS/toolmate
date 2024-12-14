@@ -10,7 +10,7 @@ const UserPaymentSchema = new Schema({
   },
   // store paypal subscriptionId
   activePlan:{
-    type: String,
+    type: String || null,
     default:''
   },
   planAccess: {

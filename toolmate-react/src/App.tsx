@@ -59,12 +59,12 @@ function App() {
           <Route path="/my-community" element={<MyCommunity />} />
           <Route path="/createCommunity" element={<CommunityCreationForm />} />
           <Route path="/my-inventory" element={<MyInventory />} />
-        <Route path="/manage-subscription" element={<ManageSub/>}/>
           {/* Wrap the routes that need the SocketProvider */}
           <Route element={<SocketLayout />}>
             <Route path="/matey/:sessionId" element={<ChatPage />} />
             <Route path="/c" element={<ChatPageNew />} />
           </Route>
+        <Route path="/manage-subscription" element={<ManageSub/>}/>
         </Route>
       </Routes>
 
