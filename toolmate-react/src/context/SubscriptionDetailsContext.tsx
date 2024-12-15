@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import axios from 'axios';
 
 interface SubscriptionContextType {
@@ -27,8 +27,10 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [paymentLogs, setPaymentLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isInfoPanalOpen, setIsInfoPanalOpen] = useState(false);
-  const []
+
+
+
+
   const fetchSubscriptionDetails = async (subscriptionId: string) => {
     setIsLoading(true);
     setError(null);
@@ -88,7 +90,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         isLoading,
         error,
         fetchSubscriptionDetails,
-        fetchPaymentLogs
+        fetchPaymentLogs,
       }}
     >
       {children}

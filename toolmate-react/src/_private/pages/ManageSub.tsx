@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import Logo from "@/components/custom/Logo";
-import { CreditCard, BadgeCheck, DollarSign, RefreshCw, ChevronDown, ChevronRight, Logs, LoaderCircle } from "lucide-react";
+import { CreditCard, BadgeCheck, DollarSign, RefreshCw, ChevronDown, ChevronRight, Logs, LoaderCircle, TriangleAlert, ArrowDownToLine, Ban, FolderKanban } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,23 +10,39 @@ import MateyExpression from "@/components/custom/MateyExpression";
 import { useAuth } from "@clerk/clerk-react";
 import { useSubscription } from "@/context/SubscriptionDetailsContext";
 import { UserContext } from "@/context/userContext";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function ManageSub() {
     const [activeTab, setActiveTab] = useState("details");
     const { userData } = useContext(UserContext);
+    
     const {
         subscriptionData,
         paymentLogs,
         isLoading,
         error,
         fetchSubscriptionDetails,
-        fetchPaymentLogs
+        fetchPaymentLogs,
     } = useSubscription();
 
+    const [isInfoPanalOpen, setIsInfoPanalOpen] = useState(false);
+    const [panalFlag, setPanalFlag] = useState<"suspend" | "cancel" | "downgrade">("suspend");
+
+    // pause subscription request
     const tabs = [
         { id: "details", label: "Plan Information", icon: CreditCard },
-        { id: "logs", label: "Activity", icon: Logs },
         { id: "curr", label: "Subscription Management", icon: BadgeCheck },
+        { id: "logs", label: "Activity", icon: Logs },
         { id: "refund", label: "Refund Management", icon: RefreshCw },
     ];
 
@@ -34,9 +50,28 @@ export default function ManageSub() {
         if (userData && userData.id && userData.activePlan) {
             fetchSubscriptionDetails(userData.activePlan as string);
             fetchPaymentLogs(userData.id);
+
         }
     }, [userData]);
-
+    // side effect : when payment log is updated
+    React.useEffect(() => {
+        console.log(paymentLogs, "paymentLogs");
+        const lastLog = paymentLogs[0];
+        // intitalize the values of panel 
+        console.log(lastLog, "lastLog");
+        if (paymentLogs.length > 0) {
+            if (lastLog.status === "suspend request saved to the queue") {
+                setIsInfoPanalOpen(true);
+                setPanalFlag("suspend");
+            } else if (lastLog.status === "cancel request saved to the queue") {
+                setIsInfoPanalOpen(true);
+                setPanalFlag("cancel");
+            } else {
+                setIsInfoPanalOpen(true);
+                setPanalFlag("downgrade");
+            }
+        }
+    }, [paymentLogs]);
     function InfoItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
         return (
             <div className="flex items-center space-x-3 text-left">
@@ -56,7 +91,132 @@ export default function ManageSub() {
 
         return (
             <div className="flex flex-col items-center justify-center p-4 sm:p-6">
+                {
+
+                    isInfoPanalOpen && (
+                        <Card className={`w-full p-4 m-4 ${panalFlag === "suspend" ? "bg-lighterYellow border-yellow" : panalFlag === "cancel" ? "bg-red-50 border-red-500" : "bg-blue-50 border-blue-500"} border-2`}>
+                            {
+                                panalFlag === "suspend" && (
+                                    <div className="">
+                                        <div className="flex gap-4 items-center">
+                                            <TriangleAlert width={30} height={30} />
+                                            <div className="flex flex-col justify-start items-start">
+                                                <p className="font-semibold text-lg">Suspend Requested</p>
+                                                <p>Your Suspent request will take effect at the end of this billing cycle</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger className="flex flex-col justify-start px-4 py-1 my-4 border-2 border-yellow rounded-md font-semibold bg-softYellow hover:bg-lightYellow">How It Works ?</AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>How Suspention Of subscription works!</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            <ul className="list-disc pl-5 space-y-2">
+                                                                <li>No refund will be initiated as you have already been charged for the service.</li>
+                                                                <li>You can continue using the service until the next billing cycle.</li>
+                                                                <li>You will not be charged for next billing cycle</li>
+                                                                <li>The suspension will take effect at the start of the next billing cycle, not immediately.</li>
+                                                                <li>You can resume the subscription at any time after the suspension date.</li>
+                                                            </ul>
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel className="font-semibold  bg-softYellow hover:bg-paleYellow">Got It</AlertDialogCancel>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+
+                                            <div className="border-yellow border-2 rounded-md bg-mangoYellow hover:bg-softYellow cursor-pointer px-4 py-1 my-4">
+                                                Manage Subscription
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            }
+                            {
+                                panalFlag === "cancel" && (
+                                    <div>
+                                        <div>
+                                            <div className="flex gap-2 items-center">
+                                                <Ban className="text-red-500" />
+                                                <div className="flex flex-col items-start justify-start">
+                                                    <p className="font-semibold text-lg">Cancellation Requested</p>
+                                                    <p>Your Suspent request will take effect at the end of this billing cycle</p>
+                                                </div>
+                                            </div>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger className="flex flex-col justify-start px-4 py-1 my-4 border-2 border-red-500 rounded-md font-semibold bg-red-50 hover:bg-red-100">
+                                                    How Cancellation Works?
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Subscription Cancellation Policy</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            <ul className="list-disc pl-5 space-y-2">
+                                                                <li>Your cancellation will take effect at the end of the current billing cycle.</li>
+                                                                <li>You will retain access to premium features until the subscription period ends.</li>
+                                                                <li>No prorated refunds will be provided for the remaining portion of the billing cycle.</li>
+                                                                <li>You can cancel via your account dashboard or by emailing support.</li>
+                                                                <li>Full refunds are available only within 7 days of initial purchase if no premium features were used.</li>
+                                                            </ul>
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel className="font-semibold bg-red-50 hover:bg-red-100">
+                                                            Got It
+                                                        </AlertDialogCancel>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </div>
+                                )
+                            }
+                            {
+                                panalFlag === "downgrade" && (
+                                    <div>
+                                        <div>
+                                            <div className="flex gap-2 items-center">
+                                                <ArrowDownToLine className="text-blue-500" />
+                                                <p className="font-semibold text-lg">Downgrade Requested</p>
+                                            </div>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger className="flex flex-col justify-start px-4 py-1 my-4 border-2 border-blue-500 rounded-md font-semibold bg-blue-50 hover:bg-blue-100">
+                                                    How Downgrade Works?
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Subscription Downgrade Policy</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            <ul className="list-disc pl-5 space-y-2">
+                                                                <li>Downgrade will take effect at the end of your current billing cycle.</li>
+                                                                <li>No refunds or credits will be issued for the remaining period of the higher-tier plan.</li>
+                                                                <li>You can continue using current plan features until the next billing cycle.</li>
+                                                                <li>Your new plan will be active from the start of the next billing cycle.</li>
+                                                                <li>All existing data and settings will be preserved during the downgrade process.</li>
+                                                            </ul>
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel className="font-semibold bg-blue-50 hover:bg-blue-100">
+                                                            Got It
+                                                        </AlertDialogCancel>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </div>
+                                )
+                            }
+                        </Card>
+
+                    )
+                }
+
+
                 <Card className="w-full bg-white shadow-lg">
+
                     <CardContent className="p-4 sm:p-6 space-y-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                             <Badge variant="outline" className="text-slate-500 border-yellow border-2">
@@ -210,7 +370,93 @@ export default function ManageSub() {
     }
 
     function SubscriptionDetails() {
-        return <div>Subscription Details</div>;
+        return <div>
+            <div className="flex md:flex-row flex-col gap-4 w-full ">
+                <Card className={`w-full rounded-2xl md:h-72 h-48 bg-white ${userData?.planAccess[1] ? "shadow-yellow border-2 shadow-lg border-goldenYellow" : "shadow-lg"} mt-4`}>
+                    <CardContent className="p-4 sm:p-6 space-y-3">
+                        <div>
+                            <img src="/assets/icons/gear.svg" className="w-10 h-10" />
+                        </div>
+                        <div className="  flex justify-start items-center gap-2">
+                            <p className="text-yellow font-bold text-2xl">Toolmate Essential</p>
+                            {
+                                userData?.planAccess[1] && (
+                                    <Badge variant="outline" className="px-4 py-1 border-yellow border-2 rounded-md bg-lightYellow text-black">
+                                        currently Active
+                                    </Badge>
+                                )
+                            }
+                        </div>
+
+                    </CardContent>
+                </Card>
+                <Card className={`w-full rounded-2xl md:h-72 h-48 bg-white ${userData?.planAccess[2] ? "shadow-yellow border-2 shadow-lg border-goldenYellow" : "shadow-lg "}  mt-4`}>
+                    <CardContent className="p-4 sm:p-6 space-y-3">
+                        <div>
+                            <img src="/assets/icons/toolbox.svg" className="w-10 h-10" />
+                        </div>
+                        <div className="  flex justify-start items-center gap-2">
+                            <p className="text-yellow font-bold text-2xl">Toolmate Pro</p>
+                            {
+                                userData?.planAccess[2] && (
+                                    <Badge variant="outline" className="px-4 py-1 border-yellow border-2 rounded-md bg-lightYellow text-black">
+                                        currently Active
+                                    </Badge>
+                                )
+                            }
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="my-6 bg-slate-100 p-4 rounded-lg">
+                <div className="flex gap-2 items-center text-lg font-semibold">
+                    <FolderKanban />
+                    <p>Manage Subscription</p>
+                </div>
+                <div className="grid md:grid-cols-3 grid-cols-1 gap-4 mt-4">
+                    <div className="bg-slate-200 p-4 rounded-md">
+                        <div className="flex gap-2 items-start ">
+                            <Ban width={35} height={35} />
+                            <div className="flex flex-col items-start justify-start">
+                                <p className="font-semibold ">Suspend Subscription</p>
+                                <p className="text-slate-600 text-left">Temporarily Stop/Suspend The Subscription And Resume Later </p>
+                            </div>
+
+                        </div>
+                        <div >
+                            <AlertDialog
+                                
+                            >
+                                <AlertDialogTrigger className="hover:bg-red-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-red-300 text-red-500">Suspend Subscription</AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>How suspending the subscription works</AlertDialogTitle>
+                                        <AlertDialogDescription>
+
+                                            <ul>
+                                                <li>No refund will be initiated as you have already been charged for the service.</li>
+                                                <li>You can continue using the service until the next billing cycle.</li>
+                                                <li>You will not be charged for next billing cycle</li>
+                                                <li>The suspension will take effect at the start of the next billing cycle, not immediately.</li>
+                                                <li>You can resume the subscription at any time after the suspension date.</li>
+                                            </ul>
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction className="bg-red-400 hover:bg-red-600">Confirm Suspend</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>;
     }
 
     function RefundLogs() {
@@ -241,7 +487,7 @@ export default function ManageSub() {
                 </div>
             </div>
             <div className="p-5 flex gap-2">
-                <div className="flex gap-10 w-full h-full ">
+                <div className="md:flex block md:gap-10 gap-4 w-full h-full ">
                     <div className="md:flex hidden w-fit gap-2 mt-8 flex-col h-fit transition-all">
                         {tabs.map(tab => (
                             <div
