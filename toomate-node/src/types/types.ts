@@ -137,3 +137,21 @@ export interface BillingPlanResponse {
 }
 
 export type AccessToken = string;
+
+export interface PaymentPlanData {
+    essentialProductId: string[];
+    proProductId: string[];
+  }
+  
+  export interface SubscriptionResponse {
+    success: boolean;
+    isSubscribed: boolean;
+    message: string;
+    subscriptionId?: string;
+    data?: any;
+  }
+  
+  export interface PlanResponse {
+    success: boolean;
+    data: any | null;
+  }

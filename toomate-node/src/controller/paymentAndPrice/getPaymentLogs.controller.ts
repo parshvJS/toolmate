@@ -10,7 +10,7 @@ export async function getSubscriptionLogs(req: Request, res: Response) {
             return res.status(400).json({ message: "User ID is required." });
         }
 
-        const paymentLogs = await userPaymentLogs.find({ userId }).sort({ createdAt: -1 }).select("-__v -userId -updatedAt");
+        const paymentLogs = await userPaymentLogs.find({ userId }).sort({ createdAt: -1 }).select("-__v -updatedAt");
         if (paymentLogs.length === 0) {
             return res.status(404).json({ message: "No payment logs found." });
         }

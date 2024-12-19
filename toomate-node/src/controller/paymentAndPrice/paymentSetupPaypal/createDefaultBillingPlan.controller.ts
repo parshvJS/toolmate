@@ -199,7 +199,7 @@ async function createBillingPlans(plans: {
                     },
                     tenure_type: "REGULAR",
                     sequence: 1,
-                    total_cycles: plan.intervalCount,
+                    total_cycles: 0,
                     pricing_scheme: {
                         fixed_price: {
                             value: plan.price.toFixed(2),

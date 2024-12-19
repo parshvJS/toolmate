@@ -24,12 +24,13 @@ async function getSubscriptionDetails(subscriptionId: string) {
 	} catch (error: any) {
 		return {
 			success: false,
-			data: `Error fetching subscription details: ${ error.message}`,
+			data: `Error fetching subscription details: ${error.message}`,
 		};
 	}
 }
 
 export async function requestSubscriptionPause(req: Request, res: Response) {
+	await connectDB();
 	try {
 		const {
 			subscriptionId,
@@ -47,6 +48,20 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 			});
 		}
 
+
+		// check for existing request
+		const existingRequest = await updateSubscriptionQueue.findOne({
+			subscriptionId,
+			userId,
+		});
+		if (existingRequest) {
+			return res.status(400).json({
+				success: false,
+				status: 400,
+				message: 'Request already exists for this subscription',
+			});
+		}
+
 		if (
 			message !== 'downgrade' &&
 			message !== 'suspend' &&
@@ -59,7 +74,7 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 					'Invalid message type. Please provide downgrade, suspend, or cancel',
 			});
 		}
-		const validDownDate = [1, 6, 12];
+		const validDownDate = [0, 1];
 		if (
 			isDownGradeRequest &&
 			!downGradeDuration &&
@@ -149,7 +164,7 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 			success: true,
 			status: 200,
 			message:
-				'Request to suspend subscription has been saved to the queue',
+				`Request to ${message} subscription has been saved to the queue`,
 		});
 	} catch (error: any) {
 		console.error('Error processing subscription pause request:', error);

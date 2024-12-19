@@ -34,7 +34,6 @@ export default function Dashboard() {
         const lastTooltipDate = localStorage.getItem("lastTooltipDate");
         const currentDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
-        console.log(new Date(lastTooltipDate).toDateString() === new Date(currentDate).toDateString())
         // Check if the stored date exists and if it matches today’s date
         if (lastTooltipDate && new Date(lastTooltipDate).toDateString() === new Date(currentDate).toDateString()) {
             console.log("hit getting tooltip")

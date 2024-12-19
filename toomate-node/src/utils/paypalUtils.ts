@@ -11,6 +11,7 @@ const REFRESH_THRESHOLD_IN_SECONDS = 7 * 60 * 60; // 7 hours (25,200 seconds)
 // Function to fetch a new access token (dummy example; replace with actual implementation)
 async function fetchNewAccessToken() {
     // Example implementation to get a new access token
+    console.log(process.env.PAYPAL_API_BASE_URL,"process.env.PAYPAL_API_BASE_URL",process.env.PAYPAL_CLIENT_ID,"process.env.PAYPAL_CLIENT_ID",process.env.PAYPAL_CLIENT_SECRET,"process.env.PAYPAL_CLIENT_SECRET");
     const response = await axios.post(
         `${process.env.PAYPAL_API_BASE_URL}/v1/oauth2/token`, // Replace with your live/production API URL for PayPal
         'grant_type=client_credentials', // Data for the POST request
@@ -22,14 +23,15 @@ async function fetchNewAccessToken() {
             username: process.env.PAYPAL_CLIENT_ID!, // Your PayPal client ID from environment variables
             password: process.env.PAYPAL_CLIENT_SECRET!, // Your PayPal client secret from environment variables
           },
-        }
+        },
       );
+      console.log('Access token response:', response.data);
     return {
         token: response.data.access_token,
         expires_in: response.data.expires_in,
     };
 }
-
+    
 // Function to get a fresh or valid access token
 export default async function getPaypalAccessToken() {
     const currTimeInSec = Math.floor(Date.now() / 1000); // Current time in seconds

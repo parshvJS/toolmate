@@ -23,10 +23,10 @@ const updateSubscriptionQueueSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    downgradedPlanDuration: {
+    downgradePlanIndex: {
         type: Number,
-        default: 1
-    }
+        default: 0
+    }   
 }, { timestamps: true });
 
 const updateSubscriptionQueue = mongoose.model('updateSubscriptionQueue', updateSubscriptionQueueSchema);
