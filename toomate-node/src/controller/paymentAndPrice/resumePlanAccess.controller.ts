@@ -5,6 +5,8 @@ import axios from 'axios';
 import { Request, Response } from 'express';
 import User from '../../models/user.model.js';
 import { UserPayment } from '../../models/userPayment.model.js';
+import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
+import userPaymentLogs from '../../models/userPaymentLogs.model.js';
 
 // this function is used to resume the plan access
 // it will update the plan access and active plan in the user payment model
@@ -53,14 +55,35 @@ export async function resumePlanAccess(req: Request, res: Response) {
       });
     }
 
-    // update the access
-    const indexToUpdate = await getAccessDetails(newSubscriptionData.data.plan_id);
-    const validIndex = [0, 1, 2];
-    if (
-      !indexToUpdate.success ||
-      indexToUpdate.index === undefined ||
-      !validIndex.includes(indexToUpdate.index)
-    ) {
+    // create new update subscription queue item
+
+    const userLog = await userPaymentLogs.findOne({
+      userId,
+      subscriptionId,
+      status: {
+        $in: ["subscription ACTIVE", "ACTIVE"]
+      },
+    });
+
+    if (!userLog) {
+      return res.status(404).json({
+        message: 'Subscription log not found',
+        success: false,
+        status: 404,
+      });
+    }
+
+    let subIdToCheck = ""
+    if (userLog.isCouponApplied || userLog.baseBillingPlanId) {
+      subIdToCheck = userLog.baseBillingPlanId;
+    }
+    else {
+      subIdToCheck = subscriptionId;
+    }
+
+    // get the plan access details
+    const subDetails = await getSubscriptionData(subIdToCheck);
+    if (!subDetails.success) {
       return res.status(500).json({
         message: 'Error fetching subscription details',
         success: false,
@@ -68,28 +91,58 @@ export async function resumePlanAccess(req: Request, res: Response) {
       });
     }
 
-    // update the plan access and active plan
-    const newPlan = [false, false, false];
-    newPlan[indexToUpdate.index] = true;
-    const userPayment = await UserPayment.findOneAndUpdate(
-      { userId: userId },
-      {
-        $set: {
-          planAccess: newPlan,
-          activePlan: subscriptionId,
-        },
-      },
-      { new: true },
-    );
-
-    if (!userPayment) {
-      return res.status(404).json({ message: 'No payment logs found.' });
+    const planId = subDetails.data.plan_id;
+    const accessDetails = await getAccessDetails(planId);
+    if (!accessDetails.success) {
+      return res.status(400).json({
+        message: 'Invalid Plan ID',
+        success: false,
+        status: 400,
+      });
     }
+
+    const platformAccess = accessDetails.platformAccess;
+
+    const newQueue = {
+      userId,
+      subscriptionId,
+      type: 'resume',
+      updatePlanAccessTo: platformAccess,
+      updatePlanDate: subDetails.data.billing_info.next_billing_time,
+    }
+
+    const newItem = await updateSubscriptionQueue.create(newQueue);
+    if (!newItem) {
+      return res.status(500).json({
+        message: 'Internal Server Error',
+        success: false,
+        status: 500,
+      });
+    }
+
+    const newLog = {
+      userId,
+      subscriptionId,
+      status: `Platform Access Changed to ${platformAccess === 1 ? 'Essential' : 'Standard'} Plan. Subscription RESUME`,
+      baseBillingPlanId: userLog.baseBillingPlanId,
+      planName: userLog.planName,
+      isCouponApplied: userLog.isCouponApplied,
+      couponCode: userLog.couponCode,
+    }
+
+    const log = await userPaymentLogs.create(newLog);
+    if (!log) {
+      return res.status(500).json({
+        message: 'Internal Server Error. Failed to create log',
+        success: false,
+        status: 500,
+      });
+    }
+
     return res.status(200).json({
       message: 'Subscription plan updated successfully',
       success: true,
       status: 200,
-      data: userPayment,
     });
   } catch (error) {
     console.error(error);
@@ -129,12 +182,14 @@ async function getAccessDetails(planId: string) {
     return {
       success: true,
       index: essentialPlan.indexOf(planId),
+      platformAccess: 1,
     };
   }
   if (isStandard) {
     return {
       success: true,
       index: standardPlan.indexOf(planId),
+      platformAccess: 2,
     };
   }
   return {

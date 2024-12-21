@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import Logo from "@/components/custom/Logo";
-import { CreditCard, BadgeCheck, DollarSign, RefreshCw, ChevronDown, ChevronRight, Logs, LoaderCircle, TriangleAlert, ArrowDownToLine, Ban, FolderKanban, TicketSlash, Hand, OctagonX } from "lucide-react";
+import { CreditCard, BadgeCheck, DollarSign, RefreshCw, ChevronDown, ChevronRight, Logs, LoaderCircle, TriangleAlert, ArrowDownToLine, Ban, FolderKanban, TicketSlash, Hand, OctagonX, Diamond, Info } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,23 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+
 import { Link } from "react-router-dom";
 
 export default function ManageSub() {
@@ -39,8 +56,13 @@ export default function ManageSub() {
         isSuspendRequested,
         isCancelRequested,
         isProPlanSubscribed,
-        isSuspended
+        isSuspended,
+        isCancelSuspendLoading,
+        isCancelCancelLoading,
+        isCancelDowngradeLoading,
+        handleRemovePauseSubscription,
     } = useSubscription();
+    console.log(subscriptionData, "herereererererere")
 
     const [isInfoPanalOpen, setIsInfoPanalOpen] = useState(false);
     const [panalFlag, setPanalFlag] = useState<"suspend" | "cancel" | "downgrade">("suspend");
@@ -52,7 +74,7 @@ export default function ManageSub() {
     const [isCancelSuspendOpen, setIsCancelSuspendOpen] = useState(false); // cancel suspend request
     const [isCancelDowngradeOpen, setIsCancelDowngradeOpen] = useState(false); // cancel downgrade request
     const [isCancelCancelOpen, setIsCancelCancelOpen] = useState(false); // cancel cancel request
-
+    const [isSuspendLoading, setIsSuspendLoading] = useState(false);
     // pause subscription request
     const tabs = [
         { id: "details", label: "Plan Information", icon: CreditCard },
@@ -158,7 +180,7 @@ export default function ManageSub() {
                                                 <Ban className="text-red-500" />
                                                 <div className="flex flex-col items-start justify-start">
                                                     <p className="font-semibold text-lg">Cancellation Requested</p>
-                                                    <p>Your Suspent request will take effect at the end of this billing cycle</p>
+                                                    <p>Your Cancellation request will take effect at the end of this billing cycle</p>
                                                 </div>
                                             </div>
                                             <AlertDialog>
@@ -269,6 +291,26 @@ export default function ManageSub() {
                                 label="Last Paid On"
                                 value={new Date(subscriptionData.lastPaidOn).toLocaleString()}
                             />
+                            <div className="w-fit h-full flex gap-2">
+                                <InfoItem
+                                    icon={<Diamond className="w-5 h-5" />}
+                                    label="Plan Status"
+                                    value={subscriptionData.planStatus}
+                                />
+                                <div>
+                                    <TooltipProvider>
+                                        <Tooltip delayDuration={0}>
+                                            <TooltipTrigger>
+                                                <Info width={15} height={15} />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-softYellow font-semibold text-black">
+                                                <p className="max-w-2xl">If you have requested a subscription change (suspend, cancel, or downgrade), the status will update immediately, but the changes will take effect at the end of the current billing cycle.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -419,7 +461,6 @@ export default function ManageSub() {
                             }}
                             open={(isCancelRequested || isSuspendRequested) ? isDowngradeOpen : undefined}>
                             <AlertDialogTrigger>
-
                                 <div className="font-semibold bg-slate-200 rounded-md shadow-md py-2 hover:bg-slate-300">
                                     Down Grade
                                 </div>
@@ -489,18 +530,28 @@ export default function ManageSub() {
                             </div>
                         </div>
                         <div>
-                            {/* suspend */}
                             <AlertDialog
                                 onOpenChange={(isOpen) => {
-                                    if (isSuspendRequested || isRequestSubscriptionPauseLoading) {
+                                    if (isSuspendRequested || isRequestSubscriptionPauseLoading || isCancelRequested) {
                                         return;
                                     }
                                     setIsSuspendOpen(isOpen);
                                 }}
-                                open={isSuspendRequested ? isSuspendOpen : undefined}>
-                                <AlertDialogTrigger className={`hover:bg-red-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-red-300 text-red-500 ${isSuspendRequested ? "bg-red-300 cursor-default" : ""}`}>
+                                open={!isSuspendRequested || !isCancelRequested ? isSuspendOpen : undefined}>
+                                <AlertDialogTrigger className={`hover:bg-red-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-red-300 text-red-500 ${isSuspendRequested || isCancelRequested ? "bg-red-300 cursor-default" : ""}`}>
                                     {
-                                        isSuspendRequested ? <div >Suspend Already Requested</div> : <div>Suspend Subscription</div>
+                                        isSuspendRequested && !isRequestSubscriptionPauseLoading && !isSuspendLoading ? <div >Suspend Already Requested</div> : <div>{
+                                            isCancelRequested ? "Suspend not allowed: Active plan will be cancelled first." : "suspend your subscription"
+                                        }</div>
+                                    }
+
+                                    {
+                                        isRequestSubscriptionPauseLoading && isSuspendLoading && (
+                                            <div className=" w-full h-fit flex gap-2 items-center justify-center">
+                                                <LoaderCircle className="animate-spin" />
+                                                <p>Loading....</p>
+                                            </div>
+                                        )
                                     }
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -520,16 +571,13 @@ export default function ManageSub() {
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction
                                             onClick={async () => {
+                                                setIsSuspendLoading(true)
                                                 await requestSubscriptionPause(false, "suspend", 0)
                                                 setIsSuspendOpen(false)
+                                                setIsSuspendLoading(false)
                                             }}
                                             className="bg-red-400 hover:bg-red-600">
-                                            {
-                                                isRequestSubscriptionPauseLoading ?
-                                                    <div className="animate-spin">
-                                                        <LoaderCircle />
-                                                    </div> : "Confirm Suspend"
-                                            }
+                                            Confirm Suspend
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -551,22 +599,32 @@ export default function ManageSub() {
                             {/* cancel */}
                             <AlertDialog
                                 onOpenChange={(isOpen) => {
-                                    if (isCancelRequested || isRequestSubscriptionPauseLoading) {
+                                    if (isCancelRequested || isRequestSubscriptionPauseLoading || isSuspendRequested) {
                                         return;
                                     }
                                     setIsCancelOpen(isOpen);
                                 }}
-                                open={isCancelRequested ? isCancelOpen : undefined}
+                                open={!isCancelRequested || !isSuspendRequested ? isCancelOpen : undefined}
                             >
                                 <AlertDialogTrigger className={`hover:bg-red-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-red-300 text-red-500 ${isCancelRequested || isSuspendRequested ? "bg-red-300 cursor-default" : ""}`}>
-                                    <div className="text-left">
-                                        {isSuspendRequested ? (
+                                    <div className="text-center">
+                                        {isSuspendRequested && !isRequestSubscriptionPauseLoading ? (
                                             <div>Cancellation not allowed: Active plan will be suspended first.</div>
                                         ) : isCancelRequested ? (
                                             <div>Cancellation is already in progress.</div>
                                         ) : (
-                                            <div>Click here to cancel your subscription.</div>
+                                            <div> cancel your subscription.</div>
                                         )}
+
+                                        {
+                                            (isRequestSubscriptionPauseLoading && !isSuspendLoading) && (
+                                                <div className=" w-full h-fit flex gap-2 items-center justify-center">
+                                                    <LoaderCircle className="animate-spin" />
+                                                    <p>Loading....</p>
+                                                </div>
+                                            )
+                                        }
+
                                     </div>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -587,12 +645,7 @@ export default function ManageSub() {
                                         <AlertDialogAction
                                             onClick={() => requestSubscriptionPause(false, "cancel", 0)}
                                             className="bg-red-400 hover:bg-red-600">
-                                            {
-                                                isRequestSubscriptionPauseLoading ?
-                                                    <div className="animate-spin">
-                                                        <LoaderCircle />
-                                                    </div> : "Confirm Cancel"
-                                            }
+                                            Confirm Cancel
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -661,7 +714,14 @@ export default function ManageSub() {
                                     }}
                                     open={isSuspendRequested ? isCancelSuspendOpen : undefined}
                                 >
-                                    <AlertDialogTrigger className="hover:bg-purple-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-purple-300 text-purple-500">Cancel Suspend Request</AlertDialogTrigger>
+                                    <AlertDialogTrigger className="hover:bg-purple-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-purple-300 text-purple-500">
+                                        {isCancelSuspendLoading ?
+                                            <div className="flex gap-2 items-center justify-center">
+                                                <LoaderCircle className="animate-spin" />
+                                                <p>Loading....</p>
+                                            </div>
+                                            : "Cancel Suspend Request"}
+                                    </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>How resuming the subscription works</AlertDialogTitle>
@@ -675,7 +735,13 @@ export default function ManageSub() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction className="bg-purple-400 hover:bg-purple-600">Confirm To Cancel Subscription Suspend Request</AlertDialogAction>                                        </AlertDialogFooter>
+                                            <AlertDialogAction
+                                                onClick={async () => {
+                                                    setIsCancelSuspendOpen(false)
+                                                    await handleRemovePauseSubscription("suspend")
+                                                }}
+                                                className="bg-purple-400 hover:bg-purple-600">Confirm To Cancel Subscription Suspend Request</AlertDialogAction>
+                                        </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </div>
@@ -701,7 +767,14 @@ export default function ManageSub() {
                                     }}
                                     open={isCancelRequested ? isCancelCancelOpen : undefined}
                                 >
-                                    <AlertDialogTrigger className="hover:bg-purple-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-purple-300 text-purple-500">Cancel Cancel Request</AlertDialogTrigger>
+                                    <AlertDialogTrigger className="hover:bg-purple-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-purple-300 text-purple-500">
+                                        {isCancelCancelLoading ?
+                                            <div className="flex gap-2 items-center justify-center">
+                                                <LoaderCircle className="animate-spin" />
+                                                <p>Loading....</p>
+                                            </div>
+                                            : "Cancel Cancel Request"}
+                                    </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>How resuming the subscription works</AlertDialogTitle>
@@ -715,7 +788,12 @@ export default function ManageSub() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction className="bg-purple-400 hover:bg-purple-600">Confirm To Cancel Subscription Cancel Request</AlertDialogAction>
+                                            <AlertDialogAction
+                                                onClick={async () => {
+                                                    setIsCancelCancelOpen(false)
+                                                    await handleRemovePauseSubscription("cancel")
+                                                }}
+                                                className="bg-purple-400 hover:bg-purple-600">Confirm To Cancel Subscription Cancel Request</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>

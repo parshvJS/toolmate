@@ -20,15 +20,15 @@ import { editToUserToolInventory } from '../../controller/_private/editToUserToo
 import { getCurrPrice } from '../../controller/paymentAndPrice/getCurrPrice.controller.js';
 import { couponCodeValidator } from '../../controller/paymentAndPrice/couponCodeValidator.controller.js';
 import { paymentConfirmationAndUpdate } from '../../controller/paymentAndPrice/paymentConfirmationAndUpdate.controller.js';
-import { paymentRefundRequest } from '../../controller/paymentAndPrice/paymentRefund.controller.js';
+import { paymentRefundRequest } from '../../controller/paymentAndPrice/refund/paymentRefund.controller.js';
 import { getSubscriptionLogs } from '../../controller/paymentAndPrice/getPaymentLogs.controller.js';
 import { getSubscriptionDetails } from '../../controller/paymentAndPrice/getPaymentLogInfo.controller.js';
 import { requestSubscriptionPause } from '../../controller/paymentAndPrice/requestSubscriptionPause.controller.js';
-import { suspendSubscription } from '../../controller/paymentAndPrice/suspendSubscription.controller.js';
-import { cancelSubscription } from '../../controller/paymentAndPrice/cancelSubscription.controller.js';
-import { downGradeSubscription } from '../../controller/paymentAndPrice/downGradeSubscription.controller.js';
+
 import { resumePlanAccess } from '../../controller/paymentAndPrice/resumePlanAccess.controller.js';
 import { removeSubscriptionPause } from '../../controller/paymentAndPrice/removeSubscriptionPause.controller.js';
+import { isEligibleForRefund } from '../../controller/paymentAndPrice/refund/isEligibleForRefund.controller.js';
+import { getRefundLogs } from '../../controller/paymentAndPrice/refund/getRefundLogs.controller.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route('/getUserPaidAndPersonalInfo').post(handleUserPaidAndPersonalInfo);
@@ -53,15 +53,14 @@ paidDashbaord.route('/payment').post(paymentProcessor.handlePayment);
 paidDashbaord.route('/getCurrPrice').get(getCurrPrice);
 paidDashbaord.route('/getCouponCodeValidation').post(couponCodeValidator);
 paidDashbaord.route('/paymentConfirmationAndUpdate').post(paymentConfirmationAndUpdate);
-paidDashbaord.route('/paymentRefundRequest').post(paymentRefundRequest);
 paidDashbaord.route('/getSubscriptionLogs').post(getSubscriptionLogs);
 paidDashbaord.route('/getSubscriptionDetails').post(getSubscriptionDetails);
 // this api is for user to request to pause their subscription
 paidDashbaord.route('/requestSubscriptionPause').post(requestSubscriptionPause);
 paidDashbaord.route('/removeSubscriptionPauseRequest').post(removeSubscriptionPause);
-paidDashbaord.route('/suspendSubscription').post(suspendSubscription);
-paidDashbaord.route('/cancelSubscription').post(cancelSubscription);
-paidDashbaord.route('/downgradeSubscription').post(downGradeSubscription);
 paidDashbaord.route('/resumeSubscription').post(resumePlanAccess);
-
+// refund 
+paidDashbaord.route('/refundRequest').post(paymentRefundRequest);
+paidDashbaord.route('/getRefundEligibilityStatus').post(isEligibleForRefund);
+paidDashbaord.route('/getRefundLogs').post(getRefundLogs);
 export { paidDashbaord };

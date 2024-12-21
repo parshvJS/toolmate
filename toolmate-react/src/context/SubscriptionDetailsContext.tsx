@@ -21,11 +21,16 @@ interface SubscriptionContextType {
   fetchSubscriptionDetails: (subscriptionId: string) => Promise<void>;
   fetchPaymentLogs: (userId: string) => Promise<void>;
   requestSubscriptionPause: (isDownGradeRequest: boolean, message: "cancel" | "suspend" | "downgrade", downGradeDuration: number) => Promise<boolean>;
+  handleRemovePauseSubscription: (message: "cancel" | "suspend" | "downgrade") => Promise<boolean>;
   isRequestSubscriptionPauseLoading: boolean;
   isSuspendRequested: boolean;
   isCancelRequested: boolean;
   isProPlanSubscribed: boolean;
   isSuspended: boolean;
+  isCancelSuspendLoading: boolean;
+  isCancelCancelLoading: boolean;
+  isCancelDowngradeLoading: boolean;
+
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -36,39 +41,102 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { userData } = useContext(UserContext);
-  // current user subscription states
   const [isSuspendRequested, setIsSuspendRequested] = useState(false);
   const [isCancelRequested, setIsCancelRequested] = useState(false);
   const [isProPlanSubscribed, setIsProPlanSubscribed] = useState(false);
   const [isSuspended, setIsSuspended] = useState(false);
   const [isRequestSubscriptionPauseLoading, setIsRequestSubscriptionPauseLoading] = useState(false);
-  const { toast } = useToast();
-  useEffect(() => {
+  const [isCancelSuspendLoading, setIsCancelSuspendLoading] = useState(false);
+  const [isCancelCancelLoading, setIsCancelCancelLoading] = useState(false);
+  const [isCancelDowngradeLoading, setIsCancelDowngradeLoading] = useState(false);
 
-    const handleUSerSubscriptionState = () => {
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const handleUserSubscriptionState = () => {
       const lastLog = paymentLogs[0];
-      // suspend requested
       if (lastLog.status === 'suspend request saved to the queue') {
         setIsSuspendRequested(true);
       }
-      // cancel requested
       if (lastLog.status === 'cancel request saved to the queue') {
         setIsCancelRequested(true);
       }
-      // suspended
       if (lastLog.status.toUpperCase() === 'SUSPENDED') {
         setIsSuspended(true);
       }
-      // pro plan subscribed
       if (userData?.planAccess[2]) {
         setIsProPlanSubscribed(true);
       }
+    };
+    if (paymentLogs.length > 0) {
+      handleUserSubscriptionState();
+    }
+  }, [paymentLogs, userData]);
+
+
+  const handleRemovePauseSubscription = async (message: "cancel" | "suspend" | "downgrade") => {
+    if (message === "suspend") {
+      setIsCancelSuspendLoading(true);
+    }
+    if (message === "cancel") {
+      setIsCancelCancelLoading(true);
+    }
+    if (message === "downgrade") {
+      setIsCancelDowngradeLoading(true);
+    }
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/removeSubscriptionPauseRequest`, {
+        subscriptionId: subscriptionData?.subscriptionId,
+        userId: userData?.id,
+        message
+      });
+
+      if (!response.data.success) {
+        toast({
+          title: "Error",
+          description: response.data.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      toast({
+        title: "Success",
+        description: `${message} request removed successfully!`,
+        variant: "success"
+      });
+      if (message === "suspend") {
+        setIsSuspendRequested(false);
+      }
+      if (message === "cancel") {
+        setIsCancelRequested(false);
+      }
+      if (message === "downgrade") {
+        setIsProPlanSubscribed(false);
+      }
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      if (message === "suspend") {
+        setIsCancelSuspendLoading(false);
+      }
+      if (message === "cancel") {
+        setIsCancelCancelLoading(false);
+      }
+      if (message === "downgrade") {
+        setIsCancelDowngradeLoading(false);
+      }
 
     }
-    if (paymentLogs.length > 0) {
-      handleUSerSubscriptionState();
-    }
-  }, [paymentLogs])
+  }
+
 
 
   const fetchSubscriptionDetails = async (subscriptionId: string) => {
@@ -76,7 +144,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     setError(null);
     try {
       const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getSubscriptionDetails`, {
-        subscriptionId: subscriptionId
+        subscriptionId
       });
 
       if (!response.data.success) {
@@ -106,15 +174,14 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     setIsLoading(true);
     setError(null);
     try {
-      console.log(userId, "6788");
       const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getSubscriptionLogs`, {
-        userId: userId
+        userId
       });
 
       if (response.status !== 200) {
         throw new Error("Failed to fetch subscription logs");
       }
-      console.log(response.data.logs, "6788");
+
       setPaymentLogs(response.data.logs || []);
     } catch (err: any) {
       setError(err.message);
@@ -123,42 +190,53 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  async function requestSubscriptionPause(isDownGradeRequest: boolean, message: "cancel" | "suspend" | "downgrade", downGradeDuration: number) {
+  const requestSubscriptionPause = async (isDownGradeRequest: boolean, message: "cancel" | "suspend" | "downgrade", downGradeDuration: number) => {
     setIsRequestSubscriptionPauseLoading(true);
     try {
       const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/requestSubscriptionPause`, {
         subscriptionId: subscriptionData?.subscriptionId,
         userId: userData?.id,
-        message: message,
-        isDownGradeRequest: isDownGradeRequest,
-        downGradeDuration: downGradeDuration
+        message,
+        isDownGradeRequest,
+        downGradeDuration
       });
+
       if (!response.data.success) {
         toast({
           title: "Error",
           description: response.data.message,
           variant: "destructive"
-        })
+        });
         return false;
       }
 
       toast({
         title: "Success",
-        description: `${message} request sent successfully ! ${message} Takes Effect from next billing cycle | ${new Date(subscriptionData.nextBillingCycle).toDateString()}`,
+        description: `${message} request sent successfully! ${message} takes effect from next billing cycle | ${new Date(subscriptionData.nextBillingCycle).toDateString()}`,
         variant: "success"
-      })
+      });
+
+      if (message === "suspend") {
+        setIsSuspendRequested(true);
+      }
+      if (message === "cancel") {
+        setIsCancelRequested(true);
+      }
+      if (message === "downgrade") {
+        setIsProPlanSubscribed(false);
+      }
       return true;
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive"
-      })
+      });
       return false;
     } finally {
       setIsRequestSubscriptionPauseLoading(false);
     }
-  }
+  };
 
   return (
     <SubscriptionContext.Provider
@@ -173,6 +251,10 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         isCancelRequested,
         isProPlanSubscribed,
         requestSubscriptionPause,
+        handleRemovePauseSubscription,
+        isCancelSuspendLoading,
+        isCancelCancelLoading,
+        isCancelDowngradeLoading,
         isRequestSubscriptionPauseLoading,
         isSuspended
       }}

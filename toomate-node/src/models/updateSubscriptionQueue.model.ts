@@ -12,7 +12,7 @@ const updateSubscriptionQueueSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['suspend', 'cancel', 'downgrade'], // it can be suspend, cancel, or downgrade request
+        enum: ['suspend', 'cancel', 'downgrade','resume'], // it can be suspend, cancel, or downgrade request
         required: true
     },
     updatePlanAccessTo: {
@@ -23,6 +23,7 @@ const updateSubscriptionQueueSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // the index of the plan to be downgraded to
     downgradePlanIndex: {
         type: Number,
         default: 0

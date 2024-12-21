@@ -11,6 +11,14 @@ const userRefundLogsSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
+		status: {
+			type: String,
+			required: true
+		},
+		amount: {
+			type: String,
+			required: true
+		}
 	},
 	{ timestamps: true }
 );

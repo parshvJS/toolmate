@@ -195,7 +195,7 @@ async function createBillingPlans(plans: {
                 {
                     frequency: {
                         interval_unit: plan.frequency,
-                        interval_count: 1,
+                        interval_count: plan.intervalCount,
                     },
                     tenure_type: "REGULAR",
                     sequence: 1,

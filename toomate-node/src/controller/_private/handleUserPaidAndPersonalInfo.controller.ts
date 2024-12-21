@@ -83,7 +83,7 @@ async function handleQueuedSubscriptionUpdates(userId: string, queueData: any) {
 	const currDate = new Date(getPaypalFormatDate());
 
 	if (updateDate <= currDate) {
-		await performPauseSubscription(queueData.type, queueData.subscriptionId, String(userId));
+		await performPlatformAccessChange(queueData.type, queueData.subscriptionId, String(userId));
 		await updateSubscriptionQueue.deleteOne({ _id: queueData._id });
 		return {
 			success: true,
@@ -148,26 +148,61 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
 	}
 }
 
-async function performPauseSubscription(operationType: string, subscriptionId: string, userId: string) {
-	const apiUrlMap = {
-		suspend: '/api/v1/suspendSubscription',
-		cancel: '/api/v1/cancelSubscription',
-		downgrade: '/api/v1/downgradeSubscription',
-	};
-
-	const url = process.env.SERVER_URL + apiUrlMap[operationType as keyof typeof apiUrlMap];
-	if (!url) {
-		console.error('Invalid operation type');
-		return { success: false, message: 'Invalid operation type' };
+async function performPlatformAccessChange(operationType: string, subscriptionId: string, userId: string) {
+	const queueData = await updateSubscriptionQueue.findOne({ userId, subscriptionId });
+	if (!queueData) return {
+		success: false,
+		status: 404,
+		message: 'Subscription update failed',
+	}
+	if (queueData.type !== operationType) return {
+		success: false,
+		status: 404,
+		message: 'Subscription update failed',
 	}
 
-	try {
-		const response = await axios.post(url, { subscriptionId, userId });
-		return response.status === 200
-			? { success: true, message: `${operationType} successful` }
-			: { success: false, message: response.data.message };
-	} catch (error: any) {
-		console.error(`Error in ${operationType}: ${error.message}`);
-		return { success: false, message: 'Operation failed' };
+	const idx = queueData.updatePlanAccessTo;
+	let newPlanAccess = [false, false, false];
+	newPlanAccess[idx] = true;
+
+
+	const newUserPlan = await UserPayment.findOneAndUpdate(
+		{ userId },
+		{ activePlan: operationType == "downgrade" || operationType == "resume" ? subscriptionId : "", planAccess: newPlanAccess },
+		{ new: true }
+	)
+
+	if (!newUserPlan) return {
+		success: false,
+		status: 500,
+		message: 'Internal Server Error',
+	}
+
+	const previousLog = await userPaymentLogs.findOne({
+		userId,
+		subscriptionId,
+		status: { $in: ["Subscription ACTIVE", "ACTIVE"] },
+	});
+	if (!previousLog) return {
+		success: false,
+		status: 404,
+		message: 'Subscription update failed',
+	}
+
+	const newLog = {
+		userId,
+		subscriptionId,
+		status: `Platform Access Changed to ${newPlanAccess[1] ? "Standard" : newPlanAccess[2] ? "Premium" : "Basic"} Plan. Subscription ${operationType.toUpperCase()}`,
+		baseBillingPlanId: previousLog.baseBillingPlanId,
+		planName: previousLog.planName,
+		isCouponApplied: previousLog.isCouponApplied,
+		couponCode: previousLog.couponCode,
+	}
+
+	await userPaymentLogs.create(newLog);
+	return {
+		success: true,
+		status: 200,
+		message: 'Subscription updated successfully',
 	}
 }

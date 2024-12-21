@@ -32,7 +32,7 @@ export async function handleSocketSerivce(socket: Socket) {
         await produceMessage(prompt, sessionId, '', 'user');
     });
 
-  
+
     // this service creates new session for user
     socket.on('createNewUserSession', () => { handleCreateNewSession(socket) });
 
@@ -41,7 +41,7 @@ export async function handleSocketSerivce(socket: Socket) {
 
     socket.on('userMessage', async (data: INewUserMessage) => {
         try {
-            console.log("budgetDetails in socket","budgetDetails",data.budgetSliderValue, "isBudgetSliderChangable", data.isBudgetSliderChangable, "isBudgetSliderPresent", data.isBudgetSliderPresent);
+            console.log("budgetDetails in socket", "budgetDetails", data.budgetSliderValue, "isBudgetSliderChangable", data.isBudgetSliderChangable, "isBudgetSliderPresent", data.isBudgetSliderPresent);
             // Initialize controller for stream handling
             const controller = new AbortController();
             const { signal } = controller;
@@ -143,7 +143,7 @@ export async function handleSocketSerivce(socket: Socket) {
                     );
 
                     if (messageStream) {
-                   
+
                         await Promise.all([
                             produceNewMessage(
                                 messageStream.message,
@@ -232,8 +232,8 @@ export async function handleSocketSerivce(socket: Socket) {
                         ]);
                     }
 
-                    if(data.isBudgetSliderChangable){
-                        await FindNeedOfBudgetSlider(data.message,newChatContext, socket);
+                    if (data.isBudgetSliderChangable) {
+                        await FindNeedOfBudgetSlider(data.message, newChatContext, socket);
                     }
                     break;
                 }

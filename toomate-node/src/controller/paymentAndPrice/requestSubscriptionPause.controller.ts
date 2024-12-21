@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import getPaypalAccessToken from '../../utils/paypalUtils.js';
 import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
 import userPaymentLogs from '../../models/userPaymentLogs.model.js';
+import { PaymentPlan } from '../../models/admin/paymentPlan.model.js';
 // user can suspend their subscription
 
 const accessToken = await getPaypalAccessToken();
@@ -26,6 +27,58 @@ async function getSubscriptionDetails(subscriptionId: string) {
 			success: false,
 			data: `Error fetching subscription details: ${error.message}`,
 		};
+	}
+}
+
+
+
+async function downgardeSubscription(subscriptionId: string, planId: string, durationIndex: 1 | 6 | 12) {
+	await connectDB();
+	// determine the planid to downgrade
+	const plans = await PaymentPlan.findOne();
+	if (!plans || !plans.essentialProductId || !plans.proProductId) {
+		return {
+			success: false,
+			message: "Plans not found!"
+		}
+	}
+
+	const isPro = plans.proProductId?.includes(planId);
+	if (!isPro) {
+		return {
+			success: true,
+			isFreePlan: true,
+			message: "Subscride to free plan"
+		}
+	}
+
+	const idx = durationIndex == 1 ? 0 : (durationIndex == 6 ? 1 : 2)
+	const newPlanId = plans.essentialProductId[idx]
+
+	// revise the subscription
+	const accessToken = await getPaypalAccessToken();
+	const baseUrl = process.env.PAYPAL_API_BASE_URL;
+
+	const revisePlan = await axios.post(`${baseUrl}/v1/billing/subscriptions/${subscriptionId}/revise`, {
+		plan_id: newPlanId
+	},
+		{
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'application/json',
+			},
+		});
+	if (revisePlan.status !== 200) {
+		return {
+			success: false,
+			isFreePlan: false,
+			message: "Failed to downgrade subscription"
+		}
+	}
+	return {
+		success: true,
+		isFreePlan: false,
+		message: "Subscription downgraded successfully"
 	}
 }
 
@@ -86,6 +139,7 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 				message: 'Please provide valid downGradeDuration',
 			});
 		}
+
 		await connectDB();
 
 		// Fetch subscription details
@@ -122,11 +176,36 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 			});
 		}
 
+		// if donwgrade the downgrade the subscription
+		let downgrade;
+		if (message === 'downgrade') {
+			downgrade = await downgardeSubscription(subscriptionId, subscriptionDetails.data.plan_id, downGradeDuration);
+			if (!downgrade.success) {
+				return res.status(400).json({
+					success: false,
+					status: 400,
+					message: 'Failed to downgrade subscription',
+					error: downgrade.message,
+				});
+			}
+		}
+
+
+		// perform paypal subscription pause 
+		const pauseDetails = await performPaypalSubscriptionPause(message, subscriptionId);
+		if (!pauseDetails.success) {
+			return res.status(400).json({
+				success: false,
+				message: pauseDetails.message,
+				status: 400
+			})
+		}
+
 		const newQueueDoc = {
 			userId: userId,
 			updatePlanDate: nextBillingDate.toISOString().split('.')[0] + 'Z', // Remove milliseconds
 			type: message,
-			updatePlanAccessTo: isDownGradeRequest ? downGradeDuration : 0,
+			updatePlanAccessTo: isDownGradeRequest ? (downgrade && downgrade.isFreePlan ? 0 : 1) : 0,
 			subscriptionId: subscriptionId,
 		};
 
@@ -140,6 +219,7 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 			});
 		}
 
+
 		// Log the suspension request
 		const newLog = {
 			userId: userId,
@@ -148,7 +228,7 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 			couponCode: logData.couponCode,
 			baseBillingPlanId: logData.baseBillingPlanId,
 			planName: logData.planName,
-			status: `${message} request saved to the queue`,
+			status: `${message === "downgrade" ? "Down Grade processed! changes take effect accordingly" : `${message} request saved to the queue`}`,
 		};
 
 		const logNew = await userPaymentLogs.create(newLog);
@@ -173,5 +253,104 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 			status: 500,
 			message: 'Internal Server Error',
 		});
+	}
+}
+
+
+
+async function performPaypalSubscriptionPause(operationType: "suspend" | "cancel", subscriptionId: string) {
+	const accessToken = await getPaypalAccessToken();
+	try {
+		if (operationType === "suspend") {
+			return await suspendPaypalSubscription(subscriptionId, accessToken);
+		} else if (operationType === "cancel") {
+			return await cancelPaypalSubscription(subscriptionId, accessToken);
+		} else {
+			return {
+				success: false,
+				message: "Invalid operation type"
+			};
+		}
+	} catch (error: any) {
+		console.error(`Error performing PayPal subscription ${operationType}:`, error);
+		return {
+			success: false,
+			message: `Failed to ${operationType} subscription: ${error.message}`
+		};
+	}
+}
+
+async function suspendPaypalSubscription(subscriptionId: string, accessToken: string) {
+	const BASE_API_URL = process.env.PAYPAL_API_BASE_URL;
+	try {
+		await axios.post(`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}/suspend`, {
+			reason: "Requested by customer"
+		}, {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			}
+		});
+
+		const { data } = await axios.get(`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}`, {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			}
+		});
+
+		return {
+			success: true,
+			data
+		};
+	} catch (error: any) {
+		console.error('Error suspending PayPal subscription:', error);
+		return {
+			success: false,
+			message: `Failed to suspend subscription: ${error.message}`
+		};
+	}
+}
+
+async function cancelPaypalSubscription(subscriptionId: string, accessToken: string) {
+	const BASE_API_URL = process.env.PAYPAL_API_BASE_URL;
+	try {
+		await axios.post(
+			`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}/cancel`,
+			{
+				reason: 'Requested by customer',
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+			}
+		);
+
+		const { data } = await axios.get(
+			`${BASE_API_URL}/v1/billing/subscriptions/${subscriptionId}`,
+			{
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				},
+			}
+		);
+
+		return {
+			success: true,
+			data
+		};
+	} catch (error: any) {
+		console.error('Error canceling PayPal subscription:', error);
+		return {
+			success: false,
+			message: `Failed to cancel subscription: ${error.message}`
+		};
 	}
 }

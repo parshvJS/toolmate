@@ -243,9 +243,13 @@ class PaymentProcessor {
             new Date().getTime()) / (1000 * 60 * 60 * 24)
         );
 
+        // get the price user have currently paid 
+        
+
+
         const prorationPrice = this.calculateProration(
-          parseFloat(currentPlan.billing_cycles[0].pricing_scheme.fixed_price.value),
-          parseFloat(newPlan.billing_cycles[0].pricing_scheme.fixed_price.value),
+          parseFloat(currentPlan.billing_cycles.find((cycle: any) => cycle.tenure_type === "REGULAR").pricing_scheme.fixed_price.value),
+          parseFloat(newPlan.billing_cycles.find((cycle: any) => cycle.tenure_type == "REGULAR").pricing_scheme.fixed_price.value),
           daysRemaining,
           30 // Assuming monthly billing
         );
