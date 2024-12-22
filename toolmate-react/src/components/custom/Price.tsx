@@ -10,43 +10,37 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { useUser } from "@clerk/clerk-react";
-import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-import {
-  useForm
-} from "react-hook-form"
-import {
-  zodResolver
-} from "@hookform/resolvers/zod"
-import * as z from "zod"
+import { useLocation, useNavigate, Link } from "react-router-dom";
+
 import { useDebounce } from 'use-debounce';
-import { Input } from "../ui/input";
 import { calculateDiscountedPrice, calculateImpact, extractBAToken } from "@/lib/utils";
 import { UserContext } from "@/context/userContext";
 import FAQSection from "./FAQ";
+import { usePriceContext } from "@/context/pricingContext";
 
 
 
 export default function Price() {
   const location = useLocation()
+  const {
+    priceData,
+    sixMonthDiscount,
+    yearlyDiscount,
+    isPriceLoading,
+  } = usePriceContext();
   const queryParams = new URLSearchParams(location.search)
   const redirected = queryParams.get('redirected');
   const [isShowContinueWithFree, setIsShowContinueWithFree] = useState(false)
   const { isSignedIn } = useUser();
-  const { userId, userData } = useContext(UserContext)
+  const { userData } = useContext(UserContext)
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("month");
   const [activePlan, setActivePlan] = useState<any>(null);
   const [showCheckoutPopup, setShowCheckoutPopup] = useState(false);
-  const [isPriceLoading, setIsPriceLoading] = useState(true);
-  const [priceData, setPriceData] = useState<any>(null);
-  const [sixMonthDiscount, setSixMonthDiscount] = useState(0);
-  const [yearlyDiscount, setYearlyDiscount] = useState(0);
+
   const [continueToDashboard, setContinueToDashboard] = useState(false);
   // couponCode
   const [couponCode, setCouponCode] = useState("");
@@ -60,7 +54,6 @@ export default function Price() {
   const [couponCodeImpact, setCouponCodeImpact] = useState(0);
   const [couponCodeDiscountPercentage, setCouponCodeDiscountPercentage] = useState(0);
   // get paypal url
-  const [paypalUrl, setPaypalUrl] = useState("");
   const [paypalLoading, setPaypalLoading] = useState(false);
 
   useEffect(() => {
@@ -81,50 +74,6 @@ export default function Price() {
     }
   }, [redirected]);
 
-  useEffect(() => {
-    async function fetchPriceData() {
-      try {
-        const { data } = await axios.get(`${import.meta.env.VITE_SERVER_URL}/api/v1/getCurrPrice`);
-        const { month, sixMonth, year, discountOnSixMonth, discountOnYearly, productId } = data;
-        setSixMonthDiscount(discountOnSixMonth);
-        setYearlyDiscount(discountOnYearly);
-
-        const newPriceData = pricing.map((priceItem) => {
-          if (priceItem.tabName === "month") {
-            priceItem.list[1].priceSetter = { price: month[0] };
-            priceItem.list[2].priceSetter = { price: month[1] };
-            priceItem.list[1].productIdSetter = productId.month[0];
-            priceItem.list[2].productIdSetter = productId.month[1];
-          }
-          if (priceItem.tabName === "months") {
-            priceItem.list[1].priceSetter = { price: sixMonth[0], discount: discountOnSixMonth };
-            priceItem.list[2].priceSetter = { price: sixMonth[1], discount: discountOnSixMonth };
-            priceItem.list[1].productIdSetter = productId.sixMonth[0];
-            priceItem.list[2].productIdSetter = productId.sixMonth[1];
-          }
-          if (priceItem.tabName === "year") {
-            priceItem.list[1].priceSetter = { price: year[0], discount: discountOnYearly };
-            priceItem.list[2].priceSetter = { price: year[1], discount: discountOnYearly };
-
-            priceItem.list[1].productIdSetter = productId.year[0];
-            priceItem.list[2].productIdSetter = productId.year[1];
-          }
-          return priceItem;
-        });
-
-        setPriceData(newPriceData);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch price data",
-          variant: "destructive",
-        });
-      } finally {
-        setIsPriceLoading(false);
-      }
-    }
-    fetchPriceData();
-  }, []);
 
   const handleTabChange = (value: any) => setActiveTab(value);
 
@@ -138,15 +87,17 @@ export default function Price() {
       navigate('/signup');
       return;
     }
+    const activeTabObject: any = priceData.find((item: any) => item.tabName === activeTab);
+    if (activeTabObject) {
 
-    const activeTabObject = priceData.find((item: any) => item.tabName === activeTab);
-    const activePlanObject = activeTabObject.list.find((item: any) => item.planValue === planValue);
+      const activePlanObject = activeTabObject.list.find((item: any) => item.planValue === planValue);
 
-    setActivePlan({ ...activePlanObject, duration: activeTabObject.tabName });
-    console.log("activePlanObject", {
-      ...activePlanObject,
-      duration: activeTabObject.tabName,
-    });
+      setActivePlan({ ...activePlanObject, duration: activeTabObject.tabName });
+      console.log("activePlanObject", {
+        ...activePlanObject,
+        duration: activeTabObject.tabName,
+      });
+    }
     setShowCheckoutPopup(true);
   };
 

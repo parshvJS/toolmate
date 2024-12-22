@@ -21,5 +21,7 @@ const UserPaymentSchema = new Schema({
   timestamps: true // Automatically adds createdAt and updatedAt timestamps
 });
 
+// index 
+UserPaymentSchema.index({ userId: 1 });
 // Create and export the model
 export const UserPayment = model('UserPayment', UserPaymentSchema);

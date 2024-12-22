@@ -34,6 +34,7 @@ const UserMemorySchema = new mongoose.Schema<IUserMemory>({
     },
 },{timestamps:true});
 
+UserMemorySchema.index({ userId: 1 });
 const UserMemory: Model<IUserMemory> = mongoose.model<IUserMemory>('UserMemory', UserMemorySchema);
 
 export default  UserMemory;

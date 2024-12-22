@@ -118,7 +118,8 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 		if (
 			message !== 'downgrade' &&
 			message !== 'suspend' &&
-			message !== 'cancel'
+			message !== 'cancel' &&
+			message !== ''
 		) {
 			return res.status(400).json({
 				success: false,

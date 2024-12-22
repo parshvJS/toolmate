@@ -1,24 +1,25 @@
 import mongoose from "mongoose";
 
 const userChatSchema = new mongoose.Schema({
-    userId:{
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    sessionId:{
+    sessionId: {
         type: String,
         required: true,
     },
-    chatName:{
+    chatName: {
         type: String,
-        default:""
+        default: ""
     },
-    isMateyMemoryOn:{
+    isMateyMemoryOn: {
         type: Boolean,
-        default:true
+        default: true
     }
-},{timestamps:true});
+}, { timestamps: true });
 
+userChatSchema.index({ userId: 1 });
 const UserChat = mongoose.model('UserChat', userChatSchema);
 export default UserChat;

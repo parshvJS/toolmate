@@ -52,7 +52,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const { toast } = useToast();
 
-  useEffect(() => {
+  useEffect(() => {    
     const handleUserSubscriptionState = () => {
       const lastLog = paymentLogs[0];
       if (lastLog.status === 'suspend request saved to the queue') {

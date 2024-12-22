@@ -1,6 +1,6 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Logo from "@/components/custom/Logo";
-import { CreditCard, BadgeCheck, DollarSign, RefreshCw, ChevronDown, ChevronRight, Logs, LoaderCircle, TriangleAlert, ArrowDownToLine, Ban, FolderKanban, TicketSlash, Hand, OctagonX, Diamond, Info } from "lucide-react";
+import { CreditCard, BadgeCheck, DollarSign, RefreshCw, ChevronDown, ChevronRight, Logs, LoaderCircle, TriangleAlert, ArrowDownToLine, Ban, FolderKanban, TicketSlash, Hand, OctagonX, Diamond, Info, CheckCircle, XCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import MateyExpression from "@/components/custom/MateyExpression";
 import { useAuth } from "@clerk/clerk-react";
 import { useSubscription } from "@/context/SubscriptionDetailsContext";
 import { UserContext } from "@/context/userContext";
+import { Skeleton } from "@/components/ui/skeleton"
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,22 +30,20 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-
 import { Link } from "react-router-dom";
-
+import { pricing } from "@/constants";
+import { usePriceContext } from "@/context/pricingContext";
+import { toast } from "@/hooks/use-toast";
+import axios from "axios";
 export default function ManageSub() {
     const [activeTab, setActiveTab] = useState("details");
     const { userData } = useContext(UserContext);
-
+    const {
+        sixMonthDiscount,
+        yearlyDiscount,
+        isPriceLoading,
+        priceData
+    } = usePriceContext()
     const {
         subscriptionData,
         paymentLogs,
@@ -58,11 +58,9 @@ export default function ManageSub() {
         isProPlanSubscribed,
         isSuspended,
         isCancelSuspendLoading,
-        isCancelCancelLoading,
         isCancelDowngradeLoading,
         handleRemovePauseSubscription,
     } = useSubscription();
-    console.log(subscriptionData, "herereererererere")
 
     const [isInfoPanalOpen, setIsInfoPanalOpen] = useState(false);
     const [panalFlag, setPanalFlag] = useState<"suspend" | "cancel" | "downgrade">("suspend");
@@ -75,6 +73,13 @@ export default function ManageSub() {
     const [isCancelDowngradeOpen, setIsCancelDowngradeOpen] = useState(false); // cancel downgrade request
     const [isCancelCancelOpen, setIsCancelCancelOpen] = useState(false); // cancel cancel request
     const [isSuspendLoading, setIsSuspendLoading] = useState(false);
+    // refund states
+    const [isRefundEligible, setIsRefundEligible] = useState(false); // refund eligibility
+    const [nonEligibleReason, setNonEligibleReason] = useState(""); // refund eligibility reason
+    const [refundLogs, setRefundLogs] = useState([]); // refund logs
+    const [isRefundOpen, setIsRefundOpen] = useState(false); // refund request
+    const [isRefundElibileStatusLoading, setIsRefundElibileStatusLoading] = useState(false); // refund request loading
+    const [isRefundLogsLoading, setIsRefundLogsLoading] = useState(false); // refund logs loading
     // pause subscription request
     const tabs = [
         { id: "details", label: "Plan Information", icon: CreditCard },
@@ -83,7 +88,38 @@ export default function ManageSub() {
         { id: "refund", label: "Refund Management", icon: RefreshCw },
     ];
 
-    React.useEffect(() => {
+
+    // effect for refund related data
+    useEffect(() => {
+        if (activeTab === "refund") {
+            fetchRefundData();
+        }
+        async function fetchRefundData() {
+            setIsRefundElibileStatusLoading(true);
+            try {
+                const { data } = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getRefundEligibilityStatus`, {
+                    userId: userData?.id
+                })
+
+                setIsRefundEligible(data.isEligible);
+                if (!data.isEligible) {
+                    setNonEligibleReason(data.message)
+                }
+            } catch (error: any) {
+                toast({
+                    title: "Error Occured",
+                    description: error.message,
+                    variant: "destructive"
+                })
+
+            } finally {
+                setIsRefundElibileStatusLoading(false)
+            }
+        }
+    }, [activeTab, userData]);
+
+
+    useEffect(() => {
         if (userData && userData.activePlan) {
             fetchSubscriptionDetails(userData.activePlan as string);
         }
@@ -93,7 +129,7 @@ export default function ManageSub() {
         }
     }, [userData]);
     // side effect : when payment log is updated
-    React.useEffect(() => {
+    useEffect(() => {
         console.log(paymentLogs, "paymentLogs");
         const lastLog = paymentLogs[0];
         // intitalize the values of panel 
@@ -122,6 +158,8 @@ export default function ManageSub() {
             </div>
         );
     }
+
+    console.log(pricing, "priceinggg")
 
     function CurrentPlanDetails() {
         const [isShowCycleDetails, setIsShowCycleDetails] = useState(false);
@@ -452,63 +490,128 @@ export default function ManageSub() {
                             </div>
                         </div>
                         {/* downgrade  */}
-                        <AlertDialog
-                            onOpenChange={(isOpen) => {
-                                if (isCancelRequested || isSuspendRequested) {
-                                    return;
-                                }
-                                setIsDowngradeOpen(isOpen);
-                            }}
-                            open={(isCancelRequested || isSuspendRequested) ? isDowngradeOpen : undefined}>
-                            <AlertDialogTrigger>
-                                <div className="font-semibold bg-slate-200 rounded-md shadow-md py-2 hover:bg-slate-300">
-                                    Down Grade
-                                </div>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        <ul>
-                                            <li>Your down Grade Request will take effect at the end of this billing cycle</li>
-                                            <li>after this billing cycle over,Your subscription will be converted from <b>Toolmate Pro</b> To <b>Toolmate Essential</b> </li>
-                                        </ul>
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => requestSubscriptionPause(true, "downgrade", userData?.planAccess[2] ? 1 : 0)}
-                                        className="bg-blue-400 hover:bg-blue-600"
-                                    >
-                                        {
-                                            isRequestSubscriptionPauseLoading ?
-                                                <div className="animate-spin">
-                                                    <LoaderCircle />
-                                                </div> : "Confirm Downgrade"
+                        <div className={`${userData?.planAccess[1] ? "hidden" : "block w-full "}`}>
+                            {
+                                isPriceLoading ? <div className="flex gap-2 ">
+                                    <Skeleton className="w-[100px] h-[20px] rounded-full" />
+                                </div> : <AlertDialog
+                                    onOpenChange={(isOpen) => {
+                                        if (isCancelRequested || isSuspendRequested) {
+                                            return;
                                         }
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                                        setIsDowngradeOpen(isOpen);
+                                    }}
+                                    open={(isCancelRequested || isSuspendRequested) ? isDowngradeOpen : undefined}>
+                                    <AlertDialogTrigger className="w-full">
+                                        <div className="font-semibold w-full bg-slate-200 rounded-md shadow-md py-2 hover:bg-slate-300">
+                                            Down Grade
+                                        </div>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                <ul>
+                                                    <li>Your down Grade Request will take effect at the end of this billing cycle</li>
+                                                    <li>after this billing cycle over,Your subscription will be converted from <b>Toolmate Pro</b> To <b>Toolmate Essential</b> </li>
+                                                </ul>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => requestSubscriptionPause(true, "downgrade", userData?.planAccess[2] ? 1 : 0)}
+                                                className="bg-blue-400 hover:bg-blue-600"
+                                            >
+                                                {
+                                                    isRequestSubscriptionPauseLoading ?
+                                                        <div className="animate-spin">
+                                                            <LoaderCircle />
+                                                        </div> : "Confirm Downgrade"
+                                                }
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            }
+
+                        </div>
+
+
+
 
 
                     </CardContent>
                 </Card>
-                <Card className={`w-full rounded-2xl md:h-72 h-48 bg-white ${userData?.planAccess[2] ? "shadow-yellow border-2 shadow-lg border-goldenYellow" : "shadow-lg "}  mt-4`}>
-                    <CardContent className="p-4 sm:p-6 space-y-3">
+                <Card className={`w-full rounded-2xl justify-between md:h-72 h-48 bg-white ${userData?.planAccess[2] ? "shadow-yellow border-2 shadow-lg border-goldenYellow" : "shadow-lg "}  mt-4`}>
+                    <CardContent className="p-4 sm:p-6 space-y-3 h-full flex justify-between flex-col">
                         <div>
-                            <img src="/assets/icons/toolbox.svg" className="w-10 h-10" />
+                            <div>
+                                <img src="/assets/icons/toolbox.svg" className="w-10 h-10" />
+                            </div>
+                            <div className="  flex justify-start items-center gap-2">
+                                <p className="text-yellow font-bold text-2xl">Toolmate Pro</p>
+                                {
+                                    userData?.planAccess[2] && (
+                                        <Badge variant="outline" className="px-4 py-1 border-yellow border-2 rounded-md bg-lightYellow text-black">
+                                            currently Active
+                                        </Badge>
+                                    )
+                                }
+                            </div>
+
                         </div>
-                        <div className="  flex justify-start items-center gap-2">
-                            <p className="text-yellow font-bold text-2xl">Toolmate Pro</p>
+                        {/* upgrade */}
+                        <div className={`${userData?.planAccess[2] ? "hidden" : "block w-full "}`}>
                             {
-                                userData?.planAccess[2] && (
-                                    <Badge variant="outline" className="px-4 py-1 border-yellow border-2 rounded-md bg-lightYellow text-black">
-                                        currently Active
-                                    </Badge>
-                                )
+                                isPriceLoading ? <div className="flex gap-2 ">
+                                    <Skeleton className="w-[100px] h-[20px] rounded-full" />
+                                </div> : <AlertDialog
+                                    onOpenChange={(isOpen) => {
+                                        if (isCancelRequested || isSuspendRequested) {
+                                            return;
+                                        }
+                                        setIsDowngradeOpen(isOpen);
+                                    }}
+                                    open={(isCancelRequested || isSuspendRequested) ? isDowngradeOpen : undefined}>
+                                    <AlertDialogTrigger className="w-full">
+                                        <div className="font-semibold w-full bg-gradient-to-r from-yellow to-softYellow  text-black rounded-md shadow-md py-2 hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200 ease-in-out transform hover:scale-105">
+                                            Upgrade
+                                        </div>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                <ul>
+                                                    <li>You Will Be Changeded For Prorated Amount for this billing cycle And General Price for Next billing cycle</li>
+                                                    <li>Update will take effect immediately.</li>
+                                                    <li>All Your Current Data Will Be Same.</li>
+                                                    <li>Update Might Take Several Moment to Complete Please Try To Refresh the Page To check.</li>
+                                                    <li>after this billing cycle over,Your subscription will be converted from <b>Toolmate Essential</b> To <b>Toolmate Pro</b> </li>
+                                                </ul>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+
+                                                className="bg-blue-400 hover:bg-blue-600"
+                                            >
+                                                {
+                                                    isRequestSubscriptionPauseLoading ?
+                                                        <div className="animate-spin">
+                                                            <LoaderCircle />
+                                                        </div> : "Confirm Upgrade"
+                                                }
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             }
+
+
+
                         </div>
                     </CardContent>
                 </Card>
@@ -748,58 +851,6 @@ export default function ManageSub() {
                         </div>
                     }
 
-                    {
-                        isCancelRequested && <div className="bg-slate-200 p-4 rounded-md flex flex-col justify-between">
-                            <div className="flex gap-2 items-start ">
-                                <OctagonX width={35} height={35} />
-                                <div className="flex flex-col items-start justify-start">
-                                    <p className="font-semibold ">Cancel cancellation  Request</p>
-                                    <p className="text-slate-600 text-left">Cancel Request will not take effect and removed from the queue</p>
-                                </div>
-                            </div>
-                            <div>
-                                <AlertDialog
-                                    onOpenChange={(isOpen) => {
-                                        if (isRequestSubscriptionPauseLoading) {
-                                            return;
-                                        }
-                                        setIsCancelCancelOpen(isOpen);
-                                    }}
-                                    open={isCancelRequested ? isCancelCancelOpen : undefined}
-                                >
-                                    <AlertDialogTrigger className="hover:bg-purple-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-purple-300 text-purple-500">
-                                        {isCancelCancelLoading ?
-                                            <div className="flex gap-2 items-center justify-center">
-                                                <LoaderCircle className="animate-spin" />
-                                                <p>Loading....</p>
-                                            </div>
-                                            : "Cancel Cancel Request"}
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>How resuming the subscription works</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                <ul>
-                                                    <li>Your subscription will be resumed immediately.</li>
-                                                    <li>You will be charged for the next billing cycle as per the subscription plan.</li>
-                                                    <li>All features and benefits of the subscription will be restored when next billing cycle begins.</li>
-                                                </ul>
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={async () => {
-                                                    setIsCancelCancelOpen(false)
-                                                    await handleRemovePauseSubscription("cancel")
-                                                }}
-                                                className="bg-purple-400 hover:bg-purple-600">Confirm To Cancel Subscription Cancel Request</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    }
                 </div>
             </div>
 
@@ -807,8 +858,36 @@ export default function ManageSub() {
     }
 
     function RefundLogs() {
-        return <div>Refund Logs</div>;
+        return <div>
+            <div className="flex gap-2 items-center">
+                {/* icons */}
+                {
+                    isRefundElibileStatusLoading ? (
+                        <Skeleton className="w-full h-20 bg-slate-300" />
+                    ) : isRefundEligible ? (
+                        <div className="flex gap-2 items-center p-4 border-2 border-green-100  w-full rounded-md">
+                            <CheckCircle width={25} height={25} className="text-green-300" />
+                            <p className="font-semibold text-green-300">Refund Eligible</p>
+                        </div>
+                    ) : (
+                        <div className="flex w-full gap-2 flex-col items-start p-4 border-2 border-red-600 rounded-lg ">
+                            <div className="flex items-center gap-2 ">
+                                <XCircle className="text-red-500" width={25} height={25} />
+                                <p className="font-semibold text-red-500">Refund Not Eligible</p>
+                            </div>
+                            <p className="font-semibold capitalize">{nonEligibleReason}</p>
+                        </div>
+                    )
+                }
+
+            </div>
+
+
+
+
+        </div>;
     }
+
     if (error) {
         return <div className="flex justify-center items-center text-red-700 font-semibold max-w-3xl">{error}</div>
     }
