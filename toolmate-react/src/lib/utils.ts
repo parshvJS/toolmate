@@ -36,3 +36,4 @@ export function extractBAToken(url:string) {
       return null;
   }
 }
+

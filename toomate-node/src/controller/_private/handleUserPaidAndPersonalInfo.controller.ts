@@ -81,7 +81,7 @@ async function handleQueuedSubscriptionUpdates(userId: string, queueData: any) {
 
 	const updateDate = new Date(queueData.updatePlanDate);
 	const currDate = new Date(getPaypalFormatDate());
-
+	console.log(updateDate, currDate, updateDate <= currDate,"updateDate <= currDate");
 	if (updateDate <= currDate) {
 		await performPlatformAccessChange(queueData.type, queueData.subscriptionId, String(userId));
 		await updateSubscriptionQueue.deleteOne({ _id: queueData._id });

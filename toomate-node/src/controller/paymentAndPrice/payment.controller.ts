@@ -244,7 +244,7 @@ class PaymentProcessor {
         );
 
         // get the price user have currently paid 
-        
+
 
 
         const prorationPrice = this.calculateProration(

@@ -117,22 +117,16 @@ export async function createDefaultBillingPlan(req: any, res: any) {
             },
         ];
 
-        const productIds: Record<string, string> = {};
-        for (const plan of plans) {
-            if (!productIds[plan.planType]) {
-                console.log(`Creating product for plan type: ${plan.planType}`);
-                productIds[plan.planType] = await createProduct(
-                    `${plan.planType} Product`,
-                    `Product for ${plan.planType} plans`,
-                    accessToken
-                );
-            }
-        }
-        console.log("Product IDs:", productIds);
+        const productId = await createProduct(
+            "Software Subscription",
+            "Unified product for all subscription plans",
+            accessToken
+        );
+        
         const billingPlans = await createBillingPlans(
             plans.map((plan) => ({
                 ...plan,
-                productId: productIds[plan.planType],
+                productId: productId,
             })),
             accessToken
         );

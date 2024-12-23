@@ -32,7 +32,7 @@ async function getSubscriptionDetails(subscriptionId: string) {
 
 
 
-async function downgardeSubscription(subscriptionId: string, planId: string, durationIndex: 1 | 6 | 12) {
+async function downgardeSubscription(subscriptionId: string, planId: string, durationIndex: 1 | 6 | 12, subData: any) {
 	await connectDB();
 	// determine the planid to downgrade
 	const plans = await PaymentPlan.findOne();
@@ -54,20 +54,38 @@ async function downgardeSubscription(subscriptionId: string, planId: string, dur
 
 	const idx = durationIndex == 1 ? 0 : (durationIndex == 6 ? 1 : 2)
 	const newPlanId = plans.essentialProductId[idx]
-
+	console.log(newPlanId, "newPlanId");
 	// revise the subscription
 	const accessToken = await getPaypalAccessToken();
 	const baseUrl = process.env.PAYPAL_API_BASE_URL;
-
-	const revisePlan = await axios.post(`${baseUrl}/v1/billing/subscriptions/${subscriptionId}/revise`, {
-		plan_id: newPlanId
-	},
+	console.log(subData, "sub Data");
+	const newSubData = {
+		plan_id: newPlanId,
+		shipping_amount: subData.shipping_amount,
+		shipping_address: {
+			name: {
+				full_name: subData.subscriber.name.given_name + " " + subData.subscriber.name.surname
+			},
+			address: subData.subscriber.shipping_address.address,
+		},
+		application_context: {
+            brand_name: process.env.BRAND_NAME || 'Your Brand',
+            locale: 'en-US',
+            user_action: 'SUBSCRIBE_NOW',
+            return_url: process.env.PAYPAL_SUCCESS_REDIRECT_URL,
+            cancel_url: process.env.PAYPAL_CANCEL_REDIRECT_URL,
+          }
+	}
+	console.log(newSubData, "new data insfpfslf");
+	const revisePlan = await axios.post(`${baseUrl}/v1/billing/subscriptions/${subscriptionId}/revise`, newSubData,
 		{
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 				'Content-Type': 'application/json',
 			},
 		});
+
+	console.log(revisePlan, "revisePlan");
 	if (revisePlan.status !== 200) {
 		return {
 			success: false,
@@ -180,7 +198,8 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 		// if donwgrade the downgrade the subscription
 		let downgrade;
 		if (message === 'downgrade') {
-			downgrade = await downgardeSubscription(subscriptionId, subscriptionDetails.data.plan_id, downGradeDuration);
+			downgrade = await downgardeSubscription(subscriptionId, subscriptionDetails.data.plan_id, downGradeDuration, subscriptionDetails.data);
+			console.dir(downgrade, "downgrade fff");
 			if (!downgrade.success) {
 				return res.status(400).json({
 					success: false,
@@ -193,15 +212,16 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 
 
 		// perform paypal subscription pause 
-		const pauseDetails = await performPaypalSubscriptionPause(message, subscriptionId);
-		if (!pauseDetails.success) {
-			return res.status(400).json({
-				success: false,
-				message: pauseDetails.message,
-				status: 400
-			})
+		if (message === 'cancel' || message === 'suspend') {
+			const pauseDetails = await performPaypalSubscriptionPause(message, subscriptionId);
+			if (!pauseDetails.success) {
+				return res.status(400).json({
+					success: false,
+					message: pauseDetails.message,
+					status: 400
+				})
+			}
 		}
-
 		const newQueueDoc = {
 			userId: userId,
 			updatePlanDate: nextBillingDate.toISOString().split('.')[0] + 'Z', // Remove milliseconds

@@ -33,3 +33,30 @@ export interface ExpressionData {
     catagoryName:string;
     products:any[]
   }
+
+  export interface RefundLog {
+    id: string
+    status: string
+    amount: string
+    createdAt: string
+    seller_payable_breakdown: {
+      gross_amount: {
+        currency_code: string
+        value: string
+      }
+      paypal_fee: {
+        currency_code: string
+        value: string
+      }
+      net_amount: {
+        currency_code: string
+        value: string
+      }
+      total_refunded_amount: {
+        currency_code: string
+        value: string
+      }
+    }
+  }
+  
+  
