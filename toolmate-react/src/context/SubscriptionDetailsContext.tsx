@@ -30,7 +30,7 @@ interface SubscriptionContextType {
   isCancelSuspendLoading: boolean;
   isCancelCancelLoading: boolean;
   isCancelDowngradeLoading: boolean;
-
+  transactionLogs: any[];
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -49,7 +49,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [isCancelSuspendLoading, setIsCancelSuspendLoading] = useState(false);
   const [isCancelCancelLoading, setIsCancelCancelLoading] = useState(false);
   const [isCancelDowngradeLoading, setIsCancelDowngradeLoading] = useState(false);
-
+  const [transactionLogs, setTransactionLogs] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -146,12 +146,13 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getSubscriptionDetails`, {
         subscriptionId
       });
-
+      console.log(response.data, "responsedd");
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
 
       const subscription = response.data.subscription;
+      const transactionLogs = response.data.transactions;
       setSubscriptionData({
         planName: subscription.planName,
         subscriptionId: subscription.id,
@@ -163,6 +164,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         lastPaidOn: subscription.billing_info.last_payment.time,
         cycleExecutionLogs: subscription.billing_info.cycle_executions
       });
+      setTransactionLogs(transactionLogs);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -252,6 +254,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         isProPlanSubscribed,
         requestSubscriptionPause,
         handleRemovePauseSubscription,
+        transactionLogs,
         isCancelSuspendLoading,
         isCancelCancelLoading,
         isCancelDowngradeLoading,

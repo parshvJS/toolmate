@@ -59,4 +59,24 @@ export interface ExpressionData {
     }
   }
   
+  export interface TransationLogs{
+    id: string;
+    status: string;
+    time: string;
+    amount_with_breakdown: {
+      gross_amount: {
+        currency_code: string;
+        value: string;
+      };
+      fee_amount: {
+        currency_code: string;
+        value: string;
+      };
+      net_amount: {
+        currency_code: string;
+        value: string;
+      };
+    };
+
+  }
   

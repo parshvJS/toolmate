@@ -26,6 +26,7 @@ import TermsOfService from "./_open/pages/legalDocs/TermAndCon";
 import PrivacyPolicy from "./_open/pages/legalDocs/PrivacyPolicy";
 import SafetyPolicy from "./_open/pages/legalDocs/SafetyPolicy";
 import ManageSub from "./_private/pages/ManageSub";
+import SubscriptionLayout  from "./_private/pages/subscription/SubscriptionLayout";
 
 function App() {
   const { user } = useUser()
@@ -64,7 +65,7 @@ function App() {
             <Route path="/matey/:sessionId" element={<ChatPage />} />
             <Route path="/c" element={<ChatPageNew />} />
           </Route>
-        <Route path="/manage-subscription" element={<ManageSub/>}/>
+        <Route path="/manage-subscription" element={<SubscriptionLayout/>}/>
         </Route>
       </Routes>
 

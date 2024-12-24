@@ -35,7 +35,7 @@ import { pricing } from "@/constants";
 import { usePriceContext } from "@/context/pricingContext";
 import { toast } from "@/hooks/use-toast";
 import axios from "axios";
-import { RefundLogsTable } from "@/components/custom/Refund-log-table";
+import { RefundLogsTable } from "@/components/custom/tables/tables/Refund-log-table";
 export default function ManageSub() {
     const [activeTab, setActiveTab] = useState("details");
     const { userData } = useContext(UserContext);
@@ -62,7 +62,7 @@ export default function ManageSub() {
         isCancelDowngradeLoading,
         handleRemovePauseSubscription,
     } = useSubscription();
-
+    console.log(subscriptionData, "subscriptionData");
     const [isInfoPanalOpen, setIsInfoPanalOpen] = useState(false);
     const [panalFlag, setPanalFlag] = useState<"suspend" | "cancel" | "downgrade">("suspend");
     // dialogs 
@@ -439,7 +439,7 @@ export default function ManageSub() {
                     {isShowCycleDetails && <CycleLogCard log={subscriptionData.cycleExecutionLogs} />}
                 </div>
             </div>
-        );
+        );  
     }
 
     function CycleLogCard({ log }: { log: any[] }) {

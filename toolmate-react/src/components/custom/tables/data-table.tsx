@@ -21,15 +21,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[]
-    data: TData[]
-}
-
-export function DataTable<TData, TValue>({
+export function DataTable({
     columns,
     data,
-}: DataTableProps<TData, TValue>) {
+}:any) {
     const [sorting, setSorting] = useState<SortingState>([])
 
     const table = useReactTable({

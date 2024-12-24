@@ -122,7 +122,7 @@ export async function createDefaultBillingPlan(req: any, res: any) {
             "Unified product for all subscription plans",
             accessToken
         );
-        
+
         const billingPlans = await createBillingPlans(
             plans.map((plan) => ({
                 ...plan,
@@ -137,11 +137,12 @@ export async function createDefaultBillingPlan(req: any, res: any) {
         }
         const essential_productId = [];
         const pro_productId = [];
+        console.dir(billingPlans);
         for (const plan of billingPlans) {
-            if (plan.product_id === productIds.ESSENTIAL) {
-                essential_productId.push(plan.id);
+            if (plan.type === "ESSENTIAL") {
+                essential_productId.push(plan.plan.id);
             } else {
-                pro_productId.push(plan.id);
+                pro_productId.push(plan.plan.id);
             }
         }
 
@@ -218,7 +219,10 @@ async function createBillingPlans(plans: {
                     },
                 });
                 console.log("Billing plan created:", response.data);
-                billingPlans.push(response.data);
+                billingPlans.push({
+                    type: plan.planType,
+                    plan: response.data,
+                });
                 break;
             } catch (error: any) {
                 console.error("Error creating billing plan:", error.response?.data || error.message);

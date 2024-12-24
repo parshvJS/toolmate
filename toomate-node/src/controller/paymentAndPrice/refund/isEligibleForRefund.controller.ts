@@ -14,18 +14,18 @@ export async function isEligibleForRefund(req: Request, res: Response) {
         const { userId } = req.body;
 
         if (!userId) {
-            return res.status(400).json({ message: "User ID is required", success: false });
+            return res.status(400).json({ message: "User ID is required", success: false, isEligible: false });
         }
 
         const userSub = await UserPayment.findOne({ userId }).lean();
 
-        if (!userSub) {
-            return res.status(400).json({ message: "No active subscription found", success: false });
+        if (!userSub || !userSub.activePlan) {
+            return res.status(200).json({ message: "No active subscription found", success: false, isEligible: false });
         }
 
         const subscriptionData = await getSubscriptionData(userSub.activePlan);
         if (!subscriptionData.success) {
-            return res.status(404).json({ message: "Subscription not found", success: false });
+            return res.status(200).json({ message: "Subscription not found", success: false, isEligible: false });
         }
 
         const status = subscriptionData.data.status;
@@ -65,7 +65,7 @@ export async function isEligibleForRefund(req: Request, res: Response) {
             success: true,
         });
     } catch (error: any) {
-        return res.status(500).json({ message: error.message, success: false });
+        return res.status(500).json({ message: error.message, success: false, isEligible: false });
     }
 }
 
