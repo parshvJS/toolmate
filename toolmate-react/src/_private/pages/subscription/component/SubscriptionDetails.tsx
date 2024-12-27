@@ -5,7 +5,7 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-  } from "@/components/ui/card"
+} from "@/components/ui/card"
 
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,20 +25,20 @@ export default function SubscriptionDetails() {
     const [isResumeOpen, setIsResumeOpen] = useState(false); // resume subscription request
     const [isCancelSuspendOpen, setIsCancelSuspendOpen] = useState(false); // cancel suspend request
 
-    
+
     const {
         requestSubscriptionPause,
         isRequestSubscriptionPauseLoading,
         isSuspended,
         isSuspendRequested,
-        isCancelRequested,    
+        isCancelRequested,
         isCancelSuspendLoading,
         handleRemovePauseSubscription
     } = useSubscription();
     const {
         isPriceLoading,
     } = usePriceContext();
-    const {userData} = useContext(UserContext)
+    const { userData } = useContext(UserContext)
 
 
     return <div>

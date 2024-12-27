@@ -8,6 +8,8 @@ import PaymentSession from '../../models/paymentSession.model.js';
 import CouponCode from '../../models/admin/couponCode.model.js';
 import { UserPayment } from '../../models/userPayment.model.js';
 import getPaypalAccessToken from '../../utils/paypalUtils.js';
+import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
+import OverDueList from '../../models/OverDueList.model.js';
 
 dotenv.config();
 
@@ -176,6 +178,15 @@ class PaymentProcessor {
     await connectDB();
     try {
       const { productId, userId, isCouponCodeApplied, CouponCode: couponInput, planName } = req.body;
+
+
+      // remove the previous overDue or subscription pause request
+
+      await Promise.all([
+        updateSubscriptionQueue.deleteMany({ userId }),
+        OverDueList.deleteMany({ userId })
+      ]);
+
 
       // Validate basic requirements
       if (!productId || !userId) {

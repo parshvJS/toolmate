@@ -10,6 +10,10 @@ const OverDueListSchema = new mongoose.Schema({
         type:String,
         required: true
     },
+    planAccess:{
+        type: Number,
+        required: true
+    }
 },{timestamps: true});
 
 const OverDueList = mongoose.model('OverDueList', OverDueListSchema);

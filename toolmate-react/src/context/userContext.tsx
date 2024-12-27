@@ -1,11 +1,10 @@
-import { createContext, ReactNode, useEffect } from 'react';
+import { createContext, ReactNode, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { env } from "@/lib/environment";
 import { useAuth } from "@clerk/clerk-react";
 import { ChatItem, iChatname } from '@/types/types';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 
 
 interface UserData {
@@ -13,6 +12,9 @@ interface UserData {
     id: string;
     activePlan: string;
     sideBarHisotry: iChatname[];
+    isFree?: boolean | null,
+    route?: string | null
+    suspendedPlan?: string | null
 }
 
 interface UserContextType {
@@ -22,10 +24,12 @@ interface UserContextType {
     isLoading: boolean;
     isError: boolean;
     isFetching: boolean;
+    isOverdue: boolean;
     newIdForCache: (id: string) => void;
     unshiftiChatname: (newItem: ChatItem) => void;
     retrieveCache: () => ChatItem[];
-    deleteCacheElement: (id: string) => void
+    deleteCacheElement: (id: string) => void,
+    setIsOverdue: (status: boolean) => void
 }
 
 const INITIAL_USER_DATA: UserContextType = {
@@ -35,10 +39,12 @@ const INITIAL_USER_DATA: UserContextType = {
     isLoading: false,
     isError: false,
     isFetching: false,
+    isOverdue: false,
     unshiftiChatname: () => { },
     newIdForCache: () => { },
     retrieveCache: () => { return [] },
-    deleteCacheElement: () => { }
+    deleteCacheElement: () => { },
+    setIsOverdue: () => { }
 };
 
 const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
@@ -46,7 +52,7 @@ const UserContext = createContext<UserContextType>(INITIAL_USER_DATA);
 function UserContextProvider({ children }: { children: ReactNode }) {
     const { userId } = useAuth();
     const queryClient = useQueryClient();
-    const { toast } = useToast()
+    const [isOverdue, setIsOverdue] = useState<boolean>(false);
     const navigate = useNavigate()
     const { data: userData, isLoading, isError, isFetching } = useQuery<UserData, Error>({
         queryKey: ['user', userId],
@@ -55,13 +61,22 @@ function UserContextProvider({ children }: { children: ReactNode }) {
                 throw new Error("User ID is not available");
             }
             console.log(userId, "userId");
-            const response = await axios.post<{ data: UserData }>(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
+            const response = await axios.post<{ data: UserData, route: string | null }>(`${env.domain}/api/v1/getUserPaidAndPersonalInfo`, {
                 clerkUserId: userId,
             });
-            console.log(response.data.data, "response.data.data");
+            console.log(
+                response.data.data,
+                "response.data.datasdfsdfsdfsd"
+            )
+            if (response.data.route !== null) {
+                if (response.data.route === "/overdue") {
+                    setIsOverdue(true)
+                }
+                console.log("redirecting to ", response.data)
+                navigate(response.data.route)
+            }
             const res = response.data.data;
-            // const isFreeUser=  response.data.data.planAccess[0];
-            console.log(res, "res");
+
             return res;
         },
         enabled: !!userId,                  // Only run the query if userId exists
@@ -72,7 +87,6 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         // Cache data forever (you can change this if you want a specific time)
     });
     useEffect(() => {
-
         console.log(userData?.id, "userId");
     }, [userData?.id])
 
@@ -223,10 +237,12 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         userId,
         userData,
         historyData,
+        isOverdue,
         isLoading,
         isError,
         isFetching,
         unshiftiChatname,
+        setIsOverdue,
         newIdForCache,
         retrieveCache,
         deleteCacheElement

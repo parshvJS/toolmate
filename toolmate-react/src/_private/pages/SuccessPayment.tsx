@@ -1,7 +1,7 @@
-import Confetti from 'react-confetti'
-import { useContext, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom';
-import { CircleCheck, CreditCard } from 'lucide-react';
+import Confetti from 'react-confetti';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CircleCheck, CreditCard, LoaderCircle } from 'lucide-react';
 import MateyExpression from '@/components/custom/MateyExpression';
 import axios from 'axios';
 import { UserContext } from '@/context/userContext';
@@ -9,66 +9,99 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function SuccessPayment() {
     const { userData } = useContext(UserContext);
-    const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
-    const queryParams = new URLSearchParams(window.location.search);
-    const ba_token = queryParams.get('ba_token');
-    const subscription_id = queryParams.get('subscription_id');
-    const [planData, setPlanData] = useState<any>();
     const navigate = useNavigate();
     const { toast } = useToast();
+
+    // State management
+    const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const [baToken, setBaToken] = useState<string | null>(null);
+    const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+    const [planData, setPlanData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [requestSent, setRequestSent] = useState(false); // To prevent multiple requests
+
+    // Update dimensions for Confetti on window resize
     useEffect(() => {
         const handleResize = () => {
             setDimensions({ width: window.innerWidth, height: window.innerHeight });
         };
-
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-
+    // Extract query parameters on component mount
     useEffect(() => {
-        const data = JSON.parse(localStorage.getItem('paypalData') || '{}');
-        console.log(data, "data");
-        if (ba_token && data) {
-            const localToken = data.ba;
-            if (localToken === ba_token) {
-                setPlanData(data);
-            }
+        const queryParams = new URLSearchParams(window.location.search);
+        setBaToken(queryParams.get('ba_token'));
+        setSubscriptionId(queryParams.get('subscription_id'));
+    }, []);
+
+    // Fetch plan data and confirm subscription
+    useEffect(() => {
+        // Prevent unnecessary API calls
+        if (!baToken || !subscriptionId || !userData || requestSent) {
+            return;
         }
 
+        const data = JSON.parse(localStorage.getItem('paypalData') || '{}');
+        if (data?.ba === baToken) {
+            setPlanData(data);
+        } else {
+            console.error("BA token mismatch or missing paypalData in localStorage");
+        }
+    }, [baToken, subscriptionId, userData, requestSent]);
 
-        async function storeSubscriptionLog() {
-            if (!userData) return;
+    useEffect(() => {
+        async function confirmSubscription() {
+            if (!planData) {
+                console.error("Plan data is missing");
+                return;
+            }
+
+            setIsLoading(true);
             try {
                 const apiData = {
-                    subscriptionId: subscription_id,
+                    subscriptionId: subscriptionId,
                     planName: planData.Packname,
-                    ba: ba_token,
-                    userId: userData?.id
-                }
-                const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/paymentConfirmationAndUpdate`, apiData)
-                console.log(res.data, "res.data");
-                if (res.status !== 200) {
+                    ba: baToken,
+                    userId: userData?.id,
+                };
+
+                console.log("API Data being sent:", apiData);
+
+                const res = await axios.post(
+                    `${import.meta.env.VITE_SERVER_URL}/api/v1/paymentConfirmationAndUpdate`,
+                    apiData
+                );
+
+                if (res.status === 200) {
+                    console.log("Subscription confirmed successfully:", res.data);
+                    localStorage.removeItem('paypalData');
+                    setRequestSent(true); // Mark the request as sent
                     toast({
-                        title: "Error",
-                        description: res.data.message,
-                        variant: 'destructive',
-                    })
-                    return;
+                        title: "Success",
+                        description: "Your subscription has been confirmed successfully.",
+                        variant: "default",
+                    });
+                } else {
+                    throw new Error(res.data.message || "Unexpected error occurred");
                 }
-                localStorage.removeItem('paypalData');
             } catch (error: any) {
-                console.log(error.message);
+                console.error("Error confirming subscription:", error.message);
                 toast({
                     title: "Error",
                     description: error.message,
-                    variant: 'destructive',
-                })
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
             }
         }
-        storeSubscriptionLog();
-    }, [ba_token, subscription_id, userData])
 
+        if (planData && !requestSent) {
+            confirmSubscription();
+        }
+    }, [planData, baToken, subscriptionId, userData, requestSent]);
 
     return (
         <div className="flex justify-center items-center h-screen">
@@ -78,44 +111,48 @@ export default function SuccessPayment() {
                 recycle={false}
             />
 
-            <div className='flex w-full h-full items-center justify-center'>
-                {/* card */}
-                <div className='shadow-md p-4 rounded-lg border border-slate-400 bg-gradient-to-tr from-paleYellow to-mangoYellow'>
-                    <div className='flex gap-2 items-center'>
-                        <MateyExpression expression='2thumb' />
-
-                        <div className='flex flex-col  items-start leading-4'>
-                            <p className='font-semibold text-xl'>Plan Subscription Successfull</p>
-                            <p className='text-slate-500'>Payment Completed</p>
+            <div className="flex w-full h-full items-center justify-center">
+                <div className="shadow-md p-4 rounded-lg border border-slate-400 bg-gradient-to-tr from-paleYellow to-mangoYellow">
+                    <div className="flex gap-2 items-center">
+                        <MateyExpression expression="2thumb" />
+                        <div className="flex flex-col items-start leading-4">
+                            <p className="font-semibold text-xl">Plan Subscription Successful</p>
+                            <p className="text-slate-500">Payment Completed</p>
                         </div>
                     </div>
-                    {/* info */}
-                    {
-                        planData &&
-                        <div className='border-t-2 border-slate-700 my-4'>
-                            <div className='flex flex-col gap-2 mt-4 items-start font-semibold text-xl'>
-                                <p> Subscribed To {planData.Packname}</p>
-                                <p className='text-slate-600  font-medium'>{planData.price}</p>
+
+                    {planData && (
+                        <div className="border-t-2 border-slate-700 my-4">
+                            <div className="flex flex-col gap-2 mt-4 items-start font-semibold text-xl">
+                                <p>Subscribed To: {planData.Packname}</p>
+                                <p className="text-slate-600 font-medium">Price: {planData.price}</p>
                             </div>
                         </div>
-                    }
+                    )}
+
+                    {isLoading && (
+                        <div className="flex gap-2 items-center">
+                            <LoaderCircle />
+                            <p>Please Wait</p>
+                        </div>
+                    )}
 
                     <div
                         onClick={() => navigate('/dashboard')}
-                        className='flex justify-center items-center mt-4 gap-2 bg-yellow px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer'>
+                        className="flex justify-center items-center mt-4 gap-2 bg-yellow px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer"
+                    >
                         <CircleCheck size={22} />
                         Go To Dashboard
                     </div>
                     <div
                         onClick={() => navigate('/manage-subscription')}
-                        className='flex justify-center items-center mt-2 gap-2 bg-yellow/40 px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer'>
+                        className="flex justify-center items-center mt-2 gap-2 bg-yellow/40 px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer"
+                    >
                         <CreditCard size={22} />
                         Manage Subscription
                     </div>
                 </div>
-
-
             </div>
         </div>
-    )
+    );
 }

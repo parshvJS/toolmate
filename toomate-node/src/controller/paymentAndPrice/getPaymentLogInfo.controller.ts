@@ -47,7 +47,7 @@ export async function getSubscriptionDetails(req: Request, res: Response) {
         const subscriptionResult = await fetchSubscriptionDetails(subscriptionId, accessToken);
         const startDate = new Date(subscriptionResult.data.start_time);
         const currDate = new Date();
-        const transactionResult = await fetchTransactionDetails(subscriptionId,startDate,currDate, accessToken);
+        const transactionResult = await fetchTransactionDetails(subscriptionId, startDate, currDate, accessToken);
         if (!subscriptionResult.success) {
             return res.status(400).json({ message: "Failed to retrieve subscription details.", error: subscriptionResult.data });
         }
@@ -67,7 +67,7 @@ export async function getSubscriptionDetails(req: Request, res: Response) {
 }
 
 // Function to fetch transaction details
-async function fetchTransactionDetails(subscriptionId: string,startDate:Date,currDate:Date, accessToken: string) {
+async function fetchTransactionDetails(subscriptionId: string, startDate: Date, currDate: Date, accessToken: string) {
     try {
         const response = await axios.get(
             `${BASE_PAYPAL_URL}/v1/billing/subscriptions/${subscriptionId}/transactions?start_time=${startDate.toISOString()}&end_time=${currDate.toISOString()}`,
@@ -77,7 +77,7 @@ async function fetchTransactionDetails(subscriptionId: string,startDate:Date,cur
                 },
             }
         );
-
+        console.log(response.data, "response-----4344------------");
         const data = response.data.transactions.map((trs: any) => {
             return {
                 id: trs.id,
@@ -90,7 +90,7 @@ async function fetchTransactionDetails(subscriptionId: string,startDate:Date,cur
         if (!response) {
             return { success: false, data: `No transaction details found` };
         }
-        return { success: true, data: data};
+        return { success: true, data: data };
     } catch (error: any) {
         return { success: false, data: `Error fetching transaction details: ${error.response?.data || error.message}` };
     }

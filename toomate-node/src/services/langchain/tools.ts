@@ -2,7 +2,7 @@ import { tool } from "@langchain/core/tools"; // Import the tool function from L
 
 // Tool 1: Normal Advice
 const normalAdvice = tool(
-  async function normalAdviceTool(prompt:string) {
+  async function normalAdviceTool(prompt: string) {
     // Logic to generate normal advice
     return `Here's some general advice regarding: ${prompt}`;
   },
@@ -14,7 +14,7 @@ const normalAdvice = tool(
 
 // Tool 2: Community Suggestion
 const communitySuggestion = tool(
-  async function communitySuggestionTool(prompt:string) {
+  async function communitySuggestionTool(prompt: string) {
     // Logic to generate community suggestions
     return `Here are some community suggestions for: ${prompt}`;
   },
@@ -26,7 +26,7 @@ const communitySuggestion = tool(
 
 // Tool 3: Product Suggestion
 const productSuggestion = tool(
-  async function productSuggestionTool(prompt:string) {
+  async function productSuggestionTool(prompt: string) {
     // Logic to generate product suggestions
     return `You might want to consider these products for: ${prompt}`;
   },
@@ -38,7 +38,7 @@ const productSuggestion = tool(
 
 // Tool 4: Guidance for Project
 const guidanceForProject = tool(
-  async function guidanceForProjectTool(prompt:string) {
+  async function guidanceForProjectTool(prompt: string) {
     // Logic to provide project guidance
     return `Here's some guidance for your project regarding: ${prompt}`;
   },
@@ -50,7 +50,7 @@ const guidanceForProject = tool(
 
 // Tool 5: Budget Planning
 const budgetPlanning = tool(
-  async function budgetPlanningTool(prompt:string) {
+  async function budgetPlanningTool(prompt: string) {
     // Logic for budget planning
     return `Here are some budget planning tips for: ${prompt}`;
   },
@@ -62,7 +62,7 @@ const budgetPlanning = tool(
 
 // Tool 6: Project Time Estimation
 const projectTimeEstimation = tool(
-  async function projectTimeEstimationTool(prompt:string) {
+  async function projectTimeEstimationTool(prompt: string) {
     // Logic for estimating project time
     return `Estimated time for your project: ${prompt}`;
   },

@@ -140,7 +140,7 @@ export async function resumePlanAccess(req: Request, res: Response) {
     }
 
     return res.status(200).json({
-      message: 'Subscription plan updated successfully',
+      message: 'Subscription plan updated successfully! changes will reflect on next billing cycle',
       success: true,
       status: 200,
     });

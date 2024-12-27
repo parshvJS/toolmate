@@ -61,7 +61,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (lastLog.status === 'cancel request saved to the queue') {
         setIsCancelRequested(true);
       }
-      if (lastLog.status.toUpperCase() === 'SUSPENDED') {
+      if (lastLog.status.includes('Subscription SUSPEND')) {
         setIsSuspended(true);
       }
       if (userData?.planAccess[2]) {

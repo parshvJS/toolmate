@@ -21,6 +21,7 @@
         "@langchain/openai": "^0.3.4",
         "aws-sdk": "^2.1691.0",
         "axios": "^1.7.9",
+        "bottleneck": "^2.19.5",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
         "crypto-js": "^4.2.0",

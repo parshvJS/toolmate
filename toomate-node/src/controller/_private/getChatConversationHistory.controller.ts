@@ -165,7 +165,7 @@ async function processChatEntry(chat: any): Promise<ChatEntry> {
 
         // Fetch all products in one query
         const productResponse = await getProductDetails(allProductIds);
-        
+
         if (productResponse.success && productResponse.data) {
             // Create a map for quick product lookup
             const productMap = new Map(

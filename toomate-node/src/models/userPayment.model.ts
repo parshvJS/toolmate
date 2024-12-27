@@ -9,9 +9,13 @@ const UserPaymentSchema = new Schema({
     required: true
   },
   // store paypal subscriptionId
-  activePlan:{
+  activePlan: {
     type: String || null,
-    default:''
+    default: ''
+  },
+  suspendedPlan: {
+    type: String || null,
+    default: ''
   },
   planAccess: {
     type: [Boolean],

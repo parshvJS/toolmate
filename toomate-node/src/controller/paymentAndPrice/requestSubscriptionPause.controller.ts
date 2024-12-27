@@ -5,6 +5,7 @@ import getPaypalAccessToken from '../../utils/paypalUtils.js';
 import updateSubscriptionQueue from '../../models/updateSubscriptionQueue.model.js';
 import userPaymentLogs from '../../models/userPaymentLogs.model.js';
 import { PaymentPlan } from '../../models/admin/paymentPlan.model.js';
+import { UserPayment } from '../../models/userPayment.model.js';
 // user can suspend their subscription
 
 const accessToken = await getPaypalAccessToken();
@@ -69,12 +70,12 @@ async function downgardeSubscription(subscriptionId: string, planId: string, dur
 			address: subData.subscriber.shipping_address.address,
 		},
 		application_context: {
-            brand_name: process.env.BRAND_NAME || 'Your Brand',
-            locale: 'en-US',
-            user_action: 'SUBSCRIBE_NOW',
-            return_url: process.env.PAYPAL_SUCCESS_REDIRECT_URL,
-            cancel_url: process.env.PAYPAL_CANCEL_REDIRECT_URL,
-          }
+			brand_name: process.env.BRAND_NAME || 'Your Brand',
+			locale: 'en-US',
+			user_action: 'SUBSCRIBE_NOW',
+			return_url: process.env.PAYPAL_SUCCESS_REDIRECT_URL,
+			cancel_url: process.env.PAYPAL_CANCEL_REDIRECT_URL,
+		}
 	}
 	console.log(newSubData, "new data insfpfslf");
 	const revisePlan = await axios.post(`${baseUrl}/v1/billing/subscriptions/${subscriptionId}/revise`, newSubData,
@@ -222,6 +223,15 @@ export async function requestSubscriptionPause(req: Request, res: Response) {
 				})
 			}
 		}
+
+		if (message == "suspend") {
+			await UserPayment.findOneAndUpdate({
+				userId: userId
+			}, {
+				suspendedPlan: subscriptionId
+			})
+		}
+
 		const newQueueDoc = {
 			userId: userId,
 			updatePlanDate: nextBillingDate.toISOString().split('.')[0] + 'Z', // Remove milliseconds
@@ -284,6 +294,7 @@ async function performPaypalSubscriptionPause(operationType: "suspend" | "cancel
 	try {
 		if (operationType === "suspend") {
 			return await suspendPaypalSubscription(subscriptionId, accessToken);
+
 		} else if (operationType === "cancel") {
 			return await cancelPaypalSubscription(subscriptionId, accessToken);
 		} else {

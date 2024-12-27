@@ -29,6 +29,8 @@ import { resumePlanAccess } from '../../controller/paymentAndPrice/resumePlanAcc
 import { removeSubscriptionPause } from '../../controller/paymentAndPrice/removeSubscriptionPause.controller.js';
 import { isEligibleForRefund } from '../../controller/paymentAndPrice/refund/isEligibleForRefund.controller.js';
 import { getRefundLogs } from '../../controller/paymentAndPrice/refund/getRefundLogs.controller.js';
+import { revokeOverDuePlan } from '../../controller/_private/revokeOverDuePlan.controller.js';
+import { getSearchData } from '../../controller/temp.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route('/getUserPaidAndPersonalInfo').post(handleUserPaidAndPersonalInfo);
@@ -59,8 +61,13 @@ paidDashbaord.route('/getSubscriptionDetails').post(getSubscriptionDetails);
 paidDashbaord.route('/requestSubscriptionPause').post(requestSubscriptionPause);
 paidDashbaord.route('/removeSubscriptionPauseRequest').post(removeSubscriptionPause);
 paidDashbaord.route('/resumeSubscription').post(resumePlanAccess);
+// this api handles the reverting the overdue plan
+paidDashbaord.route('/revokeOverDuePlan').post(revokeOverDuePlan);
 // refund 
 paidDashbaord.route('/refundRequest').post(paymentRefundRequest);
 paidDashbaord.route('/getRefundEligibilityStatus').post(isEligibleForRefund);
 paidDashbaord.route('/getRefundLogs').post(getRefundLogs);
+
+
+paidDashbaord.route('/search').post(getSearchData);
 export { paidDashbaord };

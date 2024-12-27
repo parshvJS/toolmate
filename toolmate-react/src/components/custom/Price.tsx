@@ -229,6 +229,8 @@ export default function Price() {
       setPaypalLoading(false);
     }
   }
+
+
   return (
     <div className="w-full h-full">
       <Tabs

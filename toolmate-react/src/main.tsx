@@ -20,14 +20,14 @@ createRoot(document.getElementById('root')!).render(
         <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
             <QueryClientProvider client={queryClient}>
 
-                {/* custom providers */}
-                <UserContextProvider>
-                    <SubscriptionProvider>
-                        <PriceProvider>
-                            <App />
-                        </PriceProvider>
-                    </SubscriptionProvider>
-                </UserContextProvider>
+                    {/* custom providers */}
+                    <UserContextProvider>
+                        <SubscriptionProvider>
+                            <PriceProvider>
+                                <App />
+                            </PriceProvider>
+                        </SubscriptionProvider>
+                    </UserContextProvider>
             </QueryClientProvider>
 
         </ClerkProvider>
