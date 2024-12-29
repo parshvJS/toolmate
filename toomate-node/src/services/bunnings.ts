@@ -35,47 +35,11 @@ interface IPriceDetail {
 const tokenCache = new NodeCache({ stdTTL: 50 * 60 }); // 50 minutes TTL
 
 // Rate limiting and queue mechanism
-const queue: (() => Promise<any>)[] = [];
-let isProcessingQueue = false;
-const REQUEST_INTERVAL = 80; // 500ms delay between requests
 const MAX_PRODUCT_PICK = 3;
-const MAX_CONCURRENT_REQUESTS = 10;
-let lastRequestTime = 0;
+const MAX_CONCURRENT_REQUESTS = 2;
 
-const enqueueRequest = <T>(requestFn: () => Promise<T>): Promise<T> => {
-    return new Promise((resolve, reject) => {
-        queue.push(() => requestFn().then(resolve).catch(reject));
-        processQueue();
-    });
-};
-
-const processQueue = async () => {
-    if (isProcessingQueue || queue.length === 0) return;
-
-    isProcessingQueue = true;
-
-    while (queue.length > 0) {
-        const now = Date.now();
-        const timeSinceLastRequest = now - lastRequestTime;
-
-        if (timeSinceLastRequest < REQUEST_INTERVAL) {
-            await new Promise((resolve) => setTimeout(resolve, REQUEST_INTERVAL - timeSinceLastRequest));
-        }
-
-        const requestFn = queue.shift();
-        if (requestFn) {
-            try {
-                await requestFn();
-            } catch (error) {
-                console.error("Error processing queued request:", error);
-            }
-        }
-
-        lastRequestTime = Date.now();
-    }
-
-    isProcessingQueue = false;
-};
+// limit number of concurrent requests
+const limit = pLimit(MAX_CONCURRENT_REQUESTS); // Increased concurrency
 
 // Helper: Make API Request
 const makeRequest = async <T>(
@@ -84,17 +48,13 @@ const makeRequest = async <T>(
     headers: Record<string, string>,
     data?: any
 ): Promise<T | false> => {
-    const requestFn = async (): Promise<T> => {
-        try {
-            const response = await axios({ method, url, headers, data });
-            return response.data;
-        } catch (error: any) {
-            console.error('API Request Error:', { url, method, data, error: error.response?.data || error.message });
-            throw error;
-        }
-    };
-
-    return enqueueRequest(requestFn);
+    try {
+        const response = await axios({ method, url, headers, data });
+        return response.data;
+    } catch (error: any) {
+        console.error('API Request Error:', { url, method, data, error: error.response?.data || error.message });
+        throw error;
+    }
 };
 
 // Fetch Access Token
@@ -140,7 +100,6 @@ const getItemDetails = async (itemNumbers: { query: string; results: string[] }[
         'Content-Type': 'application/json',
         'x-version-api': '1.4',
     };
-    const limit = pLimit(MAX_CONCURRENT_REQUESTS); // Increased concurrency
 
     const itemDetailsMap: Record<string, any> = {};
 
@@ -210,7 +169,6 @@ export const searchBunningsProducts = async (
         'Content-Type': 'application/json',
         'x-version-api': '1.4',
     };
-    const limit = pLimit(MAX_CONCURRENT_REQUESTS);
 
     const searchResults = await Promise.allSettled(
         searchTerms.map((query) =>
@@ -267,24 +225,29 @@ export const searchBunningsProducts = async (
             results: item.results
                 .filter((result) => result.itemNumber && result.enrichedData && result.enrichedData.name)
                 .map((result) => {
+                    console.log(result, "result")
                     const priceDetail = priceMap.get(result.itemNumber) || { unitPrice: 0, lineUnitPrice: 0 };
+                    const url = (result.enrichedData?.modelName && result.enrichedData.modelNumber) ?
+                        `${process.env.BUNNINGS_PUBLIC_URL}/${String(result.enrichedData.modelName).toLowerCase().replace(/\s+/g, "-")}-${result.enrichedData.modelNumber}_p${result.itemNumber}` :
+                        `${process.env.BUNNINGS_PUBLIC_URL}/${String(result.enrichedData.modelName).toLowerCase().replace(/\s+/g, "-")}-_p${result.enrichedData.itemNumber}`;
                     return {
                         itemNumber: result.itemNumber,
-                        title: result.enrichedData.name,
-                        description: result.enrichedData.description,
-                        brand: result.enrichedData.brand.name,
-                        leadingBrand: result.enrichedData.brand.leadingBrand,
-                        newArrival: result.enrichedData.newArrivalFlag,
-                        bestSeller: result.enrichedData.bestSellerFlag,
-                        heroImage: result.enrichedData.picture.primaryAssetURL,
-                        otherImages: result.enrichedData.otherImages.map((img: any) => img.primaryAssetURL),
-                        keySellingPoints: result.enrichedData.keySellingPoints,
-                        microSellingPoints: result.enrichedData.microSiteKeySellingPoint,
+                        title: result.enrichedData?.name || '',
+                        description: result.enrichedData?.description || '',
+                        brand: result.enrichedData?.brand?.name || '',
+                        leadingBrand: result.enrichedData?.brand?.leadingBrand || false,
+                        newArrival: result.enrichedData?.newArrivalFlag || false,
+                        bestSeller: result.enrichedData?.bestSellerFlag || false,
+                        heroImage: result.enrichedData?.picture?.primaryAssetURL || '',
+                        otherImages: result.enrichedData?.otherImages?.map((img: any) => img.primaryAssetURL) || [],
+                        keySellingPoints: result.enrichedData?.keySellingPoints || [],
+                        microSellingPoints: result.enrichedData?.microSiteKeySellingPoint || [],
                         price: {
                             itemNumber: result.itemNumber,
-                            unitPrice: priceDetail.unitPrice,
-                            lineUnitPrice: priceDetail.lineUnitPrice
-                        }
+                            unitPrice: priceDetail.unitPrice || 0,
+                            lineUnitPrice: priceDetail.lineUnitPrice || 0
+                        },
+                        url: url,
                     };
                 })
         }))
@@ -304,7 +267,7 @@ export async function getLocationCodeByLagAndLog(lat: number, log: number) {
     };
 
     const response = await axios.get(
-        `${url}/locations/nearest?latitude=${lat}&longitude=${log}&$skip=0&$top=1000`,
+        `${url}/locations/nearest?latitude=${lat}&longitude=${log}&$skip=0&$top=5`,
         { headers }
     );
 
@@ -331,6 +294,30 @@ export async function getFullLocationDetails(lat: number, log: number) {
         'x-version-api': '1.0',
     };
     const res = await axios.get(
-        `${url}/store/AU?latitude=${lat}&longitude=${log}`,
+        `${url}/store/AU?latitude=${lat}&longitude=${log}&$skip=0&$top=5`,
         { headers }
     );
+
+    if (!res.data || res.data.error) {
+        return {
+            success: false,
+            message: res.data.error || "No location found",
+        }
+    }
+    const newData = res.data.locations.map((location: any) => {
+        return {
+            locationCode: location.locationCode,
+            name: location.name,
+            address: location.address,
+            phone: location.phone,
+            email: location.email,
+            friendlyName: location.friendlyName,
+        }
+    });
+    return {
+        success: true,
+        data: newData,
+    }
+
+
+}

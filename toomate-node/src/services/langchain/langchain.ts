@@ -23,15 +23,17 @@ import UserMemory from '../../models/userMemory.model.js';
 import { encode } from 'gpt-tokenizer';
 import axios from 'axios';
 import BunningsProduct from '../../models/BunningsProduct.model.js';
-import { IBunningsChat } from '../../types/types.js';
+import { IBunningsChat, IChatMemory } from '../../types/types.js';
 import { searchBunningsProducts } from '../bunnings.js';
+import { GPT_MODEL1 } from '../../constants.js';
 
 dotenv.config();
 const openAIApiKey = process.env.OPENAI_API_KEY!;
+
 const llm = new ChatOpenAI({
 	apiKey: openAIApiKey,
 	streaming: true, // Enable streaming if supported
-	model: "gpt-3.5-turbo-0125",
+	model: GPT_MODEL1,
 });
 
 // service for free preview user
@@ -268,7 +270,7 @@ export async function getChatName(prompt: string) {
 }
 
 
-export async function getUserIntend(prompt: string, chatHistory: string, plan: number): Promise<number[]> {
+export async function getUserIntend(prompt: string, chatHistory: IChatMemory, plan: number): Promise<number[]> {
 	let getIntendPrompt = '';
 	if (plan === 1) {
 		getIntendPrompt = `Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]).
@@ -283,7 +285,7 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 		  3. Product Recommendation (Prioritize this if the user’s prompt indicates a need for a specific tool or resource)
 		  4. Follow-up Question for More Understanding (Use this if the prompt is vague or needs clarification)
 		  5. Guidance on the Project (Select this if the user is asking for advice or direction)
-		  6. Emotional Playfulness with Matey(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response.
+		  6. Emotional Playfulness with Matey(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response. only select when chat is small and dont have any strong intend or context to work on other intend
 		
 		User Intent Analysis:
 		1. Evaluate the user’s mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations, guidance, or playfulness with Matey (Intent 6) for encouragement.
@@ -348,6 +350,7 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
 	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
 	5. include 4. follow up question when there is some context of chat and more context can improve the user experience
+
 	**Chat History**: {chatHistory}
 	**User Prompt**: {prompt}
 	
@@ -368,8 +371,10 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 
 	// Parse and clean up the output
 	let intentArray;
+	let length;
 	try {
 		intentArray = JSON.parse(userIntend.trim());
+		length = intentArray.length;
 	} catch (error: any) {
 		console.error('Error parsing user intent:', error.message);
 		intentArray = [5];
@@ -379,18 +384,17 @@ export async function getUserIntend(prompt: string, chatHistory: string, plan: n
 	// Ensure intent 1 is always present
 	intentArray = [1, ...intentArray];
 
-	return intentArray;
+	return intentArray.includes(6) ? [6] : intentArray;
 }
 
 // intend list and user Id
 export async function executeIntend(
 	prompt: string,
-	chatHistory: string,
+	chatHistory: IChatMemory,
 	sessionId: string,
 	intend: number[],
 	userId: string,
 	plan: number,
-	signal: AbortSignal,
 	isBudgetSliderValue: boolean,
 	budgetSliderValue: number,
 	socket: Socket
@@ -420,7 +424,7 @@ export async function executeIntend(
 					socket.emit('status', {
 						message: "Matey Is Typing..."
 					});
-					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, signal, intend.includes(3), intend.includes(2), socket);
+					const generalResponse = await HandleGeneralResponse(prompt, chatHistory, intend.includes(3), intend.includes(2), socket);
 					newChat['message'] = generalResponse;
 					break;
 				}
@@ -430,7 +434,7 @@ export async function executeIntend(
 						message: "Matey Is Finding Community For You..."
 					});
 					newChat['isCommunitySuggested'] = true;
-					const communityId = await HandleCommunityRecommendation(prompt, chatHistory, signal, socket);
+					const communityId = await HandleCommunityRecommendation(prompt, chatHistory, socket);
 					break;
 				}
 				// Product recommendation
@@ -439,11 +443,8 @@ export async function executeIntend(
 						message: "Matey Is Finding Product For You..."
 					});
 
-					// const productIntent = await findAndSuggestProduct(prompt, chatHistory, socket);
-					const productIntent = {
-						success: true,
-						data: [1, 2, 3]
-					}
+					const productIntent = await findAndSuggestProduct(prompt, chatHistory, socket);
+
 
 					// if (!productIntent.success) {
 					// 	socket.emit('error', 'Error occurred while fetching product intent.');
@@ -451,8 +452,7 @@ export async function executeIntend(
 					// }
 
 					// Emit the product list first
-					// socket.emit('productList', productIntent.data);
-					socket.emit('productList', [1, 2, 3]);
+					socket.emit('productList', productIntent.data);
 
 					// Map over product intents and create promises for each
 					let bunningsProductList: IBunningsChat[] | undefined = undefined;
@@ -460,7 +460,7 @@ export async function executeIntend(
 					let aiProductList: any[] | undefined = undefined;
 
 					// const productPromises = productIntent.data.map(async (intent: number | string) => {
-					const productPromises = [1, 2, 3].map(async (intent: number | string) => {
+					const productPromises = productIntent.data.map(async (intent: number | string) => {
 						switch (intent) {
 							case 1:
 								return handleBunningsProduct(prompt, chatHistory, sessionId, isBudgetSliderValue, budgetSliderValue, 0, socket)
@@ -476,7 +476,7 @@ export async function executeIntend(
 									});
 
 							case 2:
-								return HandleProductRecommendation(prompt, chatHistory, signal, isBudgetSliderValue, budgetSliderValue, socket)
+								return HandleProductRecommendation(prompt, chatHistory, isBudgetSliderValue, budgetSliderValue, socket)
 									.then((adsenseProducts) => {
 										adsenseProductList = adsenseProducts;
 										console.log('adsenseProducts', adsenseProducts);
@@ -572,11 +572,12 @@ export async function executeIntend(
 	}
 }
 
-async function findAndSuggestProduct(prompt: string, chatHistory: string, socket: Socket) {
+async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, socket: Socket) {
 	const productIntentPrompt = `Based on the user's prompt and chat history, determine the most suitable product providers. 
 
 	User Prompt: {prompt}
-	Chat Context: {chatHistory}
+	Chat Context: {longTerm}
+	User Specific memory: {shortTerm}
 
 	Provider Selection Criteria:
 	1. Bunnings:
@@ -604,7 +605,7 @@ async function findAndSuggestProduct(prompt: string, chatHistory: string, socket
 	const productIntentTemplate = PromptTemplate.fromTemplate(productIntentPrompt);
 	const productIntentLLMChain = productIntentTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProductIntent = RunnableSequence.from([productIntentLLMChain, new RunnablePassthrough()]);
-	const productIntent = await runnableChainOfProductIntent.invoke({ prompt, chatHistory });
+	const productIntent = await runnableChainOfProductIntent.invoke({ prompt, longTerm: chatHistory.longTermKey, shortTerm: chatHistory.shortTermKey });
 	try {
 
 		const intents = JSON.parse(productIntent);
@@ -630,11 +631,13 @@ async function findAndSuggestProduct(prompt: string, chatHistory: string, socket
 	}
 }
 
-async function followUpQuestion(prompt: string, chatHistory: string, socket: Socket) {
+async function followUpQuestion(prompt: string, chatHistory: IChatMemory, socket: Socket) {
 	const followUpQuestionPrompt = `Based on the user's prompt and chat history, generate a follow-up question to gain a better understanding of the user's needs. 
 
 	User Prompt: {prompt}
-	Chat Context: {chatHistory}
+		Current Chat Memory: {longTerm}
+	User Specific memory: {shortTerm}
+	
 
 	Keep in mind:
 	- The follow-up question should be relevant to the user's prompt and chat history.
@@ -644,7 +647,11 @@ async function followUpQuestion(prompt: string, chatHistory: string, socket: Soc
 	const followUpQuestionTemplate = PromptTemplate.fromTemplate(followUpQuestionPrompt);
 	const followUpQuestionLLMChain = followUpQuestionTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfFollowUpQuestion = RunnableSequence.from([followUpQuestionLLMChain, new RunnablePassthrough()]);
-	const stream = await runnableChainOfFollowUpQuestion.stream({ prompt, chatHistory });
+	const stream = await runnableChainOfFollowUpQuestion.stream({
+		prompt,
+		longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "no context available",
+		shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "no context available"
+	});
 	socket.emit('status', {
 		message: "Matey Have Question..."
 	})
@@ -657,14 +664,15 @@ async function followUpQuestion(prompt: string, chatHistory: string, socket: Soc
 	return gatheredResponse;
 }
 
-async function handleMateyProduct(prompt: string, chatHistory: string, sessionId: string, socket: Socket) {
+async function handleMateyProduct(prompt: string, chatHistory: IChatMemory, sessionId: string, socket: Socket) {
 	socket.emit('status', {
 		message: "Matey Is Preparing Product For You..."
 	})
 	const productPrompt = ` Based On User Prompt and Chat Context Create a use full and relavent product list :
 	
 	User Prompt: {prompt}
-	Chat Context: {chatHistory}
+	Chat Context: {longTerm}
+	User Specific: {shortTerm}
 
 	Output :
 	[
@@ -685,7 +693,11 @@ async function handleMateyProduct(prompt: string, chatHistory: string, sessionId
 	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
-	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
+	const products = await runnableChainOfProduct.invoke({
+		prompt,
+		longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "no context available",
+		shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "no context available"
+	});
 	console.log(products, "is here")
 	try {
 		JSON.parse(products);
@@ -744,9 +756,46 @@ export async function inititalSummurizeChat(chatHistory: string) {
 }
 
 
+
+
+
+// this function is make for long term memory to be shorthath
+export async function summarizeToTokenLimit(text: string, maxTokens: number): Promise<string> {
+	const prompt = `Summarize the following text to fit within ${maxTokens} tokens:
+
+	- Focus on key points and essential details.
+	- Use concise language to ensure brevity.
+	- Avoid unnecessary text or full sentences.
+	Text: ${text}
+	Summary:`;
+
+	const llm = new ChatOpenAI({
+		model: GPT_MODEL1,
+		maxTokens,
+		apiKey: openAIApiKey
+	});
+
+	const summaryTemplate = PromptTemplate.fromTemplate(prompt);
+	const summaryLLMChain = summaryTemplate.pipe(llm).pipe(new StringOutputParser());
+	const runnableChainOfSummary = RunnableSequence.from([summaryLLMChain, new RunnablePassthrough()]);
+
+	const summary = await runnableChainOfSummary.invoke({ text });
+
+	console.log("llm", llm, "Max Tokens", maxTokens, "summary", summary)
+	return summary.trim();
+}
+
+
+
+
+
+
+
+
+
 // get products from bunnigns
 
-async function handleBunningsProduct(prompt: string, chatHistory: string, sessionId: string, isBudgetAvailable: boolean, maxBudget: number, minBudget: number, socket: Socket) {
+async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, sessionId: string, isBudgetAvailable: boolean, maxBudget: number, minBudget: number, socket: Socket) {
 	socket.emit('status', {
 		message: "Matey Is Prepareing Product From Bunnings For You..."
 	})
@@ -754,10 +803,14 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 	const productPrompt = `
 		Based on User Prompt And Chat Context generate DIY Product that are relavent to search in internet and return to user 
 		User Prompt: {prompt}
-		Chat Context: {chatHistory}
+		Chat Context: {shortTerm}
+		User Specific: {longTerm}
 
 		Keep in mind:
 		- The products should be related to DIY and creative projects.
+		- generate in depth and relevent search terms with large and specific product names.
+		- if user have mentioned any specific filter or detail about the product then include that in search term
+		- words per search term is 4-8 words long , detailed and meaningfull
 		- The products should be easily available online.
 		- The products should be suitable for a wide range of users, from beginners to experts.
 		- Data gram format should be valid and parsable to JSON.
@@ -771,17 +824,23 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
 	const productLLMChain = productTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfProduct = RunnableSequence.from([productLLMChain, new RunnablePassthrough()]);
-	const products = await runnableChainOfProduct.invoke({ prompt, chatHistory });
+	const products = await runnableChainOfProduct.invoke({
+		prompt,
+		shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No context available right not",
+		longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No context available right not"
+	});
 
 	try {
 		const parsedProductList = JSON.parse(products.replace(/`/g, '').replace('json', '').replace('JSON', '').replace('Array:', '').trim());
 
 		const bunningsProducts = await searchBunningsProducts(parsedProductList, isBudgetAvailable, maxBudget, minBudget);
 
-		if(!bunningsProducts) {
-			socket.emit('error', 'Error fetching Bunnings products.');
-			return [];
+		if (!bunningsProducts.success) {
+			socket.emit('error', bunningsProducts.message || "Error Generating Bunnings Products")
 		}
+
+		console.log("bunnings products", bunningsProducts)
+
 
 	} catch (error) {
 		console.error('Error fetching Bunnings products:', error);
@@ -792,7 +851,7 @@ async function handleBunningsProduct(prompt: string, chatHistory: string, sessio
 }
 
 
-async function HandleGeneralResponse(prompt: string, chatHistory: string, signal: AbortSignal, isProductSuggestion: boolean, isCommunitySuggestin: boolean, socket: Socket) {
+async function HandleGeneralResponse(prompt: string, chatHistory: IChatMemory, isProductSuggestion: boolean, isCommunitySuggestin: boolean, socket: Socket) {
 	let streamPrompt;
 	const chatHistoryString = JSON.stringify(chatHistory, null, 2);
 
@@ -801,7 +860,8 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	If the request is high, provide a relevant tool suggestion. If it's low, still offer a useful response related to DIY. 
 	
 	User Prompt: ${prompt}
-	Chat History:Use this for answering the question if needed: ${chatHistory.length !== 0 ? chatHistoryString : "No chat history available."}
+	Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
+	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
 	System: Your task is to provide concise, relevant responses based on the intensity of the tool request. 
 	1. Assess the intensity (high, medium, low).
 	2. If high: "Here's a product suggestion related to ...".
@@ -815,7 +875,8 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	If the request is high, provide a relevant community suggestion. If it's low, still give an insightful comment related to DIY.
 	
 	User Prompt: ${prompt}
-	Chat History: ${chatHistory.length !== 0 ? chatHistoryString : "No chat history available."}
+		Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
+	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
 	System: Your task is to provide concise, relevant responses based on the intensity of the community request. 
 	1. Assess the intensity (high, medium, low).
 	2. If high: "Here's a community suggestion related to ...".
@@ -829,7 +890,10 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	| User Prompt: ${prompt} 
 		-just give clear response dont mention prompt or chat history in response.
 
-	Context of chat (use this if present, else just use prompt to reply): ${chatHistory.length !== 0 ? chatHistoryString : "Context not available."} 
+	Context of chat (use this if present, else just use prompt to reply): 
+		Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
+	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+	
 	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
 	}
 
@@ -838,9 +902,7 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	let gatheredResponse = '';
 
 	for await (const chunk of stream) {
-		if (signal.aborted) {
-			break;
-		}
+
 		gatheredResponse += chunk.content; // Assuming 'content' is the property holding the text
 		socket.emit('message', { text: chunk.content });
 	}
@@ -848,7 +910,7 @@ async function HandleGeneralResponse(prompt: string, chatHistory: string, signal
 	return gatheredResponse;
 }
 
-async function HandleCommunityRecommendation(prompt: string, chatHistory: string, signal: AbortSignal, socket: Socket) {
+async function HandleCommunityRecommendation(prompt: string, chatHistory: IChatMemory, socket: Socket) {
 
 }
 
@@ -856,22 +918,18 @@ async function HandleCommunityRecommendation(prompt: string, chatHistory: string
 
 async function HandleProductRecommendation(
 	prompt: string,
-	chatHistory: string,
-	signal: AbortSignal,
+	chatHistory: IChatMemory,
 	isBudgetAvailable: boolean,
 	budget: number | null,
 	socket: Socket
 ) {
-	if (signal.aborted) {
-		return;
-	}
+
 	// Handle non-budget product suggestion
 	let productCategory;
 
 	try {
 		// Retrieve product category from Redis or database
 		const redisData = await getRedisData('PRODUCT-CATAGORY');
-		if (signal.aborted) return;
 
 		if (redisData.success) {
 			productCategory = JSON.parse(redisData.data);
@@ -879,7 +937,6 @@ async function HandleProductRecommendation(
 			await connectDB();
 			// Fetch from MongoDB if Redis doesn't have the data
 			const DbProductCategory = await ProductCatagory.find();
-			if (signal.aborted) return;
 
 			if (DbProductCategory.length > 0) {
 				// Cache the result in Redis for an hour (3600 seconds)
@@ -901,7 +958,15 @@ async function HandleProductRecommendation(
 		const productCategoryNames = productCategory.map((cat: any) => cat.catagoryName);
 
 		// Construct prompt for LLM
-		const categoryPrompt = `Based on the user's prompt, suggest the most relevant product categories in a JSON array format from the given catalog of categories (e.g., ["category1", "category2"]). Category Catalog: {productCategoryNames}. User Prompt: {prompt}. {chatHistory} Product Categories (No Text, generate array directly):`;
+		const categoryPrompt = `
+		Based on the user's prompt, suggest the most relevant product categories from the given catalog. Return the categories in a JSON array format (e.g., ["category1", "category2"]).
+
+		Category Catalog: {productCategoryNames}
+		User Prompt: {prompt}
+		Chat Context: {shortTerm}
+		User Specific Context:{longTerm}
+
+		Product Categories (return only the array, no additional text):`;
 
 		// Use Langchain's PromptTemplate
 		const categoryTemplate = PromptTemplate.fromTemplate(categoryPrompt);
@@ -920,8 +985,8 @@ async function HandleProductRecommendation(
 		const categoryResult = await runnableChainOfCategory.invoke({
 			prompt, // User's prompt
 			productCategoryNames: JSON.stringify(productCategoryNames),
-			chatHistory: chatHistory.length > 0 ? `Chat History: ${JSON.stringify(chatHistory)}` : "No Available Chat History Answer from prompt only"
-
+			shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available.",
+			longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"
 		});
 
 
@@ -929,7 +994,6 @@ async function HandleProductRecommendation(
 		let parsedCategory;
 		try {
 			parsedCategory = JSON.parse(categoryResult);
-			if (signal.aborted) return;
 			if (parsedCategory.length === 0) {
 				console.error('No categories selected.');
 				socket.emit('error', {
@@ -982,7 +1046,6 @@ async function HandleProductRecommendation(
 
 			productDetails = DbProductDetails;
 		}
-		if (signal.aborted) return;
 		if (!productDetails || productDetails.length === 0) {
 			console.error('No products found.');
 			socket.emit('error', "No products Selected For You By Matey")
@@ -1040,7 +1103,6 @@ Response:
 		let parsedProduct;
 		try {
 			parsedProduct = JSON.parse(wrapWordsInQuotes(String(productResult.replace('`', '').replace('JSON', '').replace('js', ''))));
-			if (signal.aborted) return;
 			if (parsedProduct.length === 0) {
 				console.error('No products selected.');
 				socket.emit('error', "No products Selected For You By Matey")
@@ -1062,7 +1124,7 @@ Response:
 
 
 // budget selection
-export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: [], socket: Socket) {
+export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: IChatMemory, socket: Socket) {
 	socket.emit("status", {
 		message: "Matey Is Creating Budget Slider..."
 	})
@@ -1093,7 +1155,7 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: [], so
 	]);
 
 	const needOfBudgetSlider = await runnableChainOfCheckContext.invoke({
-		chatHistory: JSON.stringify(chatHistory),
+		chatHistory: chatHistory,
 		prompt: prompt
 	});
 
@@ -1195,138 +1257,124 @@ export async function emotionalChatMessage(prompt: string, socket: Socket) {
 
 
 // chat summury
-export async function summarizeAndStoreChatHistory(userId: string, userChat: any): Promise<boolean> {
-	await connectDB();
+// export async function summarizeAndStoreChatHistory(userId: string, userChat: any): Promise<boolean> {
+// 	await connectDB();
 
-	try {
-		const filteredChat = await filterChatHistory(userChat);
-		if (!filteredChat.length) return false;
+// 	try {
+// 		const filteredChat = await filterChatHistory(userChat);
+// 		if (!filteredChat.length) return false;
 
-		// Define prompts as an array for streamlined iteration
-		const prompts = [
-			{
-				template: `Analyze the user's statements to identify any items, skills, knowledge, or resources they possess. Return an array of strings in this format: ["context1", "context2"].
-	  
-		  Example: 
-		  User Statement: 'I have a drill machine. How do I make a vertical hole?' 
-		  Expected Output: ["Possesses drill machine", "Has skill in drilling", "Knowledgeable about making vertical holes"]
-	  
-		  User Chat With AI: {userChat}
-		  
-		  - Response must be in JSON-parsable array format.
-		  - No additional text or explanations.
-		  - Return only the array of strings.
-		  - No comments or unnecessary text should be included.
-		  - Max Length: 0-5 array items`,
-				key: 'globalContext_UserState',
-			},
-			{
-				template: `Analyze the user's statements to identify personal choices, preferred tools, formats, or styles. Return an array of strings in this format: ["preference1", "preference2"].
-	  
-		  Example:
-		  User Statement: 'I prefer using step-by-step guides for drilling techniques.'
-		  Expected Output: ["Prefers step-by-step guides", "Chooses drilling techniques"]
-	  
-		  User Chat With AI: {userChat}
-	  
-		  - Response must be in JSON-parsable array format.
-		  - No additional text or explanations.
-		  - Return only the array of strings.
-		  - No comments or unnecessary text should be included.
-		  - Max Length: 0-5 array items`,
-				key: 'globalContext_UserPreference',
-			},
-			{
-				template: `Identify any statements that indicate the user's lack of knowledge, uncertainty, or need for guidance. Return an array of strings in this format: ["knowledge_gap1", "knowledge_gap2"].
-	  
-		  Example: 
-		  User Statement: 'I'm not sure how to use an automatic drill to make holes.' 
-		  Expected Output: ["Uncertain about using an automatic drill to make holes"]
-	  
-		  User Chat With AI: {userChat}
-	  
-		  - Response must be in JSON-parsable array format.
-		  - No additional text or explanations.
-		  - Return only the array of strings.
-		  - No comments or unnecessary text should be included.
-		  - Max Length: 0-5 array items`,
-				key: 'globalContext_Braingap',
-			},
-			{
-				template: `At the end of the conversation, generate a detailed summary of the user's journey. Reflect on their goals, what they learned, and key points discussed. Return the summary in an array format: ["detailed_summary"].
-	  
-		  Example Output: 
-		  ["User learned how to effectively use an automatic drill for vertical holes, gaining insights into technique and safety. They showed a preference for detailed guidance and demonstrated increased confidence in their skills."]
-	  
-		  User Chat With AI: {userChat}
-	  
-		  - Response must be in JSON-parsable array format.
-		  - No additional text or explanations.
-		  - Return only the array of strings.
-		  - No comments or unnecessary text should be included.
-		  - Use concise and focused language for an effective summary.
-		  - Max Length: 0-5 array items`,
-				key: 'globalContext_UserChatMemory',
-			},
-		];
+// 		// Define prompts as an array for streamlined iteration
+// 		const prompts = [
+// 			{
+// 				template: `Analyze the user's statements to identify any items, skills, knowledge, or resources they possess. Return an array of strings in this format: ["context1", "context2"].
 
-		// Helper function to parse and invoke prompt chains
-		async function invokePrompt(template: string) {
-			const promptTemplate = PromptTemplate.fromTemplate(template);
-			const llmChain = promptTemplate.pipe(llm).pipe(new StringOutputParser());
-			const runnableChain = RunnableSequence.from([llmChain, new RunnablePassthrough()]);
-			const result = await runnableChain.invoke({ userChat: JSON.stringify(filteredChat) });
-			return JSON.parse(result);
-		}
+// 		  Example: 
+// 		  User Statement: 'I have a drill machine. How do I make a vertical hole?' 
+// 		  Expected Output: ["Possesses drill machine", "Has skill in drilling", "Knowledgeable about making vertical holes"]
 
-		// Process each prompt in parallel and get results
-		const results = await Promise.all(prompts.map(({ template }) => invokePrompt(template)));
+// 		  User Chat With AI: {userChat}
 
-		// Fetch user context and update with new parsed data
-		const userContext: any = await UserMemory.findOne({ userId: userId });
-		if (userContext) {
-			// Update each context type, checking limits and removing excess
-			prompts.forEach((prompt, index) => {
-				let contextArray = userContext[prompt.key] || [];
-				contextArray = updateContextWithLimits(contextArray, results[index]);
-				userContext[prompt.key] = contextArray;
-			});
+// 		  - Response must be in JSON-parsable array format.
+// 		  - No additional text or explanations.
+// 		  - Return only the array of strings.
+// 		  - No comments or unnecessary text should be included.
+// 		  - Max Length: 0-5 array items`,
+// 				key: 'globalContext_UserState',
+// 			},
+// 			{
+// 				template: `Analyze the user's statements to identify personal choices, preferred tools, formats, or styles. Return an array of strings in this format: ["preference1", "preference2"].
 
-			const saved = await userContext.save();
-			return Boolean(saved);
-		} else {
-			// Create new user context if none exists
-			const newUserContext = new UserMemory({
-				userId: userId,
-				globalContext_UserState: results[0],
-				globalContext_UserPreference: results[1],
-				globalContext_Braingap: results[2],
-				globalContext_UserChatMemory: results[3],
-			});
-			const saved = await newUserContext.save();
-			return Boolean(saved);
-		}
-	} catch (error) {
-		console.error("Error saving chat summary:", error);
-		return false;
-	}
-}
+// 		  Example:
+// 		  User Statement: 'I prefer using step-by-step guides for drilling techniques.'
+// 		  Expected Output: ["Prefers step-by-step guides", "Chooses drilling techniques"]
 
-// Helper function to check and maintain token limit or array 
-// Helper function to check and maintain token limit or array length
-function updateContextWithLimits(contextArray: string[], newEntries: string[]): string[] {
-	const maxLength = 5;
-	contextArray = [...contextArray, ...newEntries];
-	while (isTokenSizeExceedingLimit(contextArray.join(' ')) || contextArray.length > maxLength) {
-		contextArray.shift(); // Remove oldest entry if limit is exceeded
-	}
-	return contextArray;
-}
+// 		  User Chat With AI: {userChat}
 
-function isTokenSizeExceedingLimit(text: string, limit = 2500): boolean {
-	const tokens = encode(text); // Get the token array
-	return tokens.length > limit; // Compare token count to limit
-}
+// 		  - Response must be in JSON-parsable array format.
+// 		  - No additional text or explanations.
+// 		  - Return only the array of strings.
+// 		  - No comments or unnecessary text should be included.
+// 		  - Max Length: 0-5 array items`,
+// 				key: 'globalContext_UserPreference',
+// 			},
+// 			{
+// 				template: `Identify any statements that indicate the user's lack of knowledge, uncertainty, or need for guidance. Return an array of strings in this format: ["knowledge_gap1", "knowledge_gap2"].
+
+// 		  Example: 
+// 		  User Statement: 'I'm not sure how to use an automatic drill to make holes.' 
+// 		  Expected Output: ["Uncertain about using an automatic drill to make holes"]
+
+// 		  User Chat With AI: {userChat}
+
+// 		  - Response must be in JSON-parsable array format.
+// 		  - No additional text or explanations.
+// 		  - Return only the array of strings.
+// 		  - No comments or unnecessary text should be included.
+// 		  - Max Length: 0-5 array items`,
+// 				key: 'globalContext_Braingap',
+// 			},
+// 			{
+// 				template: `At the end of the conversation, generate a detailed summary of the user's journey. Reflect on their goals, what they learned, and key points discussed. Return the summary in an array format: ["detailed_summary"].
+
+// 		  Example Output: 
+// 		  ["User learned how to effectively use an automatic drill for vertical holes, gaining insights into technique and safety. They showed a preference for detailed guidance and demonstrated increased confidence in their skills."]
+
+// 		  User Chat With AI: {userChat}
+
+// 		  - Response must be in JSON-parsable array format.
+// 		  - No additional text or explanations.
+// 		  - Return only the array of strings.
+// 		  - No comments or unnecessary text should be included.
+// 		  - Use concise and focused language for an effective summary.
+// 		  - Max Length: 0-5 array items`,
+// 				key: 'globalContext_UserChatMemory',
+// 			},
+// 		];
+
+// 		// Helper function to parse and invoke prompt chains
+// 		async function invokePrompt(template: string) {
+// 			const promptTemplate = PromptTemplate.fromTemplate(template);
+// 			const llmChain = promptTemplate.pipe(llm).pipe(new StringOutputParser());
+// 			const runnableChain = RunnableSequence.from([llmChain, new RunnablePassthrough()]);
+// 			const result = await runnableChain.invoke({ userChat: JSON.stringify(filteredChat) });
+// 			return JSON.parse(result);
+// 		}
+
+// 		// Process each prompt in parallel and get results
+// 		const results = await Promise.all(prompts.map(({ template }) => invokePrompt(template)));
+
+// 		// Fetch user context and update with new parsed data
+// 		const userContext: any = await UserMemory.findOne({ userId: userId });
+// 		if (userContext) {
+// 			// Update each context type, checking limits and removing excess
+// 			prompts.forEach((prompt, index) => {
+// 				let contextArray = userContext[prompt.key] || [];
+// 				contextArray = updateContextWithLimits(contextArray, results[index]);
+// 				userContext[prompt.key] = contextArray;
+// 			});
+
+// 			const saved = await userContext.save();
+// 			return Boolean(saved);
+// 		} else {
+// 			// Create new user context if none exists
+// 			const newUserContext = new UserMemory({
+// 				userId: userId,
+// 				globalContext_UserState: results[0],
+// 				globalContext_UserPreference: results[1],
+// 				globalContext_Braingap: results[2],
+// 				globalContext_UserChatMemory: results[3],
+// 			});
+// 			const saved = await newUserContext.save();
+// 			return Boolean(saved);
+// 		}
+// 	} catch (error) {
+// 		console.error("Error saving chat summary:", error);
+// 		return false;
+// 	}
+// }
+
+
 
 // this function get all the chat history and filter out the chat history
 async function filterChatHistory(userChat: []) {
@@ -1428,7 +1476,7 @@ async function filterChatHistory(userChat: []) {
 
 // tooltip of the day
 
-export async function generateUsefulFact(userState: string, userPreference: string, userBraingap: string, userChatMemory: string): Promise<string> {
+export async function generateUsefulFact(memory: string): Promise<string> {
 	const factPrompt = `
 	Generate a practical and broadly useful DIY tip based on the user's context. If the user's context is available, integrate the following details to make the tip more relevant:
 	
@@ -1437,10 +1485,8 @@ export async function generateUsefulFact(userState: string, userPreference: stri
 	- **User Knowledge Gap:** Address any areas where the user may need guidance or clarity.
 	- **User Chat Memory:** Consider relevant details from recent conversations to enhance relevance.
 
-	User State: {userState}
-	User Preference: {userPreference}
-	User Knowledge Gap: {userBraingap}
-	User Chat Memory: {userChatMemory}
+	User State: {memory}
+
 
 	If specific context is not available or relevant, provide a broadly applicable DIY tip. Ensure the tip is concise, informative, and can apply to a wide range of DIY projects.
 
@@ -1459,10 +1505,7 @@ export async function generateUsefulFact(userState: string, userPreference: stri
 	]);
 
 	const fact = await runnableChainOfFact.invoke({
-		userState,
-		userPreference,
-		userBraingap,
-		userChatMemory,
+		memory: memory
 	});
 
 	return fact.trim();

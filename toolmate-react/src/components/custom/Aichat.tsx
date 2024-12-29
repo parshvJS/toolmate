@@ -36,7 +36,7 @@ export default function Aichat(
   const [isStreaming, setIsStreaming] = useState(false);
   const [showWorkerQueue, setShowWorkerQueue] = useState(false);
   const [productRendered, setProductRendered] = useState(true);
-  const { productSuggestions } = useContext(RightSidebarContext);
+  // const { productSuggestions } = useContext(RightSidebarContext);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [currActiveDialog, setCurrActiveDialog] = useState(id);
   const [currDialogActiveTab, setCurrDialogActiveTab] = useState("bunnings");

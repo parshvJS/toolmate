@@ -1,4 +1,6 @@
-export default function MateyExpression({expression}:{expression: "laugh" | "hello" | "smile" | "offer" | "1thumb" | "2thumb" | "tool" | "thinking"}) {
+import { IMateyExpression } from "@/types/types";
+
+export default function MateyExpression({expression}:{expression:IMateyExpression}) {
   const emojiClass = "animate-rotate-shake"; // Tailwind class for rotation effect
 
   switch (expression) {

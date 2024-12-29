@@ -1,6 +1,6 @@
 import { ChatSession, ResponseFormat } from "../types/types.js";
 import { Chat } from "../models/chat.model.js";
-
+import { encode, isWithinTokenLimit } from "gpt-tokenizer";
 export async function getChatMessages(sessionId: string, memorySize: number) {
     const chatHistory = await Chat.find({ sessionId });
     if (chatHistory.length > memorySize) {
@@ -17,12 +17,12 @@ export async function getPremiumUserChatMessage(sessionId: string, memorySize: n
     return chatHistory.reduce((acc: any, chat) => {
         acc.push(chat.message);
         return acc
-    },[]);
+    }, []);
 }
 export function categorizeChatSessions(sessions: ChatSession[]) {
     const response: {
-        dateDiff:string,
-        data:ResponseFormat[]
+        dateDiff: string,
+        data: ResponseFormat[]
     }[] = [];
     const now = new Date();
 
@@ -87,18 +87,18 @@ export function categorizeChatSessions(sessions: ChatSession[]) {
     return response;
 }
 
-export function wrapWordsInQuotes(input:any) {
-    return input.replace(/(\b\w+\b)(?=\s*:)/g, (match:any) => {
-      // Check if the match is already wrapped in quotes
-      if (!/^".*"$/.test(match)) {
-        return `"${match}"`; // Wrap in quotes if not already
-      }
-      return match; // Leave as is if already wrapped
+export function wrapWordsInQuotes(input: any) {
+    return input.replace(/(\b\w+\b)(?=\s*:)/g, (match: any) => {
+        // Check if the match is already wrapped in quotes
+        if (!/^".*"$/.test(match)) {
+            return `"${match}"`; // Wrap in quotes if not already
+        }
+        return match; // Leave as is if already wrapped
     });
-  }
-  
+}
 
-export  function parseJsonString(input:string) {
+
+export function parseJsonString(input: string) {
     // Remove any leading/trailing backticks and ```json code block markers
     const cleanedInput = input.replace(/```json|```/g, '').trim();
 
@@ -118,9 +118,28 @@ export function calculateProrationPrice(existingPrice: number, newPrice: number,
     return parseFloat(prorationPrice.toFixed(2));
 }
 
-export function getDays(prefix:string,duration:number){
-    if(prefix == "MONTH"){
+export function getDays(prefix: string, duration: number) {
+    if (prefix == "MONTH") {
         return (duration * 30);
     }
-    return (duration * 365);    
+    return (duration * 365);
 }
+
+const valid_keys_to_store = [`USER-CHAT`];
+
+export function getMatchingPrefix(str: string) {
+    for (const prefix of valid_keys_to_store) {
+        if (str.startsWith(prefix)) {
+            return {
+                isMatched: true,
+                prefix
+            };
+        }
+    }
+    return {
+        isMatched: false,
+        prefix: null
+    }; // No valid prefix found
+}
+
+

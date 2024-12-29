@@ -143,6 +143,7 @@ export default function Navbar() {
   const [isProductDropdownOpen, setIsProductDropdownOpen] = React.useState(false);
   const [renderNavItem, setRenderNavItem] = React.useState(navItemsOther);
   const location = useLocation();
+  const { isSignedIn, isLoaded } = useAuth();
   const currentRoute = location.pathname;
   React.useEffect(() => {
     if (currentRoute === "/") {
@@ -199,20 +200,36 @@ export default function Navbar() {
         </NavigationMenu>
         <div>
           <div className="w-full flex  items-center">
-            <Link
-              to={"/signin"}
-              className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className={`${buttonVariants({
-                variant: "orangeGradient",
-              })}`}
-            >
-              Sign Up
-            </Link>
+            {isLoaded && isSignedIn ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className={`${buttonVariants({
+                    variant: "orangeGradient",
+                  })}`}
+                >
+                  Go to Dashboard
+                </Link>
+              </>
+            ) : (
+              <div>
+                <Link
+                  to="/signin"
+                  className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className={`${buttonVariants({
+                    variant: "orangeGradient",
+                  })}`}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
 
 
           </div>
@@ -314,7 +331,7 @@ export default function Navbar() {
           </SheetContent>
         </Sheet>
       </div>
-    </div>
+    </div >
   );
 }
 

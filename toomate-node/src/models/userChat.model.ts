@@ -10,6 +10,10 @@ const userChatSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    aiSessionMemory:{
+        type: String,
+        default: ""
+    },
     chatName: {
         type: String,
         default: ""
@@ -21,5 +25,6 @@ const userChatSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userChatSchema.index({ userId: 1 });
+userChatSchema.index({ sessionId: 1 });
 const UserChat = mongoose.model('UserChat', userChatSchema);
 export default UserChat;

@@ -1,23 +1,14 @@
+import { IMateyExpression } from "@/types/types";
 import React from "react";
-
-type ExpressionType = 
-  | "laugh"
-  | "hello"
-  | "smile"
-  | "offer"
-  | "1thumb"
-  | "2thumb"
-  | "tool"
-  | "thinking";
 
 export default function MateyExpression({
   expression,
 }: {
-  expression: ExpressionType;
+  expression: IMateyExpression;
 }) {
   const imagePath = `/assets/matey/`;
 
-  const expressionMap: { [key in ExpressionType]: string } = {
+  const expressionMap: { [key in IMateyExpression]: string } = {
     laugh: "exited.svg",
     hello: "helloing.svg",
     smile: "confident.svg",

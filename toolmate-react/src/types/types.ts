@@ -4,6 +4,17 @@ export interface IChat {
   expression?: string;
   }
   
+export type IMateyExpression = 
+  | "laugh" 
+  | "hello" 
+  | "smile" 
+  | "offer" 
+  | "1thumb" 
+  | "2thumb" 
+  | "tool" 
+  | "thinking";
+
+
 export interface ExpressionData {
     kwargs: {
     content: string;

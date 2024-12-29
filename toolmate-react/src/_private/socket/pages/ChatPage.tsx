@@ -13,10 +13,10 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Disc3, Box, BadgeDollarSign, DollarSign, ExternalLink, Star, Info, Lock } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Box, BadgeDollarSign, DollarSign, ExternalLink, Star, Info, Lock } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
-import { ProductItem } from "@/types/types";
+import { IMateyExpression, ProductItem } from "@/types/types";
 import { RightSidebarContext } from "@/context/rightSidebarContext";
 import { getImageUrl } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -27,10 +27,6 @@ import {
     Drawer,
     DrawerClose,
     DrawerContent,
-    DrawerDescription,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerTitle,
     DrawerTrigger,
 } from "@/components/ui/drawer"
 import {
@@ -153,11 +149,11 @@ export function ChatPage() {
     const [mateyExpression, setMateyExpression] = useState("smile");
     const [stateOfButton, setStateOfButton] = useState(-1);
     const [pagination, setPagination] = useState({ page: 1, limit: 10 });
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [isError, setIsError] = useState(false);
     const [isMateyMemory, setIsMateyMemory] = useState(true);
 
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -233,6 +229,16 @@ export function ChatPage() {
     }, [sessionId]);
 
 
+    useEffect(() => {
+        if (sessionId) {
+            const budgetSlider = localStorage.getItem(`budgetSlider-${sessionId}`);
+            if (budgetSlider) {
+                console.log(budgetSlider, "budget slider");
+                setBreakpoints(JSON.parse(budgetSlider));
+            }
+        }
+    }, [sessionId])
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -274,6 +280,7 @@ export function ChatPage() {
         };
 
         const handleBudgetSlider = (data: any) => {
+            localStorage.setItem(`budgetSlider-${sessionId}`, JSON.stringify(data));
             setBreakpoints(data);
         };
 
@@ -530,6 +537,8 @@ export function ChatPage() {
         if (mainInput === "") return;
         if (stateOfButton === 0) return;
         setStateOfButton(0);
+        setNotificationText("Matey is Thinking...");
+        setIsNotificationOn(true)
         setConversation([...conversation, { role: "user", message: mainInput }]);
         let userMessage;
         if (userData?.planAccess[2]) {
@@ -687,7 +696,7 @@ export function ChatPage() {
                             <TooltipProvider>
                                 <Tooltip delayDuration={0}>
                                     <TooltipTrigger onClick={() => setIsMateyOpen(!isMateyOpen)} className="md:block hidden">
-                                        <MateyExpression expression={mateyExpression} />
+                                        <MateyExpression expression={mateyExpression as IMateyExpression} />
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p>{isMateyOpen ? "Close" : "Open"} Matey Section</p>
@@ -697,7 +706,7 @@ export function ChatPage() {
 
                             <div className="block  md:hidden">
 
-                                <MateyExpression expression={mateyExpression} />
+                                <MateyExpression expression={mateyExpression as IMateyExpression} />
                             </div>
 
                             <div className="flex gap-2 items-center">
@@ -1160,7 +1169,7 @@ export function ChatPage() {
                 {
                     isMateyOpen &&
                     <div className="bg-yellow w-[15%] mt-2 rounded-md flex justify-center items-center" style={{ backgroundImage: 'url(/assets/images/matey-bg.png)', backgroundSize: 'cover' }}>
-                        <FullMateyExpression expression={mateyExpression} />
+                        <FullMateyExpression expression={mateyExpression as IMateyExpression} />
                     </div>
                 }
             </div>

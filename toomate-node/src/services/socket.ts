@@ -10,6 +10,8 @@ import connectDB from "../db/db.db.js";
 import { UserPayment } from "../models/userPayment.model.js";
 import { Chat } from "../models/chat.model.js";
 import User from "../models/user.model.js";
+import UserMemory from "../models/userMemory.model.js";
+import { memory } from "./memory.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -39,104 +41,76 @@ export async function handleSocketSerivce(socket: Socket) {
     // this service gives name for the chat 
     socket.on('getChatName', async (data: iChatname) => handleGetChatName(socket, data))
 
+
+
     socket.on('userMessage', async (data: INewUserMessage) => {
         try {
             console.log("budgetDetails in socket", "budgetDetails", data.budgetSliderValue, "isBudgetSliderChangable", data.isBudgetSliderChangable, "isBudgetSliderPresent", data.isBudgetSliderPresent);
             // Initialize controller for stream handling
-            const controller = new AbortController();
-            const { signal } = controller;
 
             // Store initial message
-            produceNewMessage(
-                data.message,
-                data.sessionId,
-                false,
-                false,
-                false,
-                [],
-                [],
-                [],
-                false,
-                [],
-                "user",
-            )
-            // Setup stop handler early
-            socket.once('stop', () => {
-                controller.abort();
-            });
+            produceNewMessage(data.message, data.sessionId, false, false, false, [], [], [], false, [], "user")
 
-            // Get chat history from cache or DB
-            const cacheKey = `USER-CHAT-${data.sessionId}`;
-            const chatHistory = await getRedisData(cacheKey).then(async (redisChatData) => {
-                if (redisChatData.success) {
-                    return redisChatData.data;
-                }
-
-                await connectDB();
-                const dbChatHistory = await Chat.find({ sessionId: data.sessionId })
-                    .sort({ _id: -1 })
-                    .limit(30);
-
-                if (dbChatHistory.length > 0) {
-                    const chatHistoryStore = dbChatHistory.map(chat => ({
-                        role: chat.role,
-                        message: chat.message,
-                    }));
-
-                    const contextedChat = await inititalSummurizeChat(JSON.stringify(chatHistoryStore));
-                    await setRedisData(cacheKey, JSON.stringify(contextedChat), 3600);
-                    return contextedChat;
-                }
-
-                return [];
-            });
-
-            // Process new chat context
-            const newChatContext = await abstractChathistory(chatHistory, {
-                message: data.message,
-                role: 'user',
-            });
-            await appendArrayItemInRedis(cacheKey, newChatContext);
-
-            // Get user plan from cache or DB
+            //  get the current plan of the user
             const userPlanCacheKey = `USER-PAYMENT-${data.userId}`;
-            const currentPlan = await getRedisData(userPlanCacheKey).then(async (redisUserData) => {
-                if (redisUserData.success) {
-                    const plan = JSON.parse(redisUserData.data).planAccess;
-                    return plan[2] ? 2 : plan[1] ? 1 : 0;
-                }
+            let currentPlan = 0;
 
+            const redisUserData = await getRedisData(userPlanCacheKey);
+            if (redisUserData.success) {
+                const plan = JSON.parse(redisUserData.data).planAccess;
+                currentPlan = plan[2] ? 2 : plan[1] ? 1 : 0;
+            } else {
                 await connectDB();
-
                 const user = await User.findOne({ clerkUserId: data.userId });
-                if (!user) {
-                    throw new Error('User not found');
-                }
+                if (!user) throw new Error('User not found');
 
                 const userPlan = await UserPayment.findOne({ userId: user._id });
-                if (!userPlan) {
-                    throw new Error('User payment details not found');
-                }
+                if (!userPlan) throw new Error('User payment details not found');
 
                 await setRedisData(userPlanCacheKey, JSON.stringify(userPlan), 3600);
-                return userPlan.planAccess[2] ? 2 : userPlan.planAccess[1] ? 1 : 0;
-            });
+                currentPlan = userPlan.planAccess[2] ? 2 : userPlan.planAccess[1] ? 1 : 0;
+            }
 
+            
+            // chat memory
+            const shortTermKey = `USER-CHAT-${data.sessionId}`;
+            const longTermKey = `USER-MEM-${data.userId}`;
+            const redisShortTermMemory = await getRedisData(shortTermKey);
+            const redisLongTermMemory = currentPlan === 2 ? await getRedisData(longTermKey) : null;
+
+            let _memory;
+            if (redisShortTermMemory.success && (currentPlan === 1 || (currentPlan === 2 && redisLongTermMemory?.success))) {
+                _memory = await memory(data.message, redisShortTermMemory.data, redisLongTermMemory?.data || "", currentPlan);
+            } else {
+                _memory = await memory(data.message, "", "", currentPlan as 1 | 2);
+            }
+
+            await setRedisData(shortTermKey, JSON.stringify(_memory.shortTermMemory), 3600);
+            if (currentPlan === 2) {
+                await setRedisData(longTermKey, JSON.stringify(_memory.longTermMemory), 3600);
+            }
+
+            const wholeMemory = {
+                longTermKey,
+                shortTermKey
+            }
+
+
+            
             // Process based on plan type
             switch (currentPlan) {
                 case 1: {
                     await getMateyExpession(data.message, socket);
-                    const intendList = await getUserIntend(data.message, newChatContext, currentPlan);
+                    const intendList = await getUserIntend(data.message, wholeMemory, currentPlan);
                     socket.emit('intendList', intendList);
 
                     const messageStream = await executeIntend(
                         data.message,
-                        newChatContext,
+                        wholeMemory,
                         data.sessionId,
                         intendList,
                         data.userId,
                         currentPlan,
-                        signal,
                         false,
                         0,
                         socket
@@ -172,12 +146,6 @@ export async function handleSocketSerivce(socket: Socket) {
                                 "ai",
                             )
                         ]);
-
-                        const newAiAddedChatHistory = await abstractChathistory(chatHistory, {
-                            message: messageStream.message || "",
-                            role: 'ai',
-                        });
-                        await appendArrayItemInRedis(cacheKey, newAiAddedChatHistory);
                     }
                     break;
                 }
@@ -185,17 +153,16 @@ export async function handleSocketSerivce(socket: Socket) {
                 case 2: {
                     await getMateyExpession(data.message, socket);
 
-                    const intendListPro = await getUserIntend(data.message, newChatContext, currentPlan);
+                    const intendListPro = await getUserIntend(data.message, wholeMemory, currentPlan);
                     socket.emit('intendList', intendListPro);
 
                     const messageStreamPro = await executeIntend(
                         data.message,
-                        newChatContext,
+                        wholeMemory,
                         data.sessionId,
                         intendListPro,
                         data.userId,
                         currentPlan,
-                        signal,
                         Boolean(data.budgetSliderValue),
                         data.budgetSliderValue || 0,
                         socket
@@ -233,7 +200,7 @@ export async function handleSocketSerivce(socket: Socket) {
                     }
 
                     if (data.isBudgetSliderChangable) {
-                        await FindNeedOfBudgetSlider(data.message, newChatContext, socket);
+                        await FindNeedOfBudgetSlider(data.message, wholeMemory, socket);
                     }
                     break;
                 }
@@ -302,3 +269,37 @@ async function handleGetChatName(socket: Socket, data: iChatname) {
         id: isDbEntryCreated._id!
     })
 }
+
+
+// Get chat history from cache or DB
+            // const cacheKey = `USER-CHAT-${data.sessionId}`;
+            // const chatHistory = await getRedisData(cacheKey).then(async (redisChatData) => {
+            //     if (redisChatData.success) {
+            //         return redisChatData.data;
+            //     }
+
+            //     await connectDB();
+            //     const dbChatHistory = await Chat.find({ sessionId: data.sessionId })
+            //         .sort({ _id: -1 })
+            //         .limit(30);
+
+            //     if (dbChatHistory.length > 0) {
+            //         const chatHistoryStore = dbChatHistory.map(chat => ({
+            //             role: chat.role,
+            //             message: chat.message,
+            //         }));
+
+            //         const contextedChat = await inititalSummurizeChat(JSON.stringify(chatHistoryStore));
+            //         await setRedisData(cacheKey, JSON.stringify(contextedChat), 3600);
+            //         return contextedChat;
+            //     }
+
+            //     return [];
+            // }); 
+
+            // // Process new chat context
+            // const newChatContext = await abstractChathistory(chatHistory, {
+            //     message: data.message,
+            //     role: 'user',
+            // });
+            // await appendArrayItemInRedis(cacheKey, newChatContext);

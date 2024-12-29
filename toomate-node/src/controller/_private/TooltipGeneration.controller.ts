@@ -21,14 +21,10 @@ export async function TooltipGeneration(req: Request, res: Response) {
         let tooltipDescription = "";
 
         if (!userMemory) {
-            tooltipDescription = await generateUsefulFact("", "", "", "");
+            tooltipDescription = await generateUsefulFact("");
         }
         else {
-            const userState = JSON.stringify(userMemory.globalContext_UserState);
-            const userPreference = JSON.stringify(userMemory.globalContext_UserPreference);
-            const braingap = JSON.stringify(userMemory.globalContext_Braingap);
-            const chatMemory = JSON.stringify(userMemory.globalContext_UserChatMemory);
-            tooltipDescription = await generateUsefulFact(userState, userPreference, braingap, chatMemory);
+            tooltipDescription = await generateUsefulFact(JSON.stringify(userMemory.memory));
         }
 
         return res.status(200).json({
