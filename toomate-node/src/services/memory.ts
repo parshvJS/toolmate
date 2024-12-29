@@ -4,7 +4,7 @@ import { RunnablePassthrough, RunnableSequence } from "@langchain/core/runnables
 import { ChatOpenAI } from "@langchain/openai";
 import dotenv from "dotenv";
 import { isWithinTokenLimit, encode } from "gpt-tokenizer";
-import { summarizeToTokenLimit } from "./langchain/langchain";
+import { summarizeToTokenLimit } from "./langchain/langchain.js";
 import { GPT_MODEL1 } from "../constants.js";
 
 dotenv.config();
@@ -120,11 +120,16 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
             isShortTerm = shortTermResponse.shortTermMemoryUpdate!;
         }
     }
-
-    const [newLongTermMemory, newShortTermMemory] = await Promise.all([
-        isLongTerm ? (await exceededAndFreeMemory(longTermMemory, planAccess, "long")).memory : longTermMemory,
-        isShortTerm ? (await exceededAndFreeMemory(shortTermMemory, planAccess, "short")).memory : shortTermMemory
-    ]);
+    let newLongTermMemory = longTermMemory;
+    let newShortTermMemory = shortTermMemory;
+    if (longTermMemory.trim().length === 0 && shortTermMemory.trim().length === 0) {
+        console.log("Both memories are empty");
+    } else {
+        [newLongTermMemory, newShortTermMemory] = await Promise.all([
+            isLongTerm && longTermMemory.trim().length > 0 ? (await exceededAndFreeMemory(longTermMemory, planAccess, "long")).memory : longTermMemory,
+            isShortTerm && shortTermMemory.trim().length > 0 ? (await exceededAndFreeMemory(shortTermMemory, planAccess, "short")).memory : shortTermMemory
+        ]);
+    }
 
     console.log("New long term memory:", newLongTermMemory);
     console.log("New short term memory:", newShortTermMemory);
@@ -163,12 +168,20 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
         return {
             success: true,
             planAccess,
+            flags: {
+                isLongTerm,
+                isShortTerm
+            },
             shortTermMemory: updatedShortTermMemory
         };
     } else {
         return {
             success: true,
             planAccess,
+            flags: {
+                isLongTerm,
+                isShortTerm
+            },
             longTermMemory: updatedLongTermMemory,
             shortTermMemory: updatedShortTermMemory
         };
@@ -223,7 +236,7 @@ async function exceededAndFreeMemory(
     currentPlan: PlanType,
     memoryType: MemoryType
 ) {
-    console.log(`Checking if memory exceeds limit for ${memoryType} memory with current plan ${currentPlan}`);
+    console.log(`Checking if memory exceeds limit for ${memoryType} memory with current plan ${currentPlan} and memory:`, currMemory);
     // Early return for essential plan trying to use long-term memory
     if (currentPlan === 1 && memoryType === "long") {
         console.log("Essential plan doesn't support long-term memory");
@@ -415,6 +428,7 @@ export async function updateChatMemory(prompt: string, chatMemory: string, memor
         - Focus on immediate relevance
         - Keep context for current session only
         - Be specific but concise
+        - make an detailed but brief sentence of the clear memory information
         - Only extract NEW information not present in current memory
         
         OUTPUT FORMAT:
@@ -434,17 +448,21 @@ export async function updateChatMemory(prompt: string, chatMemory: string, memor
         console.log("Updated chat memory result:", updatedChatMemory);
 
         let newMemory;
-        let oldMemory;
+        let oldMemory = [];
         try {
             // Parse new memory, ensuring it's an array
             newMemory = JSON.parse(updatedChatMemory);
-            oldMemory = JSON.parse(chatMemory);
-
+            if (chatMemory.length > 0) {
+                oldMemory = JSON.parse(chatMemory.trim());
+            }
+            console.log("Old memory items:", oldMemory);
+            console.log("New memory items:", newMemory);
             if (!Array.isArray(newMemory)) {
                 // If not an array but a string containing array format, try to parse it
                 const arrayMatch = updatedChatMemory.match(/\[([\s\S]*)\]/);
                 if (arrayMatch) {
                     newMemory = JSON.parse(`[${arrayMatch[1]}]`);
+                    console.log("RETRY1 ::: Parsed new memory items:", newMemory);
                 } else {
                     throw new Error('Invalid memory format returned');
                 }

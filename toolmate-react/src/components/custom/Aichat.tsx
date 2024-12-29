@@ -79,7 +79,9 @@ export default function Aichat(
 
   }
   console.log("productData", productData);
-
+  if (message == "") {
+    return <></>
+  }
   return (
     <div className="flex flex-col w-fit">
       <div className="flex  items-start gap-2 justify-start">

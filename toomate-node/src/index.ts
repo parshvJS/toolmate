@@ -27,8 +27,8 @@ app.use(cors({
 	// credentials: true, // Allow credentials
 }));
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true, limit: '16kb' }));
-app.use(express.json({ limit: '16kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+app.use(express.json({ limit: '10mb' }));
 
 
 // Apply the middleware to /api routes

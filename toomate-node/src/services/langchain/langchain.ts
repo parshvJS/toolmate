@@ -295,7 +295,9 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. Highly add this  
 		6. is you see need of budget slider and there is not specified need of products then dont include product recommendation
 
-		**Chat History**: {chatHistory}
+		user Specific Memory: {longTerm}
+		current chat Specific Memory: {shortTerm}
+
 		**User Prompt**: {prompt}
 		
 		Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
@@ -327,7 +329,8 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 		6. is you see need of budget slider and there is not specified need of products then dont include product recommendation
 
 		
-		**Chat History**: {chatHistory}
+			user Specific Memory: {longTerm}
+		current chat Specific Memory: {shortTerm}
 		**User Prompt**: {prompt}
 		
 		Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
@@ -351,7 +354,8 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 	4. Consider the user's experience level: If the user is a beginner, focus more on guidance and community resources; if they're advanced, product recommendations might be more appropriate.
 	5. include 4. follow up question when there is some context of chat and more context can improve the user experience
 
-	**Chat History**: {chatHistory}
+		user Specific Memory: {longTerm}
+		current chat Specific Memory: {shortTerm}
 	**User Prompt**: {prompt}
 	
 	Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
@@ -367,7 +371,11 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 	const runnableChainOfIntend = RunnableSequence.from([intendLLMChain, new RunnablePassthrough()]);
 
 	// Invoke the LLM to get the response
-	const userIntend = await runnableChainOfIntend.invoke({ prompt, chatHistory });
+	const userIntend = await runnableChainOfIntend.invoke({
+		prompt,
+		longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "no context available",
+		shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "no context available"
+	});
 
 	// Parse and clean up the output
 	let intentArray;
@@ -739,9 +747,10 @@ export async function abstractChathistory(
 }
 
 
-export async function inititalSummurizeChat(chatHistory: string) {
+export async function inititalSummurizeChat(chatHistory: IChatMemory) {
 	const abstractChathistoryPrompt = `Given the chat history, abstract the main points and summarize the conversation in a few sentences.
-	Chat History: {chatHistory}
+			user Specific Memory: {longTerm}
+		current chat Specific Memory: {shortTerm}
 	Keep in mind:
 	- The summary should capture the main points of the conversation.
 	- a summury should contain all relavent information of chat
@@ -751,7 +760,10 @@ export async function inititalSummurizeChat(chatHistory: string) {
 	const abstractChathistoryTemplate = PromptTemplate.fromTemplate(abstractChathistoryPrompt);
 	const abstractChathistoryLLMChain = abstractChathistoryTemplate.pipe(llm).pipe(new StringOutputParser());
 	const runnableChainOfAbstractChathistory = RunnableSequence.from([abstractChathistoryLLMChain, new RunnablePassthrough()]);
-	const abstractChathistory = await runnableChainOfAbstractChathistory.invoke({ chatHistory });
+	const abstractChathistory = await runnableChainOfAbstractChathistory.invoke({
+		longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "no context available",
+		shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "no context available"
+	});
 	return abstractChathistory;
 }
 
@@ -1065,7 +1077,10 @@ async function HandleProductRecommendation(
 		const productPrompt = `
 Based on the user's prompt, suggest the most relevant products from the provided product catalog. Ensure the products are highly relevant and useful, limiting each category to 4-5 suggestions. 
 
-Product Catalog: {jsonProductDetails} | User Prompt: {prompt} | Chat Context: {chatHistory}. 
+Product Catalog: {jsonProductDetails} | User Prompt: {prompt}. 
+
+user Specific Memory: {longTerm}
+current chat Specific Memory: {shortTerm}
 
 Provide the response in this format: this is just format use JSON in actual response: 
 [object(categoryName: string, products: array of product IDs), object(categoryName: string, products: array of product IDs)]. 
@@ -1096,7 +1111,8 @@ Response:
 		const productResult = await runnableChainOfProduct.invoke({
 			prompt, // User's prompt
 			jsonProductDetails: jsonProductDetails,
-			chatHistory: JSON.stringify(chatHistory)
+			shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available.",
+			longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"
 		});
 
 		console.log("productResult", productResult);
@@ -1139,7 +1155,8 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: IChatM
 	Output format: true/false
 	There should be no additional text in the response, only the boolean value of true or false.
 
-	Chat History: {chatHistory}
+	User Specific memory: {longTerm}
+	Chat Context: {shortTerm}
 	User Prompt: {prompt}
 	Is Budget Slider Needed?:`;
 
@@ -1155,13 +1172,14 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: IChatM
 	]);
 
 	const needOfBudgetSlider = await runnableChainOfCheckContext.invoke({
-		chatHistory: chatHistory,
+		longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No chat history available.",
+		shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available.",
 		prompt: prompt
 	});
 
 
-	const parsedNeedOfBudgetSlider = Boolean(needOfBudgetSlider) || true;
-
+	const parsedNeedOfBudgetSlider = Boolean(needOfBudgetSlider);
+	console.log("parsedNeedOfBudgetSlider", parsedNeedOfBudgetSlider, "original", needOfBudgetSlider)
 	if (parsedNeedOfBudgetSlider) {
 		const createBudgetSlider = `
 	Based on the user's project and chat context, generate a budget slider in JSON array format that provides relevant budget options for optimal product recommendations. 
@@ -1182,7 +1200,8 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: IChatM
 	- Analyze the chat to determine a budget fit for the user and create meaningful values.
 	- Service Type: Assess the type of service or product the user is looking for. If the service or product is typically expensive, create a budget slider with higher ranges. For mid-range or low-budget services, adjust the budget slider accordingly.
 	
-	Chat Context: {chatHistory}
+	user Specific Memory: {longTerm}
+	current chat Specific Memory: {shortTerm}
 	User Prompt: {prompt}
 	Format Requirements:
 	- Output only the JSON array, with no extra text or explanation.
@@ -1203,7 +1222,8 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: IChatM
 
 
 		const budgetSlider = await runnableChainOfCreateBudgetSlider.invoke({
-			chatHistory: JSON.stringify(chatHistory),
+			longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No chat history available.",
+			shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available.",
 			prompt: prompt
 		});
 

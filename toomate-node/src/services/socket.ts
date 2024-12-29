@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import { iChatname, INewUserMessage } from "../types/types.js";
 import { createnewUserChatInstace } from "../controller/_private/createNewUserChatInstance.controller.js";
-import { appendArrayItemInRedis, getRedisData, setRedisData } from "./redis.js";
+import { appendArrayItemInRedis, getRedisData, setRedisData, storeDataTypeSafe } from "./redis.js";
 import connectDB from "../db/db.db.js";
 import { UserPayment } from "../models/userPayment.model.js";
 import { Chat } from "../models/chat.model.js";
@@ -77,24 +77,32 @@ export async function handleSocketSerivce(socket: Socket) {
             const longTermKey = `USER-MEM-${data.userId}`;
             const redisShortTermMemory = await getRedisData(shortTermKey);
             const redisLongTermMemory = currentPlan === 2 ? await getRedisData(longTermKey) : null;
-
+            console.log("redisShortTermMemory", redisShortTermMemory, "redisLongTermMemory", redisLongTermMemory,typeof redisLongTermMemory, "type", typeof redisShortTermMemory);
             let _memory;
             if (redisShortTermMemory.success && (currentPlan === 1 || (currentPlan === 2 && redisLongTermMemory?.success))) {
-                _memory = await memory(data.message, redisShortTermMemory.data, redisLongTermMemory?.data || "", currentPlan);
+                _memory = await memory(data.message, JSON.stringify(redisShortTermMemory.data), JSON.stringify(redisLongTermMemory?.data) || "", currentPlan);
             } else {
                 _memory = await memory(data.message, "", "", currentPlan as 1 | 2);
             }
+            if(_memory.shortTermMemory.length !== 0 && _memory.flags.isShortTerm) {
+                console.log("shortTermMemory", _memory.shortTermMemory);
+                await storeDataTypeSafe(shortTermKey, _memory.shortTermMemory, 3600);
+            }
 
-            await setRedisData(shortTermKey, JSON.stringify(_memory.shortTermMemory), 3600);
-            if (currentPlan === 2) {
-                await setRedisData(longTermKey, JSON.stringify(_memory.longTermMemory), 3600);
+            if (currentPlan === 2 && _memory.longTermMemory && _memory.longTermMemory.length !== 0 && _memory.flags.isLongTerm) {
+                await storeDataTypeSafe(longTermKey, _memory.longTermMemory, 3600);
             }
 
             const wholeMemory = {
-                longTermKey,
-                shortTermKey
-            }
+                longTermKey: _memory.flags.isLongTerm 
+                    ? _memory.longTermMemory || " " 
+                    : JSON.stringify(redisLongTermMemory?.data) || " ",
+                shortTermKey: _memory.flags.isShortTerm 
+                    ? _memory.shortTermMemory || " " 
+                    : JSON.stringify(redisShortTermMemory?.data) || " "
+            };
 
+            console.log("wholeMemory:: - :: -- :: --", wholeMemory);
 
             
             // Process based on plan type

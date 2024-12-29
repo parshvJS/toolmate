@@ -240,6 +240,17 @@ async function deleteRedisData(key: string) {
     }
 }
 
+async function storeDataTypeSafe(key: string, value: any,ttl:number=3600) {
+    try {
+        await redisInstance.set(key,value,'EX',ttl);
+        return true;
+    } catch (error: any) {
+        console.error('Error storing data in Redis:', error);
+        return false;
+    }
+}
+
+
 // Gracefully close Redis connections on shutdown
 process.on('SIGINT', async () => {
     if (redisInstance) await redisInstance.quit();
@@ -253,5 +264,6 @@ export {
     getRedisData,
     setRedisData,
     appendArrayItemInRedis,
-    deleteRedisData
+    deleteRedisData,
+    storeDataTypeSafe
 };

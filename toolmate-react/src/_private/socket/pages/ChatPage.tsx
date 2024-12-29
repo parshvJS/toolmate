@@ -486,6 +486,7 @@ export function ChatPage() {
     useEffect(() => {
         appendToChat(false, false)
     }, [currStreamingRes]);
+
     function appendToChat(isSecondServerMessage: boolean, isSecondContinue: boolean) {
         if (isSecondContinue) {
             setConversation((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], message: currStreamingRes }])
@@ -560,7 +561,7 @@ export function ChatPage() {
         }
         console.log("senting user message -", userMessage);
         socket?.emit("userMessage", userMessage);
-
+        setMainInput("");
     };
 
     const handleMateyMemory = async () => {
