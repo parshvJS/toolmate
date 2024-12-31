@@ -123,7 +123,7 @@ export default function CustomSlider() {
                     transition={{ duration: 0.3, ease: "easeOut" }}
                     className="w-full bg-lightYellow border-2 border-black shadow-lg rounded-lg text-left text-md font-semibold text-black"
                     onMouseEnter={handleMouseEnter}
-                    onMouseLeave={() => handleMouseLeave(2000)} // Pass the delay duration here
+                // onMouseLeave={() => handleMouseLeave(2000)} // Pass the delay duration here
                 >
                     <div className="p-2">{getCurrentTooltip().label}</div>
 
@@ -142,10 +142,9 @@ export default function CustomSlider() {
                             setSliderValue(boundedValue[0]); // Update the context value
                             setShowTooltip(true); // Show tooltip while changing value
                         }} // Enforce min and max
-                        min={min}
+                        min={min}   
                         max={max}
                         onMouseEnter={handleMouseEnter}
-                        onMouseLeave={() => handleMouseLeave(2000)} // Pass the delay duration here
                         onTouchStart={handleMouseEnter} // Show tooltip on touch start
                         onTouchEnd={() => handleMouseLeave(2000)} // Pass the delay duration here
                     >

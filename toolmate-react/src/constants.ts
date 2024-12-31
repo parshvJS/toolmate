@@ -386,3 +386,20 @@ export const pricing = [
 
 
 
+export const productSuggestionsTabs = [
+  {
+      img: "/assets/icons/new-placeholder.svg",
+      name: "bunnings",
+      tooltip: "Bunnings Product Suggestion",
+  },
+  {
+      img: "/assets/icons/ai-placeholder.svg",
+      name: "ai",
+      tooltip: "Product Suggestion By Matey",
+  },
+  {
+      img: "/assets/icons/vendor-placeholder.svg",
+      name: "vendor",
+      tooltip: "Vendor Product Suggestion",
+  }
+]

@@ -23,6 +23,10 @@ const UserToolInventorySchema = new mongoose.Schema(
 			type: [String],
 			default: [],
 		},
+		customFields: {
+			type: Object,
+			default: {},
+		}
 	},
 	{ timestamps: true }
 );

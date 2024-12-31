@@ -34,19 +34,7 @@ export function SocketLayout() {
                 </div>
 
             </div>
-            {/* Right Sidebar */}
-            {/* <div
-                    className={classNames("transition-all duration-300 ease-in-out overflow-hidden", {
-                        "w-[64px]": collapsed,  // Collapsed width
-                        "w-[380px]": !collapsed  // Expanded width
-                    })}
-                >
-                    <Toolbar
-                        collapsed={collapsed}
-                        setCollapsed={setSidebarCollapsed}
-                    />
-                </div> */}
-            {/* </div> */}
+
         </SocketProvider>
     );
 }

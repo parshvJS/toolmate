@@ -40,7 +40,10 @@ const ChatSchema = new mongoose.Schema(
 			default: false
 		},
 		bunningsProductList:{
-			type: [mongoose.Schema.Types.ObjectId],
+			type: [{
+				categoryName: String,
+				products: [] as any
+			}],
 			ref: 'BunningsProduct',
 			default: null
 		},

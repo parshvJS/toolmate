@@ -21,12 +21,12 @@ const DashboardLayout: React.FC = () => {
 
 
     useEffect(() => {
-        if (!userData) {
+        if (!userData || !userData.planAccess[0]) {
             return;
         }
 
         console.log("checking the route")
-        if (userData.planAccess[0] && userData.suspendedPlan === "" && route.pathname !== "/manage-subscription") {
+        if (userData.planAccess[0] || route.pathname !== "/manage-subscription") {
             console.log("redirecting to sjlfsjdf")
             if (isOverdue) {
                 toast({
@@ -39,6 +39,10 @@ const DashboardLayout: React.FC = () => {
             }
             navigate('/entry');
 
+        }
+
+        return () => {
+            console.log("cleanup")
         }
     }, [userData, navigate, route]);
 

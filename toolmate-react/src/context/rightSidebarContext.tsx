@@ -1,3 +1,4 @@
+import { IBunningProduct } from '@/types/types';
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 
 interface Breakpoint {
@@ -18,6 +19,7 @@ export interface ProductGroup {
   products: any[];
 }
 
+// for testing
 const tempBreakPoint = [
   {
     value: 50,
@@ -54,6 +56,7 @@ const tempBreakPoint = [
 interface RightSidebarContextProps {
   sliderValue: number;
   isBudgetOn: boolean;
+  itemNumberBunningsProductCache: Map<number, IBunningProduct>;
   breakpoints: Breakpoint[];
   vendorProduct: ProductGroup[];
   bunningProduct: ProductGroup[];
@@ -74,9 +77,12 @@ interface RightSidebarContextProps {
   appendBunnings: (products: ProductGroup[]) => void;
   notificationRemove: () => void;
   clearAllTool: () => void;
+  setItemNumberToBunnings: (itemNumber: number, data: IBunningProduct) => void;
+  getItemFromBunningsCache: (itemNumber: number) => IBunningProduct | undefined;
 }
 
 const INITIAL_RIGHT_SIDEBAR_CONTEXT: RightSidebarContextProps = {
+  itemNumberBunningsProductCache: new Map(),
   sliderValue: Infinity,
   isBudgetOn: false,
   isBudgetChangable: true,
@@ -96,9 +102,11 @@ const INITIAL_RIGHT_SIDEBAR_CONTEXT: RightSidebarContextProps = {
   massAddBunnings: () => { },
   appendVendor: () => { },
   appendAi: () => { },
+  setItemNumberToBunnings: () => { },
   appendBunnings: () => { },
   notificationRemove: () => { },
-  clearAllTool: () => { }
+  clearAllTool: () => { },
+  getItemFromBunningsCache: () => undefined
 };
 
 export const RightSidebarContext = createContext<RightSidebarContextProps>(INITIAL_RIGHT_SIDEBAR_CONTEXT);
@@ -113,6 +121,8 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [notification, setNotification] = useState<number>(0);
   const [totalProductSuggestions, setTotalProductSuggestions] = useState<number>(0);
   const [isBudgetChangable, setIsBudgetChangable] = useState<boolean>(true);
+  const [itemNumberBunningsProductCache, setItemNumberBunningsProductCache] = useState<Map<number, IBunningProduct>>(new Map());
+
   // Calculate the total number of product suggestions
   const calculateTotalProductSuggestions = () => {
     console.log('calculateTotalProductSuggestions', vendorProduct, bunningProduct, aiProduct);
@@ -157,18 +167,12 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   };
 
-// useEffect(()=>{
-//   if(breakpoints.length === 0){
-//     setBreakpoints(tempBreakPoint);
-//   }
-//   console.log('breakpoints123',breakpoints);
-// },[breakpoints])
   // Function to reset notification count
   const notificationRemove = () => {
     setNotification(0);
   };
-  useEffect(() => {
 
+  useEffect(() => {
     calculateTotalProductSuggestions();
   }, [vendorProduct, bunningProduct, aiProduct]);
 
@@ -184,11 +188,25 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     console.log('RightSidebarProvider unmounted');
   }
 
+  function setItemNumberToBunnings(itemNumber: number, data: IBunningProduct) {
+    setItemNumberBunningsProductCache((prev) => new Map(prev).set(itemNumber, data));
+  }
+
+  function getItemFromBunningsCache(itemNumber: number): IBunningProduct | undefined {
+    return itemNumberBunningsProductCache.get(itemNumber);
+  }
+
+  useEffect(() => {
+    console.log('item data', itemNumberBunningsProductCache);
+  }, [itemNumberBunningsProductCache]);
 
   return (
     <RightSidebarContext.Provider
       value={{
+        itemNumberBunningsProductCache,
         sliderValue,
+        setItemNumberToBunnings,
+        getItemFromBunningsCache,
         isBudgetOn,
         isBudgetChangable,
         breakpoints,

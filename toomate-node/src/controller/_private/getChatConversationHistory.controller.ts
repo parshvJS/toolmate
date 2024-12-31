@@ -6,6 +6,7 @@ import Product from "../../models/adsense/product.model.js";
 import BunningsProduct from "../../models/BunningsProduct.model.js";
 import { Request, Response } from "express";
 import { Document } from "mongoose";
+import { getItemDetails } from "@/services/bunnings.js";
 
 export interface IBunningsProduct extends Document {
     name: string;
@@ -149,13 +150,6 @@ async function processChatEntry(chat: any): Promise<ChatEntry> {
         createdAt: chat.createdAt,
     };
 
-    if (chat.isBunningsProduct) {
-        const bunningsProductList = await getAllBunningsProduct(chat.bunningsProductList);
-        if (bunningsProductList.success && bunningsProductList.data) {
-            const groupedProducts = groupProductsBySearchTerm(bunningsProductList.data);
-            newChatItem.bunningsData = groupedProducts;
-        }
-    }
 
     if (chat.isProductSuggested && chat.productSuggestionList?.length > 0) {
         // Get all unique product IDs from all categories
@@ -196,31 +190,8 @@ async function processChatEntry(chat: any): Promise<ChatEntry> {
 }
 
 
-function groupProductsBySearchTerm(products: IBunningsProduct[]): BunningsDataEntry[] {
-    const grouped = products.reduce((acc, product) => {
-        const { searchTerm } = product;
-        if (!acc[searchTerm]) {
-            acc[searchTerm] = {
-                categoryName: searchTerm,
-                products: []
-            };
-        }
-        acc[searchTerm].products.push(product);
-        return acc;
-    }, {} as Record<string, BunningsDataEntry>);
 
-    return Object.values(grouped);
-}
 
-async function getAllBunningsProduct(bunningsProductList: mongoose.Types.ObjectId[]): Promise<{ success: boolean; data?: IBunningsProduct[]; message?: string }> {
-    try {
-        const bunningsProducts = await BunningsProduct.find({ _id: { $in: bunningsProductList } }).lean<IBunningsProduct[]>();
-        return { success: true, data: bunningsProducts };
-    } catch (error: any) {
-        console.error("Bunnings Product Details Error:", error);
-        return { success: false, message: error.message };
-    }
-}
 
 async function getProductDetails(productIds: string[]): Promise<{ success: boolean; data?: AdditionalProduct[]; message?: string }> {
     try {

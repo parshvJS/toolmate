@@ -233,6 +233,12 @@ function UserContextProvider({ children }: { children: ReactNode }) {
         mutation.mutate(updatedHistory);
     };
 
+    useEffect(()=>{
+        return ()=>{
+            setIsOverdue(false)
+        }
+    })
+
     const value: UserContextType = {
         userId,
         userData,

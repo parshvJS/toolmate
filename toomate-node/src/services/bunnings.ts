@@ -81,7 +81,7 @@ const getBunningsAccessToken = async (): Promise<string> => {
 };
 
 // Retry Logic
-const retry = async <T>(fn: () => Promise<T>, retries: number = 3): Promise<T> => {
+export const retry = async <T>(fn: () => Promise<T>, retries: number = 3): Promise<T> => {
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
             return await fn();
@@ -93,7 +93,7 @@ const retry = async <T>(fn: () => Promise<T>, retries: number = 3): Promise<T> =
 };
 
 // Fetch Item Details
-const getItemDetails = async (itemNumbers: { query: string; results: string[] }[]) => {
+export const getItemDetails = async (itemNumbers: { query: string; results: string[] }[]) => {
     const url = `${process.env.BUNNINGS_ITEM_API_URL}/detail/AU`;
     const headers = {
         Authorization: `Bearer ${await getBunningsAccessToken()}`,
@@ -119,7 +119,7 @@ const getItemDetails = async (itemNumbers: { query: string; results: string[] }[
             )
         )
     );
-
+    console.log(itemDetailsMap, "itemDetailsMap")
     return itemNumbers.map((item) => ({
         query: item.query,
         results: item.results.map((itemNumber) => itemDetailsMap[itemNumber] || null).filter(Boolean),
@@ -127,7 +127,7 @@ const getItemDetails = async (itemNumbers: { query: string; results: string[] }[
 };
 
 // Fetch Price Details
-const getPriceDetails = async (itemNumbers: string[], locationCode: string = '6395'): Promise<IPriceDetail[]> => {
+export const getPriceDetails = async (itemNumbers: string[], locationCode: string = '6395'): Promise<IPriceDetail[]> => {
     const url = `${process.env.BUNNINGS_PRICE_API_URL}/catalog/prices`;
     const headers = {
         Authorization: `Bearer ${await getBunningsAccessToken()}`,
@@ -150,8 +150,9 @@ export const searchBunningsProducts = async (
     isBudgetApplied: boolean,
     minBudget: number,
     maxBudget: number,
-    locationCode: string = '6395'
+    locationCode: string = '6395',
 ) => {
+   
     if (searchTerms.length === 0) {
         return { success: true, data: 'No search terms provided' };
     }
@@ -207,7 +208,7 @@ export const searchBunningsProducts = async (
             query: res.query,
             results: res.results.slice(0, res.results.length > 5 ? MAX_PRODUCT_PICK : res.results.length).map((item: any) => item.itemNumber).filter(Boolean),
         }));
-
+    console.log(itemMap, "itemMap")
     const uniqueItemNumbers = Array.from(
         new Set(validResults.flatMap((res) => res.results.map((item: any) => item.itemNumber)))
     );
@@ -253,8 +254,22 @@ export const searchBunningsProducts = async (
         }))
         .filter((item) => item.results.length > 0);
 
+    const formatedData = returnData.map((item) => {
+        return {
+            categoryName: item.query,
+            products: item.results,
+        }
+    })
 
-    return { success: true, data: returnData };
+    const dbItemMap = formatedData.map(
+        (item) => {
+            return {
+                categoryName: item.categoryName,
+                products: item.products.map((product) => product.itemNumber)
+            }
+        }
+    )
+    return { success: true, data: formatedData, itemMap: dbItemMap };
 };
 
 

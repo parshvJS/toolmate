@@ -45,6 +45,7 @@ import { VendorProduct } from "@/components/custom/VendorProduct";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import classNames from "classnames";
 import { Button } from "@/components/ui/button";
+import ProductDialog from "@/components/custom/ProductDialog";
 
 interface Message {
     role: string;
@@ -88,24 +89,25 @@ async function fetchChatHistory(
             userId,
             pagination,
         });
-
+        console.log("response", response.data.data)
         const aiProduct: any[] = [];
         const mateyProduct: any[] = [];
         const bunningsProduct: any[] = [];
 
         response.data.data.forEach((chatItem: any) => {
-            console.log("chatItem", chatItem.mateyProduct, chatItem.bunningsData, chatItem.productData, [chatItem.isMateyProduct, chatItem.isBunningsProduct, chatItem.isProductSuggested])
+
+            console.log("chatItem", chatItem.mateyProduct, chatItem.bunningsProductList, chatItem.productData, [chatItem.isMateyProduct, chatItem.isBunningsProduct, chatItem.isProductSuggested])
             if (chatItem.isMateyProduct && chatItem.mateyProduct) {
                 aiProduct.push(...chatItem.mateyProduct);
             }
-            if (chatItem.isBunningsProduct && chatItem.bunningsData) {
-                bunningsProduct.push(...chatItem.bunningsData);
+            if (chatItem.isBunningsProduct && chatItem.bunningsProductList) {
+                bunningsProduct.push(...chatItem.bunningsProductList);
             }
             if (chatItem.isProductSuggested && chatItem.productData) {
                 mateyProduct.push(...chatItem.productData);
             }
         });
-
+        console.log("bunningsProduct", bunningsProduct)
         return {
             success: true,
             data: response.data.data,
@@ -133,15 +135,36 @@ async function fetchCurrentMateyMemoryStatus(sessionId: string | undefined) {
 
 }
 export function ChatPage() {
-    const { user } = useUser()
-    const [conversation, setConversation] = useState<Message[]>([]);
-    const [currStreamingRes, setCurrStreamingRes] = useState("");
+    const { user } = useUser();
+
     const { sessionId } = useParams<{ sessionId: string }>();
     const socket = useSocket();
     const { userId, userData, unshiftiChatname } = useContext(UserContext);
-    const { isBudgetChangable, clearAllTool, setBreakpoints, sliderValue, breakpoints, massAddAi, massAddBunnings, massAddVendor, appendAi, appendBunnings, appendVendor, aiProduct, bunningProduct, vendorProduct, setIsBudgetChangable, setIsBudgetOn, isBudgetOn } = useContext(RightSidebarContext);
+    const {
+        isBudgetChangable,
+        clearAllTool,
+        setBreakpoints,
+        sliderValue,
+        breakpoints,
+        massAddAi,
+        massAddBunnings,
+        massAddVendor,
+        appendAi,
+        appendBunnings,
+        appendVendor,
+        aiProduct,
+        bunningProduct,
+        vendorProduct,
+        setIsBudgetChangable,
+        setIsBudgetOn,
+        isBudgetOn
+    } = useContext(RightSidebarContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const isNew = Boolean(searchParams.get("new"));
+    const { toast } = useToast();
+
+    const [conversation, setConversation] = useState<Message[]>([]);
+    const [currStreamingRes, setCurrStreamingRes] = useState("");
     const [isNotificationOn, setIsNotificationOn] = useState(false);
     const [notificationText, setNotificationText] = useState("Matey is Adding...");
     const [mainInput, setMainInput] = useState("");
@@ -153,26 +176,23 @@ export function ChatPage() {
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [isError, setIsError] = useState(false);
     const [isMateyMemory, setIsMateyMemory] = useState(true);
-
     const [hasMore, setHasMore] = useState(true);
-    const chatContainerRef = useRef<HTMLDivElement>(null);
-    const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [currLoadingProductFeature, setCurrLoadingProductFeature] = useState<number[]>([]);
     const [currLoadingProductFeatureIndex, setCurrLoadingProductFeatureIndex] = useState(-1);
-    const [isMateyOpen, setIsMateyOpen] = useState(false)
-    const { toast } = useToast();
-    // mobile
-    const [currOpenIndex, setCurrOpenIndex] = useState<number>(-1)
+    const [isMateyOpen, setIsMateyOpen] = useState(false);
+    const [currOpenIndex, setCurrOpenIndex] = useState<number>(-1);
     const [currActiveTab, setCurrActiveTab] = useState("bunnings");
-    const [currActiveProductId, setCurrActiveProductId] = useState<string>("")
-    const [isProductDetails, setIsProductDetails] = useState<boolean>(false)
-    const [sidebarProductDetails, setSidebarProductDetails] = useState<any>(null)
-    const [currActiveProductDetailsTab, setCurrActiveProductDetailsTab] = useState("")
-    const [currActiveCategory, setCurrActiveCategory] = useState<string>('');
-    const handleScroll = () => { }
+    const [currActiveProductId, setCurrActiveProductId] = useState<string>("");
+    const [isProductDetails, setIsProductDetails] = useState<boolean>(false);
+    const [sidebarProductDetails, setSidebarProductDetails] = useState<any>(null);
+    const [currActiveProductDetailsTab, setCurrActiveProductDetailsTab] = useState("");
+    const [currActiveCategory, setCurrActiveCategory] = useState<string>("");
+    const [isToolsLoading, setIsToolsLoading] = useState<boolean>(false);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+    const handleScroll = () => { };
 
-    // Add scroll event listener
     useEffect(() => {
         const chatContainer = chatContainerRef.current;
         if (chatContainer) {
@@ -181,7 +201,6 @@ export function ChatPage() {
         }
     }, [isLoadingMore, hasMore, pagination]);
 
-    // Initial chat history fetch
     useEffect(() => {
         async function fetchHistory() {
             const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
@@ -209,11 +228,10 @@ export function ChatPage() {
                     });
                     setIsError(true);
                 } else {
-                    console.log(chatData, "chat data332")
+                    console.log("chatData", chatData)
                     massAddAi(chatData.ai);
                     massAddBunnings(chatData.bunnings);
                     massAddVendor(chatData.matey);
-
                     setConversation(chatData.data);
                     setHasMore(chatData.data.length === pagination.limit);
                 }
@@ -224,46 +242,35 @@ export function ChatPage() {
         fetchHistory();
 
         return () => {
-            clearAllTool()
-        }
+            clearAllTool();
+        };
     }, [sessionId]);
-
 
     useEffect(() => {
         if (sessionId) {
             const budgetSlider = localStorage.getItem(`budgetSlider-${sessionId}`);
             if (budgetSlider) {
-                console.log(budgetSlider, "budget slider");
                 setBreakpoints(JSON.parse(budgetSlider));
             }
         }
-    }, [sessionId])
+    }, [sessionId]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     const handleSocketEvents = () => {
-
         const handleMessage = (data: { text: string }) => {
             setCurrStreamingRes((prev) => prev + data.text);
         };
 
-
         const handleEmoMessage = (data: { text: string, isContinue: boolean }) => {
-            console.log("emo message", data)
             if (data.isContinue) {
-                console.log("hitting conntinue")
-                setConversation((prev) => {
-                    console.log([...prev.slice(0, -1), { ...prev[prev.length - 1], message: data.text }])
-                    return [...prev.slice(0, -1), { ...prev[prev.length - 1], message: prev[prev.length - 1].message + data.text }]
-                })
-            }
-            else {
-                setConversation((prev) => [...prev, { role: "ai", message: data.text }])
+                setConversation((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], message: prev[prev.length - 1].message + data.text }]);
+            } else {
+                setConversation((prev) => [...prev, { role: "ai", message: data.text }]);
             }
         };
-        console.log("Socket connected:", socket?.id);
 
         const handleChatName = (data: any) => {
             unshiftiChatname({ chatName: data.chatName, sessionId: data.sessionId, id: data.id });
@@ -293,6 +300,7 @@ export function ChatPage() {
                     case 5: return "Provided project guidance as needed";
                 }
             });
+            workerQueue.includes(3) && setIsToolsLoading(true);
             setConversation((prev: any) => {
                 const lastMessage = prev[prev.length - 1];
                 if (lastMessage.role === "ai") {
@@ -304,29 +312,16 @@ export function ChatPage() {
 
         const handleProductId = async (data: { categoryName: string; products: string[] }[]) => {
             try {
-                console.log("Received data:", data);
-
-
-                // Step 2: Fetch data for these product IDs from the API
                 const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data);
-                console.log(response.data.data, "is 453")
                 if (response.status === 200) {
-                    const productData = response.data.data;  // Assuming this contains product details
-
+                    const productData = response.data.data;
                     appendVendor(productData);
-                    // Update product suggestions and conversation
                     setConversation((prev) => {
                         const lastMessage = prev[prev.length - 1];
                         if (lastMessage.role === "ai") {
-                            return [
-                                ...prev.slice(0, -1),
-                                { ...lastMessage, productData: productData as unknown as ProductItem[] },
-                            ];
+                            return [...prev.slice(0, -1), { ...lastMessage, productData: productData as unknown as ProductItem[] }];
                         }
-                        return [
-                            ...prev,
-                            { role: "ai", message: "", productData: productData as unknown as ProductItem[] },
-                        ];
+                        return [...prev, { role: "ai", message: "", productData: productData as unknown as ProductItem[] }];
                     });
                 }
             } catch (error) {
@@ -334,16 +329,9 @@ export function ChatPage() {
             }
         };
 
-
-
         const handleMateyProducts = async (data: any) => {
-            console.log(data, "matey created Data")
-            appendAi(data)
-            setCurrLoadingProductFeature((prev) => {
-                const newFeat = prev.filter((item) => item != 3)
-                return newFeat
-            })
-
+            appendAi(data);
+            setCurrLoadingProductFeature((prev) => prev.filter((item) => item !== 3));
             setConversation((prev) => {
                 const lastMessage = prev[prev.length - 1];
                 if (lastMessage.role === "ai") {
@@ -351,32 +339,17 @@ export function ChatPage() {
                 }
                 return prev;
             });
-        }
-
-        // const handleVendorProducts = async (data) =>{
-        //     console.log(data,"vendor created Data")
-        //     setCurrLoadingProductFeature((prev)=>{
-        //         const newFeat = prev.filter((item)=>item!=2)
-        //         return newFeat
-        //     })
-
-        //     setConversation((prev) => {
-        //         const lastMessage = prev[prev.length - 1];
-        //         if (lastMessage.role === "ai") {
-        //             return [...prev.slice(0, -1), { ...lastMessage, productData: data }];
-        //         }
-        //         return prev;
-        //     });
-        // }
+        };
 
         const handleNoProduct = (data: { message: string }) => {
             setNotificationText(data.message);
         };
+
         const handleBunningProduct = (data: any) => {
-            console.log(data, "bunning product")
-            appendBunnings(data)
-            setCurrLoadingProductFeature([])
-            setCurrLoadingProductFeatureIndex(-1)
+            console.log("bunningProduct", data)
+            appendBunnings(data);
+            setCurrLoadingProductFeature([]);
+            setCurrLoadingProductFeatureIndex(-1);
             setConversation((prev) => {
                 const lastMessage = prev[prev.length - 1];
                 if (lastMessage.role === "ai") {
@@ -384,21 +357,20 @@ export function ChatPage() {
                 }
                 return prev;
             });
-        }
+        };
+
         const handleError = (data: any) => {
             toast({
                 title: "Error",
                 description: data.message,
                 variant: "destructive",
-            })
-        }
+            });
+        };
 
         const handleProductIdLoading = (data: []) => {
-            setCurrLoadingProductFeature(data)
-            const lastIndex = conversation.length + 2;
-            setCurrLoadingProductFeatureIndex(lastIndex)
-            console.log("product id loading", data, lastIndex, conversation.length, conversation)
-        }
+            setCurrLoadingProductFeature(data);
+        };
+
         socket?.on("message", handleMessage);
         socket?.on("chatName", handleChatName);
         socket?.on("status", handleStatus);
@@ -407,19 +379,18 @@ export function ChatPage() {
         socket?.on("intendList", handleIntendList);
         socket?.on("productId", handleProductId);
         socket?.on("noProduct", handleNoProduct);
-        socket?.on("emoMessage", handleEmoMessage)
-        socket?.on('bunningsProduct', handleBunningProduct)
-        socket?.on("productList", handleProductIdLoading)
-        socket?.on("aiProducts", handleMateyProducts)
-        // socket?.on("vendorProducts", handleVendorProducts);
-        socket?.on("mateyExpression", (ex: string) => {
-            setMateyExpression(ex || "laugh")
-        })
+        socket?.on("emoMessage", handleEmoMessage);
+        socket?.on('bunningsProduct', handleBunningProduct);
+        socket?.on("productList", handleProductIdLoading);
+        socket?.on("aiProducts", handleMateyProducts);
+        socket?.on("mateyExpression", (ex: string) => setMateyExpression(ex || "laugh"));
         socket?.on("terminate", () => {
             setStateOfButton(-1);
             setCurrStreamingRes("");
+            setIsToolsLoading(false);
         });
-        socket?.on("error", handleError)
+        socket?.on("error", handleError);
+
         return () => {
             socket?.off("message", handleMessage);
             socket?.off("chatName", handleChatName);
@@ -436,19 +407,6 @@ export function ChatPage() {
         };
     };
 
-    // // this useEffect clear the curr prodyct feature list 
-    // useEffect(() => {
-    //     const lastMessage = conversation[conversation.length - 1];
-    //     const lastMessageIndex = conversation.length;
-    //     console.log("last message", lastMessage)
-    //     if (lastMessage && lastMessage.role == "ai") {
-    //         console.log("loading feature for product", lastMessageIndex, currLoadingProductFeatureIndex)
-    //         if (currLoadingProductFeature.length > 0) {
-    //             setCurrLoadingProductFeatureIndex(lastMessageIndex)
-    //         }
-    //     }
-    // }, [conversation])
-    console.log(conversation.length)
     useEffect(() => {
         async function fetchHistory() {
             const isFetchAllowed = localStorage.getItem('retrieveChat') === "yes";
@@ -474,7 +432,6 @@ export function ChatPage() {
                     });
                     setIsError(true);
                 } else {
-
                     setConversation(chatData.data);
                 }
                 setIsLoadingHistory(false);
@@ -484,18 +441,16 @@ export function ChatPage() {
     }, [sessionId]);
 
     useEffect(() => {
-        appendToChat(false, false)
+        appendToChat(false, false);
     }, [currStreamingRes]);
 
     function appendToChat(isSecondServerMessage: boolean, isSecondContinue: boolean) {
         if (isSecondContinue) {
-            setConversation((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], message: currStreamingRes }])
+            setConversation((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], message: currStreamingRes }]);
             return;
         }
         if (isSecondServerMessage) {
-            setConversation((prev) =>
-                [...prev, { role: "ai", message: currStreamingRes }]
-            );
+            setConversation((prev) => [...prev, { role: "ai", message: currStreamingRes }]);
             return;
         }
         if (currStreamingRes) {
@@ -505,8 +460,8 @@ export function ChatPage() {
                     : [...prev, { role: "ai", message: currStreamingRes }]
             );
         }
-
     }
+
     useEffect(() => {
         if (isNew) {
             setStateOfButton(1);
@@ -515,7 +470,6 @@ export function ChatPage() {
 
             if (socket && userData) {
                 socket.emit("getChatName", { prompt: initialMessage, sessionId, userId: userData?.id });
-                console.log("senting user message ------------------", { sessionId, message: initialMessage, userId });
                 socket.emit("userMessage", { sessionId, message: initialMessage, userId });
             }
             searchParams.delete("new");
@@ -535,41 +489,30 @@ export function ChatPage() {
     useEffect(scrollToBottom, [conversation]);
 
     const handleUserPrompt = () => {
-        if (mainInput === "") return;
-        if (stateOfButton === 0) return;
+        if (mainInput === "" || stateOfButton === 0) return;
         setStateOfButton(0);
         setNotificationText("Matey is Thinking...");
-        setIsNotificationOn(true)
+        setIsNotificationOn(true);
         setConversation([...conversation, { role: "user", message: mainInput }]);
-        let userMessage;
-        if (userData?.planAccess[2]) {
-            userMessage = {
+        const userMessage = userData?.planAccess[2]
+            ? {
                 sessionId,
                 message: mainInput,
                 userId,
                 isBudgetSliderPresent: breakpoints.length > 0,
                 budgetSliderValue: sliderValue,
-                isBudgetSliderChangable: isBudgetChangable
+                isBudgetSliderChangable: isBudgetChangable,
             }
-        }
-        else {
-            userMessage = {
-                sessionId,
-                message: mainInput,
-                userId,
-            }
-        }
-        console.log("senting user message -", userMessage);
+            : { sessionId, message: mainInput, userId };
         socket?.emit("userMessage", userMessage);
         setMainInput("");
     };
 
     const handleMateyMemory = async () => {
-        console.log("changing memory status");
         setIsMateyMemory((prev) => !prev);
         const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/changeMemoryStatus`, {
             userStatus: !isMateyMemory,
-            sessionId
+            sessionId,
         });
 
         if (res.status === 200) {
@@ -579,15 +522,15 @@ export function ChatPage() {
                 variant: "success",
             });
         }
-    }
+    };
 
     const handleMessageStop = async () => {
         setStateOfButton(1);
-        socket?.emit("stop", {
-            sessionId,
-        });
-    }
-
+        socket?.emit("stop", { sessionId });
+    };
+    useEffect(() => {
+        console.log(conversation.length)
+    }, [conversation])
     if (isLoadingHistory && !isNew) {
         return (
             <div className="flex justify-center items-center w-full h-screen">
@@ -628,16 +571,16 @@ export function ChatPage() {
                     <div key={index}>
                         {data.role === "ai" ? (
                             <Aichat
-                                id={index}
+                                id={String(index)}
                                 workerQueue={data.workQueue}
                                 message={data.message.replace("Typing...", "")}
                                 productData={data.productData}
-                                bunningsData={data.bunningsData ? data.bunningsData : []}
+                                bunningsData={data.isBunningsProduct ? data.bunningsProductList : []}
                                 aiData={data.mateyProduct}
-                                isCurrFeatureLoading={currLoadingProductFeatureIndex == (index + 1)}
-                                isBunningLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(1)}
-                                isProductLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(2)}
-                                isAiProductLoading={currLoadingProductFeatureIndex == (index + 1) && currLoadingProductFeature.includes(3)}
+                                isToolsLoading={isToolsLoading}
+                                isBunningLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(1)}
+                                isProductLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(2)}
+                                isAiProductLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(3)}
                             />
                         ) : (
                             <div className="w-full">
@@ -769,327 +712,9 @@ export function ChatPage() {
                                                     <Box className="text-white" />
 
                                                 </DrawerTrigger>
-                                                <DrawerContent className="h-[calc(100%-2rem)] ">
-                                                    <div className="flex flex-col gap-2 border-y-2 p-2 border-slate-300">
 
-                                                        <div className="flex gap-2">
-                                                            {productSuggestionsTabs.map((product, index) => (
-                                                                <TooltipProvider key={index}>
-                                                                    <Tooltip delayDuration={0}>
-                                                                        <TooltipTrigger className="w-fit">
-                                                                            <div
-                                                                                onClick={() => {
-                                                                                    console.log("clicked", product.name);
-                                                                                    setCurrActiveTab(product.name)
-                                                                                    if (product.name === "ai") {
-                                                                                        setCurrActiveCategory(aiProduct[0].categoryName)
-                                                                                    }
-                                                                                    if (product.name === "bunnings") {
-                                                                                        setCurrActiveCategory(bunningProduct[0].categoryName)
-                                                                                    }
-                                                                                    if (product.name === "vendor") {
-                                                                                        setCurrActiveCategory(vendorProduct[0].categoryName)
-                                                                                    }
-                                                                                }}
-                                                                                className="flex w-fit gap-2 items-center rounded-md cursor-pointer hover:bg-mangoYellow transition-all duration-200"
-                                                                            >
-                                                                                <img
-                                                                                    src={product.img}
-                                                                                    alt={product.name}
-                                                                                    className="w-12 h-12 rounded-md shadow-lg"
-                                                                                />
-                                                                            </div>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent side="right" className="bg-mangoYellow z-[99] border-2 border-black">
-                                                                            <p>{product.tooltip}</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </TooltipProvider>
-                                                            ))}
-                                                        </div>
-
-                                                    </div>
-                                                    {
-                                                        currActiveTab === "bunnings" && <div>
-                                                            <Carousel className="mb-4">
-
-
-                                                                <CarouselContent className=" flex gap-2 px-4 py-2 border-b border-gray-200">
-
-                                                                    {
-                                                                        currActiveTab == "bunnings" && bunningProduct.map((category: any, index: number) => {
-                                                                            return (
-                                                                                <CarouselItem className="w-fit basis-auto">
-                                                                                    <button
-                                                                                        className={classNames(
-                                                                                            "px-4 py-2 rounded-lg font-semibold text-[5px] transition-colors duration-300",
-                                                                                            {
-                                                                                                "bg-lighterYellow ": category.categoryName === currActiveCategory,
-                                                                                                "bg-gray-200 text-gray-700": category.categoryName !== currActiveCategory,
-                                                                                            }
-                                                                                        )}
-                                                                                        onClick={() => setCurrActiveCategory(category.categoryName)}
-                                                                                    >
-                                                                                        {category.categoryName}
-                                                                                    </button>
-                                                                                </CarouselItem>
-                                                                            );
-                                                                        })
-                                                                    }
-
-                                                                </CarouselContent>
-                                                                <div className="w-full h-10 relative flex justify-between items-center p-2  ">
-                                                                    <CarouselPrevious className="absolute left-4 bg-lighterYellow" />
-                                                                    <CarouselNext className="absolute left-14 bg-lighterYellow" />
-                                                                </div>
-                                                            </Carousel>
-
-                                                            <p className="text-left px-4 py-2 font-thin text-slate-400">Click To View Details Of Product</p>
-                                                            <div className=" w-screen gap-4 p-4">
-                                                                <ScrollArea className="w-full h-[380px]">
-                                                                    {
-                                                                        currActiveTab === "bunnings" && filteredProducts.map((product) => {
-
-                                                                            return <div className="grid grid-cols-2 gap-2">
-                                                                                {
-                                                                                    product.products.map((product) => {
-                                                                                        console.log(product, "productsd")
-                                                                                        return (
-
-                                                                                            <Drawer>
-                                                                                                <DrawerTrigger>
-                                                                                                    <div className="border border-slate-300 rounded-md p-4">
-                                                                                                        <img src={product.image} />
-                                                                                                    </div>
-                                                                                                </DrawerTrigger>
-                                                                                                <DrawerContent className="h-[calc(100%-5rem)]">
-                                                                                                    <div className="flex gap-2 flex-col items-center justify-center p-4">
-                                                                                                        <img src={product.image} className="max-w-48 max-h-48" />
-                                                                                                        <hr className="border-2 border-slate-400 w-full" />
-                                                                                                        <div className="absolute top-14 right-2 bg-yellow px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                                                                                                            <DollarSign className="w-4 h-4 text-gray" />
-                                                                                                            <span className="font-bold text-gray">${product?.price || 'N/A'}</span>
-                                                                                                        </div>
-                                                                                                        <h2 className="text-lg text-left font-bold text-gray leading-tight">
-                                                                                                            {product?.name || 'No Name'}
-                                                                                                        </h2>
-                                                                                                        {/* View Product Link */}
-                                                                                                        <a
-                                                                                                            href={product?.link}
-                                                                                                            target="_blank"
-                                                                                                            rel="noopener noreferrer"
-                                                                                                            className="bg-lightYellow w-full hover:bg-yellow transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 text-gray"
-                                                                                                        >
-                                                                                                            <span>View Product</span>
-                                                                                                            <ExternalLink className="w-4 h-4" />
-                                                                                                        </a>
-                                                                                                        {/* Details Section */}
-                                                                                                        <div className="flex flex-col w-full gap-2 mt-1">
-                                                                                                            {/* Rating */}
-                                                                                                            <div className="flex  w-full items-center gap-2 p-2 rounded-md bg-lighterYellow">
-                                                                                                                <Star className="w-5 h-5 text-darkYellow" />
-                                                                                                                <span className="font-semibold text-gray">Rated By: {product?.rating || 'N/A'}</span>
-                                                                                                            </div>
-                                                                                                            {/* Usage/Description */}
-                                                                                                            <div className="p-2 w-full rounded-md flex gap-2 bg-paleYellow">
-                                                                                                                <Info className="w-5 h-5 flex-shrink-0 text-deepYellow text-left" />
-                                                                                                                <div className="text-left">
-                                                                                                                    <span className="font-semibold text-gray">Usage: </span> <br />
-                                                                                                                    <span className="text-gray">{product?.personalUsage || 'N/A'}</span>
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </DrawerContent>
-                                                                                            </Drawer>
-                                                                                        )
-                                                                                    })
-                                                                                }
-                                                                            </div>
-                                                                        })
-                                                                    }
-
-                                                                </ScrollArea>
-
-                                                            </div>
-                                                        </div>
-                                                    }
-
-
-                                                    {
-                                                        currActiveTab === "ai" && <div>
-                                                            <Carousel className="">
-
-
-                                                                <CarouselContent className=" flex gap-2 px-4 py-2 border-b border-gray-200">
-
-                                                                    {
-                                                                        aiProduct.map((category: any, index: number) => {
-                                                                            return (
-                                                                                <CarouselItem className="w-fit basis-auto">
-                                                                                    <button
-                                                                                        key={index}
-                                                                                        className={classNames(
-                                                                                            "px-4 py-2 rounded-lg font-semibold text-[5px] transition-colors duration-300",
-                                                                                            {
-                                                                                                "bg-lighterYellow ": category.categoryName === currActiveCategory,
-                                                                                                "bg-gray-200 text-gray-700": category.categoryName !== currActiveCategory
-                                                                                            }
-                                                                                        )}
-                                                                                        onClick={() => setCurrActiveCategory(category.categoryName)}
-                                                                                    >
-                                                                                        {category.categoryName}
-                                                                                    </button>
-                                                                                </CarouselItem>
-
-
-                                                                            );
-                                                                        })
-                                                                    }
-                                                                </CarouselContent>
-                                                                <div className="w-full h-10 relative flex justify-between items-center p-4">
-                                                                    <CarouselPrevious className="absolute left-4 bg-lighterYellow" />
-                                                                    <CarouselNext className="absolute left-14 bg-lighterYellow" />
-                                                                </div>
-                                                            </Carousel>
-                                                            <p className="text-left px-4 py-2 font-thin text-slate-400">Click To View Details Of Product</p>
-                                                            <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3 bg-gray-100">
-                                                                {filteredProducts.map((product: any, index: number) => (
-                                                                    <div className="grid grid-cols-2 gap-2">
-
-                                                                        {
-                                                                            product.products.map((product: any, index: number) => (
-                                                                                <Drawer>
-                                                                                    <DrawerTrigger>
-                                                                                        <div
-                                                                                            key={index}
-                                                                                            className="cursor-pointer border border-slate-300 flex flex-col items-start text-left bg-white rounded-xl shadow-md p-6 transform transition-all hover:scale-105 hover:shadow-xl hover:bg-gray-50"
-                                                                                        >
-                                                                                            <p className="text-lg font-semibold text-gray-900 mb-2">{product.name.length > 10 ? product.name.slice(0, 10) + "..." : product.name}</p>
-
-                                                                                            <p className="text-sm font-semibold text-gray-500">Estimated: {product.price} AUD</p>
-                                                                                        </div>
-                                                                                    </DrawerTrigger>
-                                                                                    <DrawerContent className="h-[calc(100%-10rem)]">
-                                                                                        <div
-                                                                                            key={index}
-                                                                                            className="cursor-pointer  flex flex-col items-start text-left bg-white rounded-xl  p-6 transform transition-all hover:scale-105 hover:shadow-xl hover:bg-gray-50"
-                                                                                        >
-                                                                                            <p className="text-2xl font-semibold text-gray-900 mb-2">{product.name}</p>
-                                                                                            <p className="text-base text-gray-600 mb-4">{product.description}</p>
-                                                                                            <p className="text-sm text-gray-700 mb-4">
-                                                                                                <span className="font-semibold text-orange-500">Tip From Matey:</span>
-                                                                                                <span className="text-gray-800 font-medium"> {product.personalUsage}</span>
-                                                                                            </p>
-                                                                                            <p className="text-sm font-semibold text-gray-500">Estimated: {product.price} AUD</p>
-                                                                                        </div>
-                                                                                    </DrawerContent>
-                                                                                </Drawer>
-
-
-                                                                            ))
-                                                                        }
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-
-                                                        </div>
-                                                    }
-
-                                                    {
-                                                        currActiveTab === "vendor" && <div>
-                                                            <Carousel className=" max-w-[95%]">
-                                                                <CarouselContent className="flex gap-2 px-4 py-2 border-b border-gray-200">
-                                                                    {vendorProduct.map((category: any, index: number) => (
-                                                                        <CarouselItem key={index} className="w-fit basis-auto">
-                                                                            <button
-                                                                                className={classNames(
-                                                                                    "px-4 py-2 rounded-lg font-semibold text-[5px] transition-colors duration-300",
-                                                                                    {
-                                                                                        "bg-lighterYellow ": category.categoryName === currActiveCategory,
-                                                                                        "bg-gray-200 text-gray-700": category.categoryName !== currActiveCategory,
-                                                                                    }
-                                                                                )}
-                                                                                onClick={() => setCurrActiveCategory(category.categoryName)}
-                                                                            >
-                                                                                {category.categoryName}
-                                                                            </button>
-                                                                        </CarouselItem>
-                                                                    ))}
-                                                                </CarouselContent>
-                                                                <div className="w-full h-10 relative flex justify-between items-center p-4">
-                                                                    <CarouselPrevious className="absolute left-4 bg-lighterYellow" />
-                                                                    <CarouselNext className="absolute left-14 bg-lighterYellow" />
-                                                                </div>
-                                                            </Carousel>
-                                                            <p className="text-left px-4 py-2 font-thin text-slate-400">Click To View Details Of Product</p>
-                                                            {/* Product grid */}
-                                                            <div className="gap-4 p-4 ">
-                                                                {filteredProducts.map((product: any, index: number) => (
-                                                                    <div className="gap-2 grid grid-cols-2">
-                                                                        {
-                                                                            product.products.map((product: any, index: number) => (
-                                                                                <Drawer>
-                                                                                    <DrawerTrigger>
-                                                                                        <div
-                                                                                            key={index}
-                                                                                            className="cursor-pointer border border-slate-300 flex flex-col items-start text-left bg-white rounded-xl shadow-md p-6 transform transition-all hover:scale-105 hover:shadow-xl hover:bg-gray-50"
-                                                                                        >
-                                                                                            <img src={product.imageParams[0] ? getImageUrl(product.imageParams[0]) : '/assets/images/no-image.svg'} onError={(e) => {
-                                                                                                e.currentTarget.src = '/assets/images/no-image.svg';
-                                                                                            }
-                                                                                            } alt={product.name} className="w-full h-40 " />
-
-                                                                                        </div>
-                                                                                    </DrawerTrigger>
-                                                                                    <DrawerContent className="h-[calc(100%-10rem)]">
-
-                                                                                        <div className="flex gap-2 flex-col items-center justify-center p-4">
-                                                                                            <img src={product.imageParams[0] ? getImageUrl(product.imageParams[0]) : '/assets/images/no-image.svg'} onError={(e) => {
-                                                                                                e.currentTarget.src = '/assets/images/no-image.svg';
-                                                                                            }} alt={product.name} className="max-w-48 max-h-48" />
-                                                                                            <hr className="border-2 border-slate-400 w-full" />
-                                                                                            <div className="absolute top-14 right-2 bg-yellow px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                                                                                                <DollarSign className="w-4 h-4 text-gray" />
-                                                                                                <span className="font-bold text-gray">${product?.price || 'N/A'}</span>
-                                                                                            </div>
-                                                                                            <h2 className="text-lg text-left font-bold text-gray leading-tight">
-                                                                                                {product?.name || 'No Name'}
-                                                                                            </h2>
-                                                                                            <a
-                                                                                                href={product?.url}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                className="bg-lightYellow w-full hover:bg-yellow transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 text-gray"
-                                                                                            >
-                                                                                                <span>View Product</span>
-                                                                                                <ExternalLink className="w-4 h-4" />
-                                                                                            </a>
-                                                                                            <div className="flex flex-col w-full gap-2 mt-1">
-                                                                                                <div className="flex w-full items-center gap-2 p-2 rounded-md bg-lighterYellow">
-                                                                                                    <Star className="w-5 h-5 text-darkYellow" />
-                                                                                                    <span className="font-semibold text-gray">Rated By: {product?.rating || 'N/A'}</span>
-                                                                                                </div>
-                                                                                                <div className="p-2 w-full rounded-md flex gap-2 bg-paleYellow">
-                                                                                                    <Info className="w-5 h-5 flex-shrink-0 text-deepYellow text-left" />
-                                                                                                    <div className="text-left">
-                                                                                                        <span className="font-semibold text-gray">Usage: </span> <br />
-                                                                                                        <span className="text-gray">{product?.description || 'N/A'}</span>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </DrawerContent>
-                                                                                </Drawer>
-                                                                            ))
-                                                                        }
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-
-
-                                                        </div>
-                                                    }
+                                                <DrawerContent className="p-4 h-[calc(100%-10rem)]">
+                                                    <ProductDialog />
                                                 </DrawerContent>
                                             </Drawer>
 

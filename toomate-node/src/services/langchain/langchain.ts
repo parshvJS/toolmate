@@ -318,7 +318,7 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 		  3. Product Recommendation (Prioritize this if the user’s prompt indicates a need for a specific tool or resource)
 		  4. Follow-up Question for More Understanding (Use this if the prompt is vague or needs clarification)
 		  5. Guidance on the Project (Select this if the user is asking for advice or direction)
-		  6. **Emotional Playfulness with Matey** *(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response.
+		  6. Emotional Playfulness with Matey *(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response.
 		
 		User Intent Analysis:
 		1. Evaluate the user’s mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations, guidance, or playfulness with Matey (Intent 6) for encouragement.
@@ -327,7 +327,7 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 		4. Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
 		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. 
 		6. is you see need of budget slider and there is not specified need of products then dont include product recommendation
-
+		7. if there is specific mention of tool inventory and no other product request then dont include product recommendation
 		
 			user Specific Memory: {longTerm}
 		current chat Specific Memory: {shortTerm}
@@ -347,7 +347,7 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 	4. Follow-up question for more understanding (use this if the prompt is vague or needs clarification)
 	5. Guidance on the project (select this if the user is asking for advice or direction)
 	
-	**User Intent Analysis**:
+	User Intent Analysis:
 	1. Evaluate the user's mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations or guidance.
 	2. Assess previous interactions: What have they discussed recently? If they mentioned a specific tool or project, prioritize product recommendations related to that.
 	3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
@@ -418,7 +418,7 @@ export async function executeIntend(
 		isMateyProduct: false,
 		mateyProduct: [] as any,
 		productSuggestionList: [] as any,
-		bunningsProductList: [] as string[],
+		bunningsProductList: [] as any,
 		emo: '',
 	};
 
@@ -473,7 +473,13 @@ export async function executeIntend(
 							case 1:
 								return handleBunningsProduct(prompt, chatHistory, sessionId, isBudgetSliderValue, budgetSliderValue, 0, socket)
 									.then((bunningsProducts) => {
-										bunningsProductList = bunningsProducts;
+										if (!bunningsProducts.success || bunningsProducts.error) {
+											socket.emit('error', 'Error fetching Bunnings products.');
+											return null;
+										}
+										newChat['isBunningsProduct'] = true;
+										newChat['bunningsProductList'] = bunningsProducts.data;
+
 										// socket.emit('bunningsProducts', bunningsProducts);
 										return bunningsProducts;
 									})
@@ -537,10 +543,6 @@ export async function executeIntend(
 									};
 								});
 							});
-
-							const bunningsProduct = await BunningsProduct.insertMany(data);
-							newChat['isBunningsProduct'] = true;
-							newChat['bunningsProductList'] = bunningsProduct.map((product) => product._id.toString());
 						}
 					}
 					if (productIntent.data.includes(2)) {
@@ -586,7 +588,7 @@ async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, s
 	User Prompt: {prompt}
 	Chat Context: {longTerm}
 	User Specific memory: {shortTerm}
-
+	${chatHistory.isToolInventoryMemory && `Tool Inventory: ${chatHistory.isToolInventoryMemory}`}
 	Provider Selection Criteria:
 	1. Bunnings:
 		- Choose if the user mentions Bunnings or prefers well-known hardware stores.
@@ -599,7 +601,10 @@ async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, s
 	3. AI Generated Product:
 		- Choose if AI-generated products fit the user's needs based on the context.
 		- Select if the user is open to innovative or unique product suggestions.
-
+	${chatHistory.isToolInventoryMemory && `4. Tool Inventory:
+			- you will be provided with tool inventory user have 
+			- analyze it and choose accordingly
+	`}
 
 
 	Output:
@@ -645,7 +650,8 @@ async function followUpQuestion(prompt: string, chatHistory: IChatMemory, socket
 	User Prompt: {prompt}
 		Current Chat Memory: {longTerm}
 	User Specific memory: {shortTerm}
-	
+		${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.isToolInventoryMemory}` : ''}
+${chatHistory.isToolInventoryMemory ? `Tool inventory is provided of user's existing tools ,consider it and generate accordigly` : ''}
 
 	Keep in mind:
 	- The follow-up question should be relevant to the user's prompt and chat history.
@@ -681,6 +687,8 @@ async function handleMateyProduct(prompt: string, chatHistory: IChatMemory, sess
 	User Prompt: {prompt}
 	Chat Context: {longTerm}
 	User Specific: {shortTerm}
+	${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.isToolInventoryMemory}` : ''}
+${chatHistory.isToolInventoryMemory ? `Tool inventory is provided of user's existing tools ,consider it and generate accordigly` : ''}
 
 	Output :
 	[
@@ -817,7 +825,7 @@ async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, s
 		User Prompt: {prompt}
 		Chat Context: {shortTerm}
 		User Specific: {longTerm}
-
+		${chatHistory.isToolInventoryMemory && `Tool Inventory: ${chatHistory.isToolInventoryMemory}`}
 		Keep in mind:
 		- The products should be related to DIY and creative projects.
 		- generate in depth and relevent search terms with large and specific product names.
@@ -831,6 +839,12 @@ async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, s
 		- Return only the product names in an array (response should contain only an array that can be parsed to JSON):
 		- No Comment or additional text
 		- give in one linear plain text response
+
+		${chatHistory.isToolInventoryMemory && `
+			- there is existing tool inventory user 
+			- analyze it and choose products accordingly
+		`}
+
 		Array:
 `;
 	const productTemplate = PromptTemplate.fromTemplate(productPrompt);
@@ -846,18 +860,27 @@ async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, s
 		const parsedProductList = JSON.parse(products.replace(/`/g, '').replace('json', '').replace('JSON', '').replace('Array:', '').trim());
 
 		const bunningsProducts = await searchBunningsProducts(parsedProductList, isBudgetAvailable, maxBudget, minBudget);
-
-		if (!bunningsProducts.success) {
-			socket.emit('error', bunningsProducts.message || "Error Generating Bunnings Products")
+		if (!bunningsProducts.success || !bunningsProducts.data || bunningsProducts.data.length === 0) {
+			socket.emit('error', bunningsProducts.message || "Error Generating Bunnings Products");
+			return {
+				success: false,
+				data: 'Error Generating Bunnings Products',
+			};
 		}
+		socket.emit('bunningsProduct', bunningsProducts.data);
 
-		console.log("bunnings products", bunningsProducts)
-
+		return {
+			success: true,
+			data: bunningsProducts.itemMap,
+		}
 
 	} catch (error) {
 		console.error('Error fetching Bunnings products:', error);
 		socket.emit('error', 'Error fetching Bunnings products.');
-		return [];
+		return {
+			success: false,
+			error: 'Error fetching Bunnings products.',
+		};
 	}
 
 }
@@ -874,6 +897,7 @@ async function HandleGeneralResponse(prompt: string, chatHistory: IChatMemory, i
 	User Prompt: ${prompt}
 	Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
 	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+	${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
 	System: Your task is to provide concise, relevant responses based on the intensity of the tool request. 
 	1. Assess the intensity (high, medium, low).
 	2. If high: "Here's a product suggestion related to ...".
@@ -889,6 +913,8 @@ async function HandleGeneralResponse(prompt: string, chatHistory: IChatMemory, i
 	User Prompt: ${prompt}
 		Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
 	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+		${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
+
 	System: Your task is to provide concise, relevant responses based on the intensity of the community request. 
 	1. Assess the intensity (high, medium, low).
 	2. If high: "Here's a community suggestion related to ...".
@@ -901,10 +927,12 @@ async function HandleGeneralResponse(prompt: string, chatHistory: IChatMemory, i
 		streamPrompt = `System prompt: As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
 	| User Prompt: ${prompt} 
 		-just give clear response dont mention prompt or chat history in response.
-
+		- if relevent the ask for more information or provide more information
+		- if needed then ask follow up question at the end 
 	Context of chat (use this if present, else just use prompt to reply): 
 		Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
 	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+	${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
 	
 	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
 	}
@@ -977,7 +1005,8 @@ async function HandleProductRecommendation(
 		User Prompt: {prompt}
 		Chat Context: {shortTerm}
 		User Specific Context:{longTerm}
-
+		${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.isToolInventoryMemory}` : ''}
+		${chatHistory.isToolInventoryMemory ? `Tool inventory is provided of existing tools ,consider it and choose accordigly` : ''}
 		Product Categories (return only the array, no additional text):`;
 
 		// Use Langchain's PromptTemplate
@@ -1081,7 +1110,8 @@ Product Catalog: {jsonProductDetails} | User Prompt: {prompt}.
 
 user Specific Memory: {longTerm}
 current chat Specific Memory: {shortTerm}
-
+${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.isToolInventoryMemory}` : ''}
+${chatHistory.isToolInventoryMemory ? `Tool inventory is provided of existing tools ,consider it and choose accordigly` : ''}
 Provide the response in this format: this is just format use JSON in actual response: 
 [object(categoryName: string, products: array of product IDs), object(categoryName: string, products: array of product IDs)]. 
 
@@ -1158,6 +1188,8 @@ export async function FindNeedOfBudgetSlider(prompt: string, chatHistory: IChatM
 	User Specific memory: {longTerm}
 	Chat Context: {shortTerm}
 	User Prompt: {prompt}
+	${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.isToolInventoryMemory}` : ''}
+${chatHistory.isToolInventoryMemory ? `Tool inventory is provided of existing tools ,if relevent then use it else ignore it` : ''}
 	Is Budget Slider Needed?:`;
 
 	const checkContextTemplate = PromptTemplate.fromTemplate(checkContextPrompt);
@@ -1275,225 +1307,6 @@ export async function emotionalChatMessage(prompt: string, socket: Socket) {
 	return gatheredResponse;
 }
 
-
-// chat summury
-// export async function summarizeAndStoreChatHistory(userId: string, userChat: any): Promise<boolean> {
-// 	await connectDB();
-
-// 	try {
-// 		const filteredChat = await filterChatHistory(userChat);
-// 		if (!filteredChat.length) return false;
-
-// 		// Define prompts as an array for streamlined iteration
-// 		const prompts = [
-// 			{
-// 				template: `Analyze the user's statements to identify any items, skills, knowledge, or resources they possess. Return an array of strings in this format: ["context1", "context2"].
-
-// 		  Example: 
-// 		  User Statement: 'I have a drill machine. How do I make a vertical hole?' 
-// 		  Expected Output: ["Possesses drill machine", "Has skill in drilling", "Knowledgeable about making vertical holes"]
-
-// 		  User Chat With AI: {userChat}
-
-// 		  - Response must be in JSON-parsable array format.
-// 		  - No additional text or explanations.
-// 		  - Return only the array of strings.
-// 		  - No comments or unnecessary text should be included.
-// 		  - Max Length: 0-5 array items`,
-// 				key: 'globalContext_UserState',
-// 			},
-// 			{
-// 				template: `Analyze the user's statements to identify personal choices, preferred tools, formats, or styles. Return an array of strings in this format: ["preference1", "preference2"].
-
-// 		  Example:
-// 		  User Statement: 'I prefer using step-by-step guides for drilling techniques.'
-// 		  Expected Output: ["Prefers step-by-step guides", "Chooses drilling techniques"]
-
-// 		  User Chat With AI: {userChat}
-
-// 		  - Response must be in JSON-parsable array format.
-// 		  - No additional text or explanations.
-// 		  - Return only the array of strings.
-// 		  - No comments or unnecessary text should be included.
-// 		  - Max Length: 0-5 array items`,
-// 				key: 'globalContext_UserPreference',
-// 			},
-// 			{
-// 				template: `Identify any statements that indicate the user's lack of knowledge, uncertainty, or need for guidance. Return an array of strings in this format: ["knowledge_gap1", "knowledge_gap2"].
-
-// 		  Example: 
-// 		  User Statement: 'I'm not sure how to use an automatic drill to make holes.' 
-// 		  Expected Output: ["Uncertain about using an automatic drill to make holes"]
-
-// 		  User Chat With AI: {userChat}
-
-// 		  - Response must be in JSON-parsable array format.
-// 		  - No additional text or explanations.
-// 		  - Return only the array of strings.
-// 		  - No comments or unnecessary text should be included.
-// 		  - Max Length: 0-5 array items`,
-// 				key: 'globalContext_Braingap',
-// 			},
-// 			{
-// 				template: `At the end of the conversation, generate a detailed summary of the user's journey. Reflect on their goals, what they learned, and key points discussed. Return the summary in an array format: ["detailed_summary"].
-
-// 		  Example Output: 
-// 		  ["User learned how to effectively use an automatic drill for vertical holes, gaining insights into technique and safety. They showed a preference for detailed guidance and demonstrated increased confidence in their skills."]
-
-// 		  User Chat With AI: {userChat}
-
-// 		  - Response must be in JSON-parsable array format.
-// 		  - No additional text or explanations.
-// 		  - Return only the array of strings.
-// 		  - No comments or unnecessary text should be included.
-// 		  - Use concise and focused language for an effective summary.
-// 		  - Max Length: 0-5 array items`,
-// 				key: 'globalContext_UserChatMemory',
-// 			},
-// 		];
-
-// 		// Helper function to parse and invoke prompt chains
-// 		async function invokePrompt(template: string) {
-// 			const promptTemplate = PromptTemplate.fromTemplate(template);
-// 			const llmChain = promptTemplate.pipe(llm).pipe(new StringOutputParser());
-// 			const runnableChain = RunnableSequence.from([llmChain, new RunnablePassthrough()]);
-// 			const result = await runnableChain.invoke({ userChat: JSON.stringify(filteredChat) });
-// 			return JSON.parse(result);
-// 		}
-
-// 		// Process each prompt in parallel and get results
-// 		const results = await Promise.all(prompts.map(({ template }) => invokePrompt(template)));
-
-// 		// Fetch user context and update with new parsed data
-// 		const userContext: any = await UserMemory.findOne({ userId: userId });
-// 		if (userContext) {
-// 			// Update each context type, checking limits and removing excess
-// 			prompts.forEach((prompt, index) => {
-// 				let contextArray = userContext[prompt.key] || [];
-// 				contextArray = updateContextWithLimits(contextArray, results[index]);
-// 				userContext[prompt.key] = contextArray;
-// 			});
-
-// 			const saved = await userContext.save();
-// 			return Boolean(saved);
-// 		} else {
-// 			// Create new user context if none exists
-// 			const newUserContext = new UserMemory({
-// 				userId: userId,
-// 				globalContext_UserState: results[0],
-// 				globalContext_UserPreference: results[1],
-// 				globalContext_Braingap: results[2],
-// 				globalContext_UserChatMemory: results[3],
-// 			});
-// 			const saved = await newUserContext.save();
-// 			return Boolean(saved);
-// 		}
-// 	} catch (error) {
-// 		console.error("Error saving chat summary:", error);
-// 		return false;
-// 	}
-// }
-
-
-
-// this function get all the chat history and filter out the chat history
-async function filterChatHistory(userChat: []) {
-	let index = 0;
-	const userChatIndexed = userChat.map((chat: any) => {
-		const newChat = {
-			index,
-			message: chat.message,
-			role: chat.role
-		}
-		index++;
-		return newChat
-	})
-
-	const allUserChats = userChatIndexed.map((chat: any) => {
-		if (chat.role === 'user') {
-			return {
-				index: chat.index,
-				message: chat.message
-			}
-		}
-	});
-
-
-
-	if (allUserChats.length === 0) {
-		return [];
-	}
-
-
-	const getUseFullUserPrompt = `You Will Be Given All Chat Of User Based On questions and query user have asked chain all the neccessary Chats and return all chat that are neccessary for chat summury. 
-	
-	- keep in mind that this is only user side chat ,AI Side chat are excluded.
-
-	- You have to return response in Type of Object of Array  array 
-	[
-		Object(index:number,message:string),
-		Object(index:number,message:string),
-		Object(index:number,message:string),
-
-	] And So On
-
-	user Side Chat : {userChat}
-
-
-	- Only Return Chat In JSON Parsable Array Format
-	- No Additional Text in Response, Only Array of Objects
-	- directly return array of objects
-	- there should be no comments or any other unnecessary text in the response, only the array of objects.
-	`
-
-	const getUseFullUserPromptTemplate = PromptTemplate.fromTemplate(getUseFullUserPrompt);
-
-	const getUseFullUserPromptLLMChain = getUseFullUserPromptTemplate
-		.pipe(llm)
-		.pipe(new StringOutputParser());
-
-
-	const runnableChainOfGetUseFullUserPrompt = RunnableSequence.from([
-
-		getUseFullUserPromptLLMChain,
-		new RunnablePassthrough(),
-	]);
-
-	const filteredChat = await runnableChainOfGetUseFullUserPrompt.invoke({
-		userChat: JSON.stringify(allUserChats)
-	});
-
-
-	try {
-		const parsedFilteredChat = JSON.parse(filteredChat);
-
-		const filteredUserChat = parsedFilteredChat.map((chat: any) => {
-
-			const K = 4;
-			const currIndex = chat.index;
-			const newFilteredChat = [];
-			const startIndex = Math.max(0, currIndex - K);
-			for (let i = startIndex; i < currIndex; i++) {
-				newFilteredChat.push(userChatIndexed[i]);
-			}
-
-			newFilteredChat.push(chat)
-
-			for (let i = (chat.index + 1); i < (currIndex + K); i++) {
-				newFilteredChat.push(userChatIndexed[i])
-			}
-			return newFilteredChat
-		})
-
-		return filteredUserChat;
-	} catch (error: any) {
-		console.error('Error filtering chat:', error);
-		return [];
-
-	}
-
-}
-
 // tooltip of the day
 
 export async function generateUsefulFact(memory: string): Promise<string> {
@@ -1571,3 +1384,124 @@ export async function getMateyExpession(prompt: string, socket: Socket) {
 }
 
 
+// tool inventory
+
+export async function isToolInventoryAccessNeeded(prompt: string, chatHistory: IChatMemory) {
+	const toolInventoryPrompt = `
+	Based on the user's chat history and prompt, determine if accessing the tool inventory is necessary for providing accurate and helpful advice.
+
+	Criteria:
+	1. Analyze the user's project details and requirements.
+	2. Assess if knowing the available tools will enhance the response.
+	3. Consider if the user's prompt indicates a need for specific tools.
+    4. they have talked about tool inventory in past chat memory
+
+	Output:
+	- Return "true" if accessing the tool inventory is necessary.
+	- Return "false" if it is not necessary.
+
+	- no other text in response only "true" or "false"
+
+	User Specific Memory: {longTerm}
+	Chat Context: {shortTerm}
+	User Prompt: {prompt}
+	Is Tool Inventory Access Needed?:`;
+
+	const toolInventoryTemplate = PromptTemplate.fromTemplate(toolInventoryPrompt);
+
+	const toolInventoryLLMChain = toolInventoryTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfToolInventory = RunnableSequence.from([
+		toolInventoryLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	try {
+		const needOfToolInventory = await runnableChainOfToolInventory.invoke({
+			longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No chat history available.",
+			shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available.",
+			prompt: prompt
+		});
+
+		if (needOfToolInventory.includes("true")) {
+			return true;
+		}
+		return false;
+	} catch (error) {
+		console.error('Error determining tool inventory access:', error);
+		return { success: false, error: 'Error determining tool inventory access.' };
+	}
+}
+
+
+export async function getToolIdToConsider(prompt: string, chatHistory: IChatMemory, tools: any[], socket: Socket) {
+	socket.emit('status', {
+		message: "Matey Is Looking Your Tool Inventory ... "
+	});
+	const toolIdPrompt = `
+	Analyze the user's chat history, prompt, and the provided tool catalog to identify the most suitable tool IDs for the user.
+
+	Criteria:
+	1. Evaluate the user's project details and requirements.
+	2. Match the tool names with the user's needs based on the chat history and prompt.
+
+	Output:
+	- Return an array of tool IDs that are most suitable for the user.
+	- Format: ["id1", "id2", "id3"]
+	- No additional text, only the array of IDs.
+
+	User Prompt: {prompt}
+	Chat Memory: {shortTerm}
+	Long Term Memory: {longTerm}
+	Tool Catalog: {tools}
+	`;
+
+	const toolIdTemplate = PromptTemplate.fromTemplate(toolIdPrompt);
+
+	const toolIdLLMChain = toolIdTemplate
+		.pipe(llm)
+		.pipe(new StringOutputParser());
+
+	const runnableChainOfToolId = RunnableSequence.from([
+		toolIdLLMChain,
+		new RunnablePassthrough(),
+	]);
+
+	try {
+
+		const toolData = tools.slice(0, tools.length > 40 ? 40 : tools.length).map((tool: any) => {
+			return {
+				name: tool.name,
+				id: tool.id
+			};
+		});
+
+
+		const toolId = await runnableChainOfToolId.invoke({
+			longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No chat history available.",
+			shortTerm: chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available.",
+			prompt: prompt,
+			tools: JSON.stringify(toolData)
+		});
+
+		try {
+			const parsedToolId = JSON.parse(toolId);
+			return parsedToolId;
+		} catch (error: any) {
+			console.error('Error determining tool ID:', error);
+			socket.emit('error', 'Error determining tool ID.');
+
+			return [];
+
+		}
+
+
+	} catch (error) {
+		console.error('Error determining tool ID:', error);
+		socket.emit('error', 'Error determining tool ID.');
+
+		return []
+	}
+}

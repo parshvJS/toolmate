@@ -119,7 +119,7 @@ export async function startNewMessageConsumer() {
 					isBunningsProduct,
 					productSuggestionList:productSuggestionList,
 					mateyProduct,
-					bunningsProductList: bunningsProductList.map((id: string) => new mongoose.Types.ObjectId(id)),
+					bunningsProductList: bunningsProductList,
 					isCommunitySuggested,
 					communityId,
 					role,

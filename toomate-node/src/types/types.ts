@@ -158,5 +158,7 @@ export interface PlanResponse {
 
 export interface IChatMemory {
     longTermKey: string,
-    shortTermKey: string
+    shortTermKey: string,
+    toolInventoryMemory?: string[],
+    isToolInventoryMemory?: boolean,
 }

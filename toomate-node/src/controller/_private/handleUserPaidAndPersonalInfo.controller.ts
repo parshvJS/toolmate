@@ -203,7 +203,7 @@ export async function handleUserPaidAndPersonalInfo(req: Request, res: Response)
 			clerkUserId: user.clerkUserId,
 			planAccess: paidUser.planAccess,
 			activePlan: paidUser.activePlan,
-			suspendedPlan:paidUser.suspendedPlan,
+			suspendedPlan: paidUser.suspendedPlan,
 		};
 		// Pause subscription if overdue
 		if (paidUser.activePlan) {

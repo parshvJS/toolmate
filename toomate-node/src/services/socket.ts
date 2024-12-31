@@ -1,9 +1,9 @@
 import { Socket } from "socket.io";
-import { abstractChathistory, executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getMateyExpession, getUserIntend, inititalSummurizeChat } from "./langchain/langchain.js";
+import { abstractChathistory, executeIntend, findAndExecuteIntend, FindNeedOfBudgetSlider, GetAnswerFromPrompt, getChatName, getMateyExpession, getToolIdToConsider, getUserIntend, inititalSummurizeChat, isToolInventoryAccessNeeded } from "./langchain/langchain.js";
 import { produceMessage, produceNewMessage } from "./kafka.js";
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
-import { iChatname, INewUserMessage } from "../types/types.js";
+import { IChatMemory, iChatname, INewUserMessage } from "../types/types.js";
 import { createnewUserChatInstace } from "../controller/_private/createNewUserChatInstance.controller.js";
 import { appendArrayItemInRedis, getRedisData, setRedisData, storeDataTypeSafe } from "./redis.js";
 import connectDB from "../db/db.db.js";
@@ -12,6 +12,7 @@ import { Chat } from "../models/chat.model.js";
 import User from "../models/user.model.js";
 import UserMemory from "../models/userMemory.model.js";
 import { memory } from "./memory.js";
+import UserToolInventory from "../models/userToolInventory.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -54,11 +55,12 @@ export async function handleSocketSerivce(socket: Socket) {
             //  get the current plan of the user
             const userPlanCacheKey = `USER-PAYMENT-${data.userId}`;
             let currentPlan = 0;
-
+            let mongoUserId;
             const redisUserData = await getRedisData(userPlanCacheKey);
             if (redisUserData.success) {
                 const plan = JSON.parse(redisUserData.data).planAccess;
                 currentPlan = plan[2] ? 2 : plan[1] ? 1 : 0;
+                mongoUserId = JSON.parse(redisUserData.data).id;
             } else {
                 await connectDB();
                 const user = await User.findOne({ clerkUserId: data.userId });
@@ -69,6 +71,8 @@ export async function handleSocketSerivce(socket: Socket) {
 
                 await setRedisData(userPlanCacheKey, JSON.stringify(userPlan), 3600);
                 currentPlan = userPlan.planAccess[2] ? 2 : userPlan.planAccess[1] ? 1 : 0;
+
+                mongoUserId = user._id;
             }
 
             
@@ -93,7 +97,7 @@ export async function handleSocketSerivce(socket: Socket) {
                 await storeDataTypeSafe(longTermKey, _memory.longTermMemory, 3600);
             }
 
-            const wholeMemory = {
+            const wholeMemory:IChatMemory = {
                 longTermKey: _memory.flags.isLongTerm 
                     ? _memory.longTermMemory || " " 
                     : JSON.stringify(redisLongTermMemory?.data) || " ",
@@ -104,6 +108,49 @@ export async function handleSocketSerivce(socket: Socket) {
 
             console.log("wholeMemory:: - :: -- :: --", wholeMemory);
 
+            // tool inventory access
+
+
+            if (currentPlan === 2) {
+                try {
+                    console.log('Checking if tool inventory access is needed...');
+                    const isToolInventoryAccess = await isToolInventoryAccessNeeded(data.message, wholeMemory);
+                    console.log('Tool inventory access needed:', isToolInventoryAccess);
+
+                    if (isToolInventoryAccess) {
+                        console.log('Fetching user tools from database...');
+                        const userTools = await UserToolInventory.find({ userId: mongoUserId }).sort({ createdAt: -1 }).lean();
+                        console.log('User tools fetched:', userTools);
+
+                        if (userTools.length > 0) {
+                            console.log('Getting tool IDs to consider...');
+                            const idPicks = await getToolIdToConsider(data.message, wholeMemory, userTools, socket);
+                            console.log('Tool IDs to consider:', idPicks);
+
+                            if (idPicks.length > 0) {
+                                const newToolInventory = userTools.filter(tool => idPicks.includes(tool._id));
+                                 const newMemory = newToolInventory.map(tool => {
+                                    const customFields = Object.keys(tool.customFields).slice(0, 15).map(key => `${key}: ${tool.customFields[key]}`).join(", ");
+                                    return `
+                                        Item Name: ${tool.name}
+                                        Description: ${tool.description.slice(0, 100)}
+                                        Quantity: ${tool.count}
+                                        Tags: ${tool.tags.join(", ")}
+                                        ${customFields}
+                                    `;
+                                });
+                                wholeMemory['toolInventoryMemory'] = newMemory;
+                                wholeMemory['isToolInventoryMemory'] = true;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching tool inventory:', error);
+                }
+            }
+
+            console.log("wholeMemory:: - :: -- :: -- 222222", wholeMemory);
+            
             
             // Process based on plan type
             switch (currentPlan) {

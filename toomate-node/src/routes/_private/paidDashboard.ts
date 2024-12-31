@@ -31,6 +31,7 @@ import { isEligibleForRefund } from '../../controller/paymentAndPrice/refund/isE
 import { getRefundLogs } from '../../controller/paymentAndPrice/refund/getRefundLogs.controller.js';
 import { revokeOverDuePlan } from '../../controller/_private/revokeOverDuePlan.controller.js';
 import { getSearchData } from '../../controller/temp.js';
+import { getBunnginsProductDetails } from '../../controller/_private/getBunningsProductDetails.js';
 const paidDashbaord = Router();
 
 paidDashbaord.route('/getUserPaidAndPersonalInfo').post(handleUserPaidAndPersonalInfo);
@@ -67,7 +68,8 @@ paidDashbaord.route('/revokeOverDuePlan').post(revokeOverDuePlan);
 paidDashbaord.route('/refundRequest').post(paymentRefundRequest);
 paidDashbaord.route('/getRefundEligibilityStatus').post(isEligibleForRefund);
 paidDashbaord.route('/getRefundLogs').post(getRefundLogs);
-
+// bunning products
+paidDashbaord.route('/getBunningsProductFromItemMap').post(getBunnginsProductDetails)
 
 paidDashbaord.route('/search').post(getSearchData);
 export { paidDashbaord };
