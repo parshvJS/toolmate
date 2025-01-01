@@ -6,9 +6,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export default function FAQSection() {
+export default function FAQSection({
+  isVisible
+}: {
+  isVisible: boolean
+}) {
   return (
-    <section className="w-full max-w-4xl mx-auto px-4 py-12">
+    <section className={`${isVisible && "hidden"} w-full max-w-4xl mx-auto px-4 py-12`}>
       <div className="text-center mb-12 w-full flex items-center justify-center flex-col">
         <h2 className="text-3xl font-bold mb-4 text-center">Frequently Asked Questions</h2>
         <p className="text-muted-foreground">
@@ -25,7 +29,7 @@ export default function FAQSection() {
         <AccordionItem value="item-1">
           <AccordionTrigger className="text-[8px]">Can I change my subscription plan later?</AccordionTrigger>
           <AccordionContent className="text-left flex items-start w-full flex-col leading-8 font-semibold">
-            Yes, you can change your subscription plan at any time. 
+            Yes, you can change your subscription plan at any time.
             <ul className="list-disc pl-4">
               <li><strong>Upgrading:</strong> Upgrades take effect immediately. The unused portion of your current plan will be credited toward the new plan, and the new billing cycle will begin on the upgrade date.</li>
               <li><strong>Downgrading:</strong> Downgrades take effect at the end of your current billing cycle.</li>

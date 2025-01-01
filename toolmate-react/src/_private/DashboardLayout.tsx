@@ -26,7 +26,8 @@ const DashboardLayout: React.FC = () => {
         }
 
         console.log("checking the route")
-        if (userData.planAccess[0] || route.pathname !== "/manage-subscription") {
+        if (userData.planAccess[0] && route.pathname !== "/manage-subscription") {
+            console.log(route.pathname,"kkkkkkkkkkkkkkk",userData.planAccess[0] && route.pathname !== "/manage-subscription")
             console.log("redirecting to sjlfsjdf")
             if (isOverdue) {
                 toast({

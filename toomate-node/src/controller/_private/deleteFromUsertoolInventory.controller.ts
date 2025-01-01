@@ -1,3 +1,4 @@
+import { deleteRedisData } from "../../services/redis.js";
 import connectDB from "../../db/db.db.js";
 import User from "../../models/user.model.js";
 import UserToolInventory from "../../models/userToolInventory.model.js";
@@ -52,6 +53,7 @@ export async function deleteFromUsertoolInventory(req: Request, res: Response) {
                 message: "Failed to delete tool from user inventory"
             })
         }
+        await deleteRedisData(`USER-TOOL-${user.clerkUserId}`)
 
         return res.status(200).json({
             success: true,

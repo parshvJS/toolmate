@@ -104,19 +104,19 @@ export default function SuccessPayment() {
     }, [planData, baToken, subscriptionId, userData, requestSent]);
 
     return (
-        <div className="flex justify-center items-center h-screen">
+        <div className="flex justify-center items-center h-screen bg-gradient-to-t from-softYellow  via-paleYellow to-paleYellow">
             <Confetti
                 width={dimensions.width}
                 height={dimensions.height}
                 recycle={false}
             />
 
-            <div className="flex w-full h-full items-center justify-center">
+            <div className="flex shadow-lg from-accent-foreground w-full h-full items-center justify-center">
                 <div className="shadow-md p-4 rounded-lg border border-slate-400 bg-gradient-to-tr from-paleYellow to-mangoYellow">
                     <div className="flex gap-2 items-center">
                         <MateyExpression expression="2thumb" />
-                        <div className="flex flex-col items-start leading-4">
-                            <p className="font-semibold text-xl">Plan Subscription Successful</p>
+                        <div className="flex flex-col gap-3 items-start leading-4">
+                            <p className="font-semibold text-xl">Plan Subscription Successfully</p>
                             <p className="text-slate-500">Payment Completed</p>
                         </div>
                     </div>
@@ -124,7 +124,7 @@ export default function SuccessPayment() {
                     {planData && (
                         <div className="border-t-2 border-slate-700 my-4">
                             <div className="flex flex-col gap-2 mt-4 items-start font-semibold text-xl">
-                                <p>Subscribed To: {planData.Packname}</p>
+                                <p className='text-lg'>Subscribed To: {planData.Packname}</p>
                                 <p className="text-slate-600 font-medium">Price: {planData.price}</p>
                             </div>
                         </div>
@@ -139,14 +139,14 @@ export default function SuccessPayment() {
 
                     <div
                         onClick={() => navigate('/dashboard')}
-                        className="flex justify-center items-center mt-4 gap-2 bg-yellow px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer"
+                        className="flex justify-center items-center mt-4 gap-2 bg-yellow px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer shadow-md transition-transform transform hover:scale-105"
                     >
                         <CircleCheck size={22} />
                         Go To Dashboard
                     </div>
                     <div
                         onClick={() => navigate('/manage-subscription')}
-                        className="flex justify-center items-center mt-2 gap-2 bg-yellow/40 px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer"
+                        className="flex justify-center items-center mt-2 gap-2 bg-yellow/40 px-4 py-2 rounded-md font-semibold hover:bg-lightYellow cursor-pointer shadow-md transition-transform transform hover:scale-105"
                     >
                         <CreditCard size={22} />
                         Manage Subscription

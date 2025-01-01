@@ -110,11 +110,38 @@ export async function handleSocketSerivce(socket: Socket) {
 
             // tool inventory access
 
-
+            let isToolInventoryAccess = false;
             if (currentPlan === 2) {
                 try {
+
+                        // get the tool inventory map
+                       let userToolmap = ``;
+                       
+                        const redisDataToolsMap  =await getRedisData(`USER-TOOL-${data.userId}`);
+                        if(redisDataToolsMap.success) {
+                            console.log('Tool map found in Redis:', redisDataToolsMap.data);
+                            userToolmap = redisDataToolsMap.data;
+                        }
+                        else {
+                            console.log('Tool map not found in Redis, fetching from database...');
+                            // get from database and store in redis
+                            const userTools = await UserToolInventory.find({ userId: mongoUserId }).sort({ createdAt: -1 }).lean();
+                            const map = userTools.map((tool,index) => {
+                                console.log("tool is",tool,`Tool ${index} : ${tool.name} `);
+                                return ` Tool ${index} : ${tool.name} `
+                            });
+                            console.log(map,"map for the cache is here");
+                            userToolmap = JSON.stringify(map);
+                            console.log('Tool map fetched from database:', map);
+
+                            await setRedisData(`USER-TOOL-${data.userId}`, JSON.stringify(map), 3600);
+                            console.log('Tool map stored in Redis:', map);
+                        }
+
+                        // get the tool intent
+
                     console.log('Checking if tool inventory access is needed...');
-                    const isToolInventoryAccess = await isToolInventoryAccessNeeded(data.message, wholeMemory);
+                    isToolInventoryAccess = await isToolInventoryAccessNeeded(data.message, wholeMemory, userToolmap);
                     console.log('Tool inventory access needed:', isToolInventoryAccess);
 
                     if (isToolInventoryAccess) {
@@ -122,23 +149,52 @@ export async function handleSocketSerivce(socket: Socket) {
                         const userTools = await UserToolInventory.find({ userId: mongoUserId }).sort({ createdAt: -1 }).lean();
                         console.log('User tools fetched:', userTools);
 
+                        const preprocessedTools = userTools.map(tool => {
+                            return {
+                                name: tool.name,
+                                description: tool.description,
+                                count: tool.count,
+                                tags: tool.tags?.join(", "),
+                                ...tool.customFields,
+                                id: tool._id.toString() // Convert ObjectId to string
+                            }
+                        });
                         if (userTools.length > 0) {
                             console.log('Getting tool IDs to consider...');
-                            const idPicks = await getToolIdToConsider(data.message, wholeMemory, userTools, socket);
+                            const idPicks = await getToolIdToConsider(data.message, wholeMemory, preprocessedTools, socket);
                             console.log('Tool IDs to consider:', idPicks);
 
                             if (idPicks.length > 0) {
-                                const newToolInventory = userTools.filter(tool => idPicks.includes(tool._id));
-                                 const newMemory = newToolInventory.map(tool => {
-                                    const customFields = Object.keys(tool.customFields).slice(0, 15).map(key => `${key}: ${tool.customFields[key]}`).join(", ");
+                                console.log('Tool IDs picked:', idPicks);
+                                const newToolInventory = preprocessedTools.filter(tool => {
+                                    console.log("Tool is",tool,"picking it is", idPicks.includes(tool.id));
+                                    return idPicks.includes(tool.id)
+                                });
+                                console.log('Filtered tool inventory:', newToolInventory);
+                                
+                                const newMemory = newToolInventory.map(tool => {
+                                    let customFields = "";
+                                    if (tool && typeof tool === 'object' && tool !== null) {
+                                        customFields = Object.keys(tool)
+                                            .filter(key => !['name', 'description', 'count', 'tags', 'id'].includes(key))
+                                            .map(key => `${key}: ${tool[key]}`)
+                                            .join(", ");
+                                    }
+                                    console.log(customFields, "customFields0101010101010101010101010");
+                                    console.log(` Item Name: ${tool.name}
+                                        Description: ${tool.description.slice(0, 100)}
+                                        Quantity: ${tool.count}
+                                        Tags: ${tool.tags}
+                                        ${customFields}`);
                                     return `
                                         Item Name: ${tool.name}
                                         Description: ${tool.description.slice(0, 100)}
                                         Quantity: ${tool.count}
-                                        Tags: ${tool.tags.join(", ")}
+                                        Tags: ${tool.tags}
                                         ${customFields}
                                     `;
                                 });
+                                console.log('New memory for tool inventory:', newMemory);
                                 wholeMemory['toolInventoryMemory'] = newMemory;
                                 wholeMemory['isToolInventoryMemory'] = true;
                             }
@@ -156,7 +212,7 @@ export async function handleSocketSerivce(socket: Socket) {
             switch (currentPlan) {
                 case 1: {
                     await getMateyExpession(data.message, socket);
-                    const intendList = await getUserIntend(data.message, wholeMemory, currentPlan);
+                    const intendList = await getUserIntend(data.message, wholeMemory, currentPlan,null);
                     socket.emit('intendList', intendList);
 
                     const messageStream = await executeIntend(
@@ -208,7 +264,7 @@ export async function handleSocketSerivce(socket: Socket) {
                 case 2: {
                     await getMateyExpession(data.message, socket);
 
-                    const intendListPro = await getUserIntend(data.message, wholeMemory, currentPlan);
+                    const intendListPro = await getUserIntend(data.message, wholeMemory, currentPlan,isToolInventoryAccess,wholeMemory.toolInventoryMemory);
                     socket.emit('intendList', intendListPro);
 
                     const messageStreamPro = await executeIntend(

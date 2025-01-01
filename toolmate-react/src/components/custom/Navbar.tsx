@@ -76,6 +76,7 @@ type NavItem = {
   href?: string; // href for normal links
   icon?: string; // icon for normal links
   dropdown?: { title: string; href: string; description: string, icon: string }[]; // dropdown links
+  isMobileShow?: boolean;
 };
 
 const navItems: NavItem[] = [
@@ -97,12 +98,14 @@ const navItems: NavItem[] = [
   {
     name: "Impact",
     href: "#impact",
-    icon: "/assets/mobileNavIcons/impact.svg"
+    icon: "/assets/mobileNavIcons/impact.svg",
+    isMobileShow: false,
   },
   {
     name: "Features",
     href: "#features",
-    icon: "/assets/mobileNavIcons/impact.svg"
+    icon: "/assets/mobileNavIcons/impact.svg",
+    isMobileShow: false,
   },
 
   {
@@ -250,24 +253,49 @@ export default function Navbar() {
             <SheetHeader>
               <div className="absolute top-9  right-0  w-full flex justify-start flex-col ">
                 <SheetTitle className=" px-2 py-1 w-full">
+                  <div className="w-full flex  items-center">
+                    {isLoaded && isSignedIn ? (
+                      <>
+                        <Link
+                          to="/dashboard"
+                          className={`w-full text-md ${buttonVariants({
+                            variant: "orangeGradient",
+                          })}`}
+                        >
+                          Go to Dashboard
+                        </Link>
+                      </>
+                    ) : (
+                      <div>
+                        <Link
+                          to="/signin"
+                          className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
+                        >
+                          Login
+                        </Link>
+                        <Link
+                          to="/signup"
+                          className={`${buttonVariants({
+                            variant: "orangeGradient",
+                          })}`}
+                        >
+                          Sign Up
+                        </Link>
+                      </div>
+                    )}
 
-                  <div>
-                    <Link
-                      to={"/signin"}
-                      className="underline font-bold text-base font-roboto transition-all p-1 rounded-md px-3 cursor-pointer"
-                    >
-                      Login
-                    </Link>
+
+
                   </div>
-
                 </SheetTitle>
                 <SheetDescription>
                   <hr />
                   <div className="flex flex-col mt-8">
                     {navItems.map((item) => {
                       const isActive = currentRoute === item.href;
+                      const isMobileShow = item.isMobileShow == false ? false : true;
                       return (
-                        <div key={item.name}>
+                        <div key={item.name} className={`${isMobileShow ? "" : "hidden"} `}>
                           {item.dropdown ? (
                             <div>
                               {/* header */}

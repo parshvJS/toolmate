@@ -242,7 +242,7 @@ export default function ManageSub() {
         if (!subscriptionData) return null;
 
         return (
-            <div className="flex flex-col items-center justify-center p-4 sm:p-6">
+            <div className="flex flex-col items-center justify-center p-4 sm:p-6 overflow-scroll">
                 {
                     isInfoPanalOpen && (
                         <Card className={`w-full p-4 m-4 ${panalFlag === "suspend" ? "bg-lighterYellow border-yellow" : panalFlag === "cancel" ? "bg-red-50 border-red-500" : "bg-blue-50 border-blue-500"} border-2`}>

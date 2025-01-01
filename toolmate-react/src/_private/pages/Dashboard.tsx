@@ -178,7 +178,7 @@ export default function Dashboard() {
 
 
                 </div>
-                <div className="w-full flex gap-0 border-2 bg-white border-lightOrange mt-2 rounded-lg flex-col">
+                <div className="w-full max-w-6xl flex gap-0 border-2 bg-white border-lightOrange mt-2 rounded-lg flex-col">
                     <textarea
                         value={mainInput}
                         onChange={(e) => setMainInput(e.target.value)}

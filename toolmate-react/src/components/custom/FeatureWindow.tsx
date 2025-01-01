@@ -7,7 +7,7 @@ export default function FeatureWindow() {
       tag: "Personalization",
       title: "Your DIY Guide",
       desc: "Get Expert Tips for Every Project",
-      windowExampleImage: "/assets/images/yellow-bg.png",
+      windowExampleImage: "/assets/icons/yellow-bg.svg",
       CTA: "Explore Your companion",
       lineBelowSection: false,
       featuresList: [
@@ -35,7 +35,7 @@ export default function FeatureWindow() {
       tag: "Community",
       title: "Collaborative Creative Space",
       desc: "Join workshops, get expert advice, and grow together.",
-      windowExampleImage: "/assets/images/yellow-bg.png",
+      windowExampleImage: "assets/icons/yellow-bg-1.svg",
       CTA: "Find People Like You",
       lineBelowSection: true,
       featuresList: [
@@ -53,7 +53,7 @@ export default function FeatureWindow() {
         },
       ],
     },
-   
+
   ];
 
   return (

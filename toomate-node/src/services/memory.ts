@@ -96,20 +96,26 @@ const createMemoryChain = (() => {
 
 // Backbone of memory module
 async function memory(prompt: string, shortTermMemory: string, longTermMemory: string, planAccess: 1 | 2) {
+
+
     console.log("Memory function called with prompt:", prompt);
     let isLongTerm = false;
     let isShortTerm = false;
 
     if (planAccess === 1) {
-        const shortTermResponse = await isShortTermMemoryNeeded(prompt, shortTermMemory);
-        console.log("Short term memory response for plan 1:", shortTermResponse);
-        if (shortTermResponse.success) {
-            isShortTerm = shortTermResponse.shortTermMemoryUpdate!;
+        if (shortTermMemory.trim().length === 0) {
+            isShortTerm = true;
+        } else {
+            const shortTermResponse = await isShortTermMemoryNeeded(prompt, shortTermMemory);
+            console.log("Short term memory response for plan 1:", shortTermResponse);
+            if (shortTermResponse.success) {
+                isShortTerm = shortTermResponse.shortTermMemoryUpdate!;
+            }
         }
     } else {
         const [longTermResponse, shortTermResponse] = await Promise.all([
             isLongTermMemoryNeeded(prompt, shortTermMemory),
-            isShortTermMemoryNeeded(prompt, longTermMemory)
+            shortTermMemory.trim().length === 0 ? Promise.resolve({ success: true, shortTermMemoryUpdate: true }) : isShortTermMemoryNeeded(prompt, longTermMemory)
         ]);
         console.log("Long term memory response:", longTermResponse);
         console.log("Short term memory response:", shortTermResponse);

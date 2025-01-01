@@ -43,20 +43,24 @@ export default function Landing() {
 
 
   return (
-    <div className="md:px-20 px-2 scroll-smooth">
+    <div className="md:px-20 px-2 scroll-smooth overflow-x-hidden">
       <div className="md:mt-28 mt-20">
         {/* hero section */}
         <section className="flex justify-between md:flex-row flex-col md:p-12 p-2 relative">
           {/* left side */}
-          <div className="text-center md:text-left md:w-2/3 max-w-2/5 place-content-center flex flex-col gap-8">
-            <p className="text-transparent leading-10 md;leading-normal bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-6xl text-left">
+          <div className="text-center md:justify-start justify-center md:items-start items-center md:text-left md:w-2/3 max-w-2/5 place-content-center flex flex-col gap-8">
+            <p className="text-transparent flex md:hidden justify-center items-center   w-full text-justify    bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-5xl md:text-left">
+              Find The Right Tool <br /> For
+              Every DIY Job!
+            </p>
+            <p className="text-transparent text-center hidden md:block  bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-6xl md:text-left">
               Find The Right<br /> Tool For
               Every <br /> DIY Job!
             </p>
             <p className="md:w-2/3 font-bold md:text-lg text-md w-full text-left">
               Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
             </p>
-            <div className="flex gap-2 items-center md:items-start ">
+            <div className="md:block flex gap-2 items-center justify-center md:justify-start md:items-start ">
               <ButtonCustom
                 navigator="/preview"
                 text="Chat With Matey Now"
@@ -91,45 +95,11 @@ export default function Landing() {
 
 
           <div className="p-2 w-full md:w-3/5 h-full flex justify-center items-start">
-            <div className="md:mt-0  absolute w-[700px]  h-[700px] -top-9  -z-20 flex justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
+            <div className="md:mt-0 hidden md:flex  absolute w-[700px]  h-[700px] -top-9  -z-20 justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
             <MobileMock />
           </div>
         </section>
 
-        <section className="hidden flex w-full">
-          {/* left */}
-          <div className="w-1/2">
-            <div>
-              <p className="text-transparent font-[540] leading-tight bg-clip-text bg-gradient-to-r from-black tracking-tight to-black  md:text-[5rem]  text-6xl text-left">
-                Find The Right Tool  For
-                Every DIY Job!
-              </p>
-
-            </div>
-            {/* bottom */}
-            <div className="w-full flex gap-4">
-
-              <div className="w-1/2 mt-4 ">
-                <p className="font-bold md:text-lg text-md w-full text-justify">
-                  Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
-                </p>
-                <div className="flex gap-2 mt-4 items-center md:items-start ">
-                  <Link to={"/preview"} className="flex flex-col gap-4 w-full">
-                    <div className="px-4 text-lg hover:scale-105 text-white py-2 cursor-pointer bg-gradient-to-r to-orange-yellow-0 from-orange transition-all duration-150 w-2/3 rounded-md ">
-                      Chat With Matey Now
-                    </div>
-                  </Link>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <div className="opacity-75 bg-gradient-to-r w-1/2 min-h-full rounded-xl from-lightOrange to-orange flex-1">
-            sdfsd
-          </div>
-
-        </section>
 
         {/* demo video section */}
         <section className="w-full mt-10">
@@ -161,50 +131,6 @@ export default function Landing() {
 
 
 
-        {/* mixed color text */}
-        <div className="md:my-20 mt-1 p-2 ">
-          {/* header */}
-          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
-            Discover How
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange to-lightOrange"> Matey </span>
-            Makes
-            DIY Easier
-          </p>
-          {/* Large Feature Card
-          {largeFeatureCardsContent.map((cardContent, index) => (
-            <LargeFeatureCard key={index} {...cardContent} />
-          ))} */}
-
-          <div className="flex flex-wrap justify-center w-full h-full items-center gap-2">
-            <div className="w-11/12 flex gap-2 h-full">
-              {
-                largeFeatureCardsContent.map((cardContent) => (
-                  <div className="w-[calc(33%-0.5rem)] h-full flex flex-col justify-between border-2 border-slate-200  rounded-2xl shadow-slate-300   shadow-md">
-                    <div>
-                      <img src={cardContent.mateyImagePath + "-"} alt="" className="bg-white h-[450px] rounded-t-2xl border-b-2 border-slate-200 min-w-full overflow-hidden " />
-                    </div>
-
-                    <div className="px-6 py-7">
-                      <div className="w-full flex justify-between">
-                        <p className="text-3xl w-3/4 text-left font-semibold">{cardContent.title}</p>
-
-                      </div>
-
-                      <Link to={"/preview"} className="flex flex-col gap-4">
-                        <p className="text-md text-left">{cardContent.desc}</p>
-
-                        <div className="px-4 text-lg hover:scale-105 text-white py-2 cursor-pointer bg-gradient-to-r to-orange-yellow-0 from-orange transition-all duration-150 w-2/3 rounded-md ">
-                          {cardContent.ctaText}
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                ))
-              }
-
-            </div>
-          </div>
-        </div>
 
         {/* grid stock video section */}
         <div id="impact" className="mb-10 p-6"></div>

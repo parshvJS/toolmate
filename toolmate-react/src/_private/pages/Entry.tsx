@@ -6,7 +6,6 @@ import { UserButton, UserProfile } from "@clerk/clerk-react";
 import { CreditCard } from "lucide-react";
 import { useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
 export default function Entry() {
     const navigate = useNavigate();
     const { userData } = useContext(UserContext)
@@ -18,7 +17,9 @@ export default function Entry() {
 
 
     return (
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen w-screen">
+          
+
             <div className="bg-gradient-to-b from-white via-white to-mangoYellow h-screen w-screen">
                 <header className="w-full h-fit flex justify-between items-center px-4 py-2">
                     <div className="md:block  hidden">

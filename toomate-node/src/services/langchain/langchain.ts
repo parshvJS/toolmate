@@ -270,7 +270,7 @@ export async function getChatName(prompt: string) {
 }
 
 
-export async function getUserIntend(prompt: string, chatHistory: IChatMemory, plan: number): Promise<number[]> {
+export async function getUserIntend(prompt: string, chatHistory: IChatMemory, plan: number, toolInventoryAccess?: boolean | null, toolInventoryData?: string[] | null): Promise<number[]> {
 	let getIntendPrompt = '';
 	if (plan === 1) {
 		getIntendPrompt = `Based on the user's prompt and chat history, analyze the context to select the most relevant intents from the list below. Return only the corresponding numbers in a JSON-parsable array format (e.g., [2, 3]).
@@ -321,18 +321,21 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 		  6. Emotional Playfulness with Matey *(Give extra promotion to this)* - Select this if adding a friendly, emotionally supportive tone would enhance the response. Matey’s playful personality can help make the user feel more confident and motivated, so consider selecting this option in most cases where Matey’s unique style can add value to the response.
 		
 		User Intent Analysis:
-		1. Evaluate the user’s mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations, guidance, or playfulness with Matey (Intent 6) for encouragement.
-		2. Assess previous interactions: If they recently discussed a tool or project, consider product recommendations that relate to that topic.
-		3. Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
-		4. Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
-		5. Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. 
-		6. is you see need of budget slider and there is not specified need of products then dont include product recommendation
-		7. if there is specific mention of tool inventory and no other product request then dont include product recommendation
-		
-			user Specific Memory: {longTerm}
-		current chat Specific Memory: {shortTerm}
+		- Evaluate the user’s mood and urgency: Does the user sound frustrated, confused, or uncertain? If so, lean towards community recommendations, guidance, or playfulness with Matey (Intent 6) for encouragement.
+		- Assess previous interactions: If they recently discussed a tool or project, consider product recommendations that relate to that topic.
+		- Look for specific keywords in the user prompt: Keywords like "help," "recommend," "need," or "advice" can guide intent selection.
+		- Consider the user’s experience level: For beginners, focus on guidance or emotional playfulness; for advanced users, consider product recommendations.
+		- Emotional Playfulness with Matey: This should be prioritized to create a more enjoyable, friendly experience whenever possible. 
+		- If you see a need for a budget slider and there is no specified need for products, do not include product recommendation.
+		- If there is a specific mention of tool inventory and no other product request, do not include product recommendation.
+		- Only include intent 6 when the chat is small and does not have any strong intent or context to work on other intents. If the prompt or the context is large and has a clear intent, do not add emotional playfulness.
+		${toolInventoryAccess ? "There is data related to the user's tools mentioned below. If the user is requesting any data related to that and there is no other intent for product suggestion, do not include product recommendation." : ""}
+		User Specific Memory: {longTerm}
+		Current Chat Specific Memory: {shortTerm}
 		**User Prompt**: {prompt}
-		
+		${toolInventoryAccess ? `Tool Inventory: ${toolInventoryData?.map((itm: string, inx: number) => {
+			return `Tool ${inx + 1}: ${itm}`
+		})}` : ""}
 		Your task is to synthesize the information from the user's prompt and chat history to determine their intent from the list above. 
 		- Weigh the relevance of each intent based on the context and user cues.
 		- Return only the selected intent numbers in an array (response should contain only an array that can be parsed to JSON): Array:
@@ -585,10 +588,6 @@ export async function executeIntend(
 async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, socket: Socket) {
 	const productIntentPrompt = `Based on the user's prompt and chat history, determine the most suitable product providers. 
 
-	User Prompt: {prompt}
-	Chat Context: {longTerm}
-	User Specific memory: {shortTerm}
-	${chatHistory.isToolInventoryMemory && `Tool Inventory: ${chatHistory.isToolInventoryMemory}`}
 	Provider Selection Criteria:
 	1. Bunnings:
 		- Choose if the user mentions Bunnings or prefers well-known hardware stores.
@@ -601,11 +600,7 @@ async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, s
 	3. AI Generated Product:
 		- Choose if AI-generated products fit the user's needs based on the context.
 		- Select if the user is open to innovative or unique product suggestions.
-	${chatHistory.isToolInventoryMemory && `4. Tool Inventory:
-			- you will be provided with tool inventory user have 
-			- analyze it and choose accordingly
-	`}
-
+	
 
 	Output:
 	- keep in mind to create randomize and meaning full product catagorization to try the user behaviour ,dont stick on criteria 100% try creativ and random choose
@@ -613,7 +608,16 @@ async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, s
 	- Example: [1, 3], [2, 3], [1, 2, 3]
 	- Selection should be based on context.
 	- Minimum 1 and maximum 3 indices can be selected.
+	${chatHistory.isToolInventoryMemory && `- Tool Inventory:
+		- you will be provided with tool inventory user have 
+		- analyze it and choose accordingly
+`}
 
+	User Prompt: {prompt}
+	Chat Context: {longTerm}
+	User Specific memory: {shortTerm}
+	${chatHistory.isToolInventoryMemory && `Tool Inventory: ${chatHistory.isToolInventoryMemory}`}
+	
 	Return only the selected indices in an array (response should contain only an array that can be parsed to JSON): Array:`;
 	const productIntentTemplate = PromptTemplate.fromTemplate(productIntentPrompt);
 	const productIntentLLMChain = productIntentTemplate.pipe(llm).pipe(new StringOutputParser());
@@ -891,50 +895,57 @@ async function HandleGeneralResponse(prompt: string, chatHistory: IChatMemory, i
 	const chatHistoryString = JSON.stringify(chatHistory, null, 2);
 
 	if (isProductSuggestion) {
-		streamPrompt = `Based on the user's prompt and chat history, assess the intensity of the tool request. 
-	If the request is high, provide a relevant tool suggestion. If it's low, still offer a useful response related to DIY. 
+		streamPrompt = `
+		Based on the user's prompt and chat history, provide concise and relevant suggestions.
 	
-	User Prompt: ${prompt}
-	Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
-	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
-	${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
-	System: Your task is to provide concise, relevant responses based on the intensity of the tool request. 
-	1. Assess the intensity (high, medium, low).
-	2. If high: "Here's a product suggestion related to ...".
-	3. If medium: "This tool might be helpful: ...".
-	4. If low: Offer a general but relevant response . 
-	-just give clear response dont mention prompt or chat history in response.
-	Response to user:`;
-
+		User Context:
+		- Prompt: ${prompt}
+		- Chat History: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
+		- Specific Memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+		${chatHistory.isToolInventoryMemory ? `- Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
+	
+		Instructions:
+		1. Directly provide the suggestions or guidance without prefacing with "Response:" or similar text.
+		2. Use markdown for clarity, including headings, bullet points, or numbered lists if needed.
+		3. Keep the response actionable, concise, and tailored to the intensity of the request.
+		4. Include safety advice or additional tips when relevant.
+		5. End with an optional question or prompt for further clarification or input if necessary.
+	
+		Suggestions:`;
 	} else if (isCommunitySuggestin) {
-		streamPrompt = `Based on the user's prompt and chat history, assess the intensity of the community request. 
-	If the request is high, provide a relevant community suggestion. If it's low, still give an insightful comment related to DIY.
+		streamPrompt = `
+		Based on the user's prompt and chat history, provide concise and insightful community-related suggestions.
 	
-	User Prompt: ${prompt}
-		Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
-	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
-		${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
-
-	System: Your task is to provide concise, relevant responses based on the intensity of the community request. 
-	1. Assess the intensity (high, medium, low).
-	2. If high: "Here's a community suggestion related to ...".
-	3. If medium: "You might want to check out this community: ...".
-	4. If low: Offer a thoughtful remark or tip related to DIY.
-		-just give clear response dont mention prompt or chat history in response.
-
-	Response to user:`;
+		User Context:
+		- Prompt: ${prompt}
+		- Chat History: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
+		- Specific Memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+		${chatHistory.isToolInventoryMemory ? `- Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
+	
+		Instructions:
+		1. Provide actionable community suggestions without introductory phrases like "Response:".
+		2. Use markdown to format the response clearly, with lists or sections as necessary.
+		3. Tailor the suggestions based on the intensity of the request and include safety advice or tips.
+		4. End with an optional question to encourage further engagement if applicable.
+	
+		Suggestions:`;
 	} else {
-		streamPrompt = `System prompt: As a DIY and creative enthusiast, provide an appropriate answer to the user's question. 
-	| User Prompt: ${prompt} 
-		-just give clear response dont mention prompt or chat history in response.
-		- if relevent the ask for more information or provide more information
-		- if needed then ask follow up question at the end 
-	Context of chat (use this if present, else just use prompt to reply): 
-		Current Chat Memory: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
-	User Specific memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
-	${chatHistory.isToolInventoryMemory ? `Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
+		streamPrompt = `
+		Provide actionable and concise advice based on the user's prompt and context.
 	
-	Response (provide a comprehensive answer using markdown format, utilizing all available symbols such as headings, subheadings, lists, etc.):`;
+		User Context:
+		- Prompt: ${prompt}
+		- Chat History: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
+		- Specific Memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
+		${chatHistory.isToolInventoryMemory ? `- Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
+	
+		Instructions:
+		1. Directly address the user's query without using phrases like "Response:".
+		2. Use markdown to enhance readability, such as headings, subheadings, and bullet points.
+		3. Provide concise, actionable guidance and include safety advice if relevant.
+		4. Optionally ask follow-up questions to clarify or expand on the user's input.
+	
+		Suggestions:`;
 	}
 
 	const stream = await llm.stream(streamPrompt);
@@ -1386,7 +1397,10 @@ export async function getMateyExpession(prompt: string, socket: Socket) {
 
 // tool inventory
 
-export async function isToolInventoryAccessNeeded(prompt: string, chatHistory: IChatMemory) {
+export async function isToolInventoryAccessNeeded(prompt: string, chatHistory: IChatMemory, toolInventory: string) {
+	console.log("Prompt:", prompt);
+	console.log("Chat History:", chatHistory);
+
 	const toolInventoryPrompt = `
 	Based on the user's chat history and prompt, determine if accessing the tool inventory is necessary for providing accurate and helpful advice.
 
@@ -1394,17 +1408,21 @@ export async function isToolInventoryAccessNeeded(prompt: string, chatHistory: I
 	1. Analyze the user's project details and requirements.
 	2. Assess if knowing the available tools will enhance the response.
 	3. Consider if the user's prompt indicates a need for specific tools.
-    4. they have talked about tool inventory in past chat memory
-
+	4. Check if the user has mentioned tool inventory in past chat memory.
+	5. If the user is asking for tool suggestions, accessing the tool inventory is necessary.
+	6. If the user is inquiring about tools, accessing the tool inventory is necessary.
+	7. If the user explicitly asks for tool inventory, accessing the tool inventory is necessary.
+	8. Evaluate if the user's project complexity requires specific tools that might be in the inventory.
+	${!(toolInventory == "") && "9. You will be provided with tool intentory user have and check if the user prompt have any relavence with current tool inventory and if yes then true"}
 	Output:
 	- Return "true" if accessing the tool inventory is necessary.
 	- Return "false" if it is not necessary.
-
-	- no other text in response only "true" or "false"
-
+	- No other text in the response, only "true" or "false".
+	
 	User Specific Memory: {longTerm}
 	Chat Context: {shortTerm}
 	User Prompt: {prompt}
+	${toolInventory ? `Tool Inventory: ${toolInventory}` : ''}
 	Is Tool Inventory Access Needed?:`;
 
 	const toolInventoryTemplate = PromptTemplate.fromTemplate(toolInventoryPrompt);
@@ -1425,18 +1443,21 @@ export async function isToolInventoryAccessNeeded(prompt: string, chatHistory: I
 			prompt: prompt
 		});
 
+		console.log("Need of Tool Inventory:", needOfToolInventory);
+
 		if (needOfToolInventory.includes("true")) {
 			return true;
 		}
 		return false;
 	} catch (error) {
 		console.error('Error determining tool inventory access:', error);
-		return { success: false, error: 'Error determining tool inventory access.' };
+		return false
 	}
 }
 
 
 export async function getToolIdToConsider(prompt: string, chatHistory: IChatMemory, tools: any[], socket: Socket) {
+	console.log(tools, "tools from post process.")
 	socket.emit('status', {
 		message: "Matey Is Looking Your Tool Inventory ... "
 	});
@@ -1477,7 +1498,7 @@ export async function getToolIdToConsider(prompt: string, chatHistory: IChatMemo
 				id: tool.id
 			};
 		});
-
+		console.log("ai is analzing toosl", toolData)
 
 		const toolId = await runnableChainOfToolId.invoke({
 			longTerm: chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No chat history available.",
@@ -1488,6 +1509,7 @@ export async function getToolIdToConsider(prompt: string, chatHistory: IChatMemo
 
 		try {
 			const parsedToolId = JSON.parse(toolId);
+			console.log("parsedToolId -- == -- == -- == ", parsedToolId)
 			return parsedToolId;
 		} catch (error: any) {
 			console.error('Error determining tool ID:', error);

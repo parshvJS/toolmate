@@ -8,6 +8,17 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+
+import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -25,6 +36,7 @@ import { usePriceContext } from "@/context/pricingContext";
 
 export default function Price() {
   const location = useLocation()
+  const currRoute = location.pathname
   const {
     priceData,
     sixMonthDiscount,
@@ -53,6 +65,7 @@ export default function Price() {
   const [couponCodeDiscountPrice, setCouponCodeDiscountPrice] = useState(0);
   const [couponCodeImpact, setCouponCodeImpact] = useState(0);
   const [couponCodeDiscountPercentage, setCouponCodeDiscountPercentage] = useState(0);
+  const [showDrawer, setShowDrawer] = useState(false);
   // get paypal url
   const [paypalLoading, setPaypalLoading] = useState(false);
 
@@ -98,7 +111,13 @@ export default function Price() {
         duration: activeTabObject.tabName,
       });
     }
-    setShowCheckoutPopup(true);
+
+    if (window.innerWidth <= 768) {
+      setShowDrawer(true);
+    }
+    else {
+      setShowCheckoutPopup(true);
+    }
   };
 
   const handleCouponCode = (data: string) => setCouponCode(data);
@@ -141,6 +160,7 @@ export default function Price() {
   const resetCouponState = (message: string) => {
     setCouponCodeValidationLoading(false);
     setCouponCodeMessage("");
+    
     setCouponCodeDiscountPrice(0);
     setCouponCodeDiscountPercentage(0);
     setCouponCodeImpact(0);
@@ -157,6 +177,7 @@ export default function Price() {
 
   const handlePriceDialogClose = (value: boolean) => {
     if (!value) {
+      setCouponCode("");  
       resetCouponState("");
       setShowCheckoutPopup(false);
     }
@@ -378,45 +399,7 @@ export default function Price() {
           ))}
         </div>
       </Tabs>
-      {/* {
-    "price": "12$ / Month",
-    "priceInt": 12,
-    "planValue": "essential",
-    "title": "Toolmate Essential",
-    "tabName": "months",
-    "color": [
-        "#FFF2AE",
-        "#FFD700"
-    ],
-    "isActivePlan": false,
-    "icons": "/assets/icons/gear.svg",
-    "featureList": [
-        {
-            "isTicked": true,
-            "title": "Personalized picks",
-            "desc": "Tailored recommendations based on your project.",
-            "isLineBelow": true
-        },
-        {
-            "isTicked": true,
-            "title": "Tool rentals",
-            "desc": "Rental suggestions when needed.",
-            "isLineBelow": true
-        },
-        {
-            "isTicked": true,
-            "title": "Community access",
-            "desc": "Engage with fellow DIYers for tips and advice.",
-            "isLineBelow": true
-        },
-        {
-            "isTicked": true,
-            "title": "Basic AI support",
-            "desc": "Matey helps with straightforward tool advice.",
-            "isLineBelow": false
-        }
-    ]
-} */}
+
       {
         isShowContinueWithFree && <div
           onClick={() => navigate('/dashboard')}
@@ -426,7 +409,7 @@ export default function Price() {
       }
       {
         (activePlan && activeTab) && <Dialog open={showCheckoutPopup} onOpenChange={handlePriceDialogClose}>
-          <DialogContent className="h-[calc(100%-10rem)] w-[calc(100%-30rem)] flex max-w-full">
+          <DialogContent className="md:h-[calc(100%-10rem)] md:w-[calc(100%-30rem)] flex md:flex-row flex-col max-w-full">
             <DialogTitle></DialogTitle>
             <div className="flex gap-2 w-2/5 items-start p-4 h-fit  bg-gradient-to-t from-softYellow to-paleYellow  rounded-lg">
               <div className="flex gap-4 items-start">
@@ -539,7 +522,136 @@ export default function Price() {
           </DialogContent>
         </Dialog>
       }
-      <FAQSection />
+
+
+
+      {
+        activePlan && <Drawer open={showDrawer} onOpenChange={(value)=>{
+          if(!value){
+            // reset coupon state
+            setCouponCode("");
+
+            resetCouponState("");
+          }
+          setShowDrawer(value);
+          
+        }}>
+          <DrawerContent className="h-[calc(100%-5rem)] px-2 py-4 flex flex-col gap-2">
+            <div className="flex gap-2 w-full items-start p-4 h-fit  bg-gradient-to-t from-softYellow to-paleYellow  rounded-lg">
+              <div className="flex gap-4 items-start">
+                <img src={activePlan.icons} alt="icon" width={30} />
+                <div className="flex flex-col items-start">
+                  <p className="font-semibold text-xl">{activePlan.title}</p>
+                  <p>{activePlan.duration == "month" ? "1 Month Plan" : (activePlan.duration == "months" ? "6 Month Plan" : " Yearly Plan")}</p>
+                </div>
+
+              </div>
+
+            </div>
+            <div className="flex gap-2 w-full h-full">
+              <div className="w-full flex flex-col items-start">
+                <p className="font-semibold">Enter Coupon Code</p>
+                <div className="border-2 flex gap-2  border-slate-200 w-full h-fit rounded-lg mr-5">
+                  <input
+                    type="text"
+                    placeholder="Coupon Code"
+                    onChange={(e) => handleCouponCode(e.target.value)}
+                    value={couponCode}
+                    className="px-4 py-2 w-full focus-visible:outline-none"
+                  />
+                  <button
+                    onClick={handleCouponApplied}
+                    className={`${couponCode.length !== 0 ? "block" : "hidden"} font-semibold px-2`}>
+                    {isCouponApplied ? (isCouponActive ? "Remove" : "Apply") : "Apply"}
+                  </button>
+
+                </div>
+                {
+                  couponCodeValidationLoading && <div className="flex gap-2 mt-2 items-center">
+                    <Loader className="animate-spin w-6 h-6" />
+                    <p>Checking Coupon...</p>
+                  </div>
+                }
+                {
+                  couponCodeMessage.length > 0 && <div>
+                    <p className="text-green-400">{couponCodeMessage}</p>
+                  </div>
+                }
+                {
+                  couponCodeError.length > 0 && <div>
+                    <p className="text-red-400">{couponCodeError}</p>
+                  </div>
+                }
+
+
+                <div className="h-full w-full flex flex-col gap-2 items-start mt-6">
+                  {/* total */}
+                  <div>
+                    <p className="font-semibold text-xl">Subscription Summary</p>
+                  </div>
+                  <div className="w-full mt-2 mb-2 flex justify-between px-4 py-2  ">
+                    <div className="flex flex-col items-start ">
+                      <div className="flex flex-col items-start justify-start  gap-2">
+                        <p className="font-semibold text-lg ">{activePlan.title}</p>
+                        <p className=" text-lg text-slate-400">{activePlan.duration == "month" ? "1 Month Plan" : (activePlan.duration == "months" ? "6 Month Plan" : " Yearly Plan")}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <p className="text-lg">{activePlan.price}</p>
+                    </div>
+                  </div>
+                  {
+                    isCouponApplied && isCouponActive &&
+                    <div className="w-full">
+                      <hr className="border w-full border-slate-200" />
+                      <div className="flex justify-between w-full items-center px-4 py-2   ">
+                        <div className="flex gap-2 items-center ">
+                          <p className="font-semibold">{couponCode}</p>
+                          <div className="bg-black rounded-full w-[6px] h-[6px] font-semibold"></div>
+                          <p className="text-lg text-slate-400">{couponCodeDiscountPercentage}%</p>
+                        </div>
+                        <div>
+                          <p className="text-lg">- {couponCodeImpact} $</p>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  <hr className="border w-full border-slate-700" />
+                  <div className="flex justify-between items-center w-full px-4 ">
+                    <p className="font-semibold text-lg">Total</p>
+                    <p className="text-lg">{isCouponActive ? couponCodeDiscountPrice : activePlan.priceInt} $</p>
+
+                  </div>
+                </div>
+                <div className="w-full mt-4 flex flex-wrap gap-2 leading-3 my-3">
+                  By clicking on the button below, you agree to our <Link target="_blank" to="/terms-of-service" className="font-semibold underline">Terms of Service</Link>, <Link target="_blank" to="/privacy-policy" className="font-semibold underline">Privacy Policy</Link> and <Link to="/refund-policy" target="_blank" className="font-semibold underline">Refund Policy</Link>
+                </div>
+                <button
+                  onClick={getPaypalUrl}
+                  className="bg-softYellow w-full flex items-center justify-center py-3 font-semibold border border-yellow hover:bg-lightYellow transition-all rounded-lg"
+                >
+                  {
+                    paypalLoading ? <div className="flex gap-2 ">
+                      <Loader className="animate-spin w-6 h-6" />
+                      <p>Loading Payment Page...</p>
+                    </div> :
+                      <div className="flex gap-2">
+                        Complete The Order
+                        <ArrowRight className="w-6 h-6" />
+
+                      </div>
+                  }
+                </button>
+              </div>
+            </div>
+
+          </DrawerContent>
+        </Drawer>
+
+      }
+
+
+      <FAQSection isVisible={currRoute == "/"} />
     </div>
   );
 }

@@ -124,14 +124,14 @@ export function MobileMock() {
     }, [currChat]);
 
     return (
-        <div className="w-full h-full flex justify-start items-center mb-5 relative">
-            <div>
+        <div className="w-full h-full flex justify-center md:justify-start items-center mb-5 relative">
+            <div className="hidden md:flex">
                 <img src="/assets/matey/langingMatey.svg" alt="back" className="z-0 top-0 left-48 absolute rotate-12" />
             </div>
 
 
             <motion.div
-                className="absolute bottom-28 z-20 -left-40 flex flex-col gap-4 justify-end items-end"
+                className="absolute hidden md:flex bottom-28 z-20 -left-40  flex-col gap-4 justify-end items-end"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -164,7 +164,7 @@ export function MobileMock() {
                     Save Time on Projects
                 </motion.div>
             </motion.div>
-            <div className="w-[330px] h-[550px] mb-10 z-10 p-2 ml-28 rounded-3xl bg-gradient-to-t from-slate-300 to-softYellow ">
+            <div className="w-[330px] h-[550px] md:mb-10 z-10 p-2 md:ml-28 rounded-3xl bg-gradient-to-t from-slate-300 to-softYellow ">
                 <div ref={scrollAreaRef} className=" z-10  bg-white w-[315px] h-[535px] mb-10 overflow-scroll hide-scrollbar  p-2 rounded-3xl ">
                     <div className="flex flex-col space-y-4 mt-3 mb-40 ">
                         {currChat.map((chat, index) => (

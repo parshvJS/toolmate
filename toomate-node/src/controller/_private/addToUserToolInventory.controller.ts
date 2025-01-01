@@ -1,3 +1,4 @@
+import { deleteRedisData } from "../../services/redis.js";
 import connectDB from "../../db/db.db.js";
 import User from "../../models/user.model.js";
 import UserToolInventory from "../../models/userToolInventory.model.js";
@@ -8,11 +9,11 @@ export async function addToUsertoolInventory(req: Request, res: Response) {
     await connectDB();
 
     try {
-        const { userId, toolName, toolDescription, toolCount, tags } = req.body;
-        if (!userId || !toolName || !toolDescription || !tags) {
+        const { userId, toolName, toolDescription, toolCount, tags,customFields } = req.body;
+        if (!userId || !toolName || !toolDescription || !tags || !customFields) {
             return res.status(400).json({
                 success: false,
-                message: "userId,toolName,toolDescription,toolCount are required"
+                message: "userId,toolName,toolDescription,tags,customFields are required"
             })
         }
 
@@ -32,7 +33,8 @@ export async function addToUsertoolInventory(req: Request, res: Response) {
             name: toolName,
             description: toolDescription,
             count: toolCount,
-            tags: seperatedTags
+            tags: seperatedTags,
+            customFields:customFields
         });
 
         const savedToolInventory = await newToolInventory.save();
@@ -60,8 +62,11 @@ export async function addToUsertoolInventory(req: Request, res: Response) {
             description: savedToolInventory.description,
             count: savedToolInventory.count,
             tags: savedToolInventory.tags,
-            _id: savedToolInventory._id
+            _id: savedToolInventory._id,
+            customFields:savedToolInventory.customFields
         }
+
+        await deleteRedisData(`USER-TOOL-${user.clerkUserId}`)
         return res.status(200).json({
             success: true,
             message: "Tool added to user inventory",
