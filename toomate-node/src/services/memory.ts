@@ -103,7 +103,7 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
     let isShortTerm = false;
 
     if (planAccess === 1) {
-        if (shortTermMemory.trim().length === 0) {
+        if (shortTermMemory.length === 0) {
             isShortTerm = true;
         } else {
             const shortTermResponse = await isShortTermMemoryNeeded(prompt, shortTermMemory);
@@ -115,7 +115,7 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
     } else {
         const [longTermResponse, shortTermResponse] = await Promise.all([
             isLongTermMemoryNeeded(prompt, shortTermMemory),
-            shortTermMemory.trim().length === 0 ? Promise.resolve({ success: true, shortTermMemoryUpdate: true }) : isShortTermMemoryNeeded(prompt, longTermMemory)
+            shortTermMemory.length === 0 ? Promise.resolve({ success: true, shortTermMemoryUpdate: true }) : isShortTermMemoryNeeded(prompt, longTermMemory)
         ]);
         console.log("Long term memory response:", longTermResponse);
         console.log("Short term memory response:", shortTermResponse);
@@ -128,12 +128,12 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
     }
     let newLongTermMemory = longTermMemory;
     let newShortTermMemory = shortTermMemory;
-    if (longTermMemory.trim().length === 0 && shortTermMemory.trim().length === 0) {
+    if (longTermMemory.length === 0 && shortTermMemory.length === 0) {
         console.log("Both memories are empty");
     } else {
         [newLongTermMemory, newShortTermMemory] = await Promise.all([
-            isLongTerm && longTermMemory.trim().length > 0 ? (await exceededAndFreeMemory(longTermMemory, planAccess, "long")).memory : longTermMemory,
-            isShortTerm && shortTermMemory.trim().length > 0 ? (await exceededAndFreeMemory(shortTermMemory, planAccess, "short")).memory : shortTermMemory
+            isLongTerm && longTermMemory.length > 0 ? (await exceededAndFreeMemory(longTermMemory, planAccess, "long")).memory : longTermMemory,
+            isShortTerm && shortTermMemory.length > 0 ? (await exceededAndFreeMemory(shortTermMemory, planAccess, "short")).memory : shortTermMemory
         ]);
     }
 

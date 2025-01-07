@@ -45,7 +45,7 @@ export default function Footer() {
             <div className="w-full  mx-4 md:w-1/3">
               <h3 className="text-lg font-bold mb-4">Social Media</h3>
               <div className="space-y-2 text-left">
-                {["Facebook", "X (formerly Twitter)", "Youtube","Instagram"].map((item) => (
+                {["Facebook", "X (formerly Twitter)", "Youtube", "Instagram"].map((item) => (
                   <div key={item}>
                     <Link
                       to="#"
