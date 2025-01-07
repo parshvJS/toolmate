@@ -168,7 +168,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setIsLoading(false);
+      
     }
   };
 
@@ -179,11 +179,9 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getSubscriptionLogs`, {
         userId
       });
-
       if (response.status !== 200) {
         throw new Error("Failed to fetch subscription logs");
       }
-
       setPaymentLogs(response.data.logs || []);
     } catch (err: any) {
       setError(err.message);

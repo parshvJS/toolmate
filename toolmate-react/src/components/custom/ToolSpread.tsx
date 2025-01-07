@@ -72,18 +72,27 @@ export function ToolSpread() {
                     <Separator className="border border-slate-700" />
                 </div>
 
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger className="w-full h-full" onClick={notificationRemove}>
-                        <ProductSuggestionTrigger
-                            notification={notification}
-                            totalProductSuggestions={totalProductSuggestions}
-                        />
-                    </DialogTrigger>
 
-                    <DialogContent className="h-[calc(100%-10rem)] lg:max-w-screen-xl max-w-screen-lg md:max-w-screen-md sm:max-w-screen-sm p-0 overflow-hidden">
-                        {/* <ProductDialog /> */}
-                    </DialogContent>
-                </Dialog>
+                <div
+                    onClick={() => {
+                        notificationRemove();
+                        setIsDialogOpen(true);
+                    }}
+                >
+                    <ProductSuggestionTrigger
+                        notification={notification}
+                        totalProductSuggestions={totalProductSuggestions}
+                    />
+                </div>
+
+                <ProductDialog
+                    isOpen={isDialogOpen}
+                    setIsOpen={() => setIsDialogOpen(false)}
+                    bunningsProduct={bunningProduct}
+                    mateyMadeProduct={aiProduct}
+                    vendorProduct={vendorProduct}
+                />
+
             </div>
 
             {/* Budget Selection Section */}

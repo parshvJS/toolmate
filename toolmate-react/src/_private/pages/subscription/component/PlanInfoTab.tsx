@@ -49,7 +49,7 @@ export default function PlanInfoTab() {
             } else if (lastLog.status === "cancel request saved to the queue") {
                 setIsInfoPanalOpen(true);
                 setPanalFlag("cancel");
-            } else if (lastLog.status === "downgrade request saved to the queue") {
+            } else if (lastLog.status === "Down Grade processed! changes take effect accordingly") {
                 setIsInfoPanalOpen(true);
                 setPanalFlag("downgrade");
             }
@@ -59,7 +59,7 @@ export default function PlanInfoTab() {
 
 
     // ----------------- TSX Boundary -----------------
-    if (isLoading) {
+    if (isLoading || !subscriptionData) {
         return (
             <div className="w-full p-4 m-4 text-center h-full flex flex-col border-2 border-slate-200 text-slate-600 rounded-md items-center justify-center">
                 <LoaderCircle className="animate-spin" />
@@ -68,7 +68,7 @@ export default function PlanInfoTab() {
         );
     }
 
-    if (!subscriptionData) {
+    if (!subscriptionData && !isLoading) {
         return (
             <div className="flex flex-col border-slate-200 border-2 rounded-md p-4 m-4">
                 <div className="flex flex-col gap-2 justify-center items-center font-semibold leading-7">
@@ -251,13 +251,13 @@ export default function PlanInfoTab() {
                 </div>
                 {isShowCycleDetails && <CycleLogCard log={subscriptionData.cycleExecutionLogs} />}
             </div>
-            
+
             <div className="flex flex-col w-full gap-2">
                 <div className="flex justify-between items-center bg-slate-200 p-4 rounded-md">
                     <h2 className="text-xl font-semibold text-slate-800">Transaction Logs</h2>
-        
+
                 </div>
-                <TransactionLogTable transactionLogs={transactionLogs}/>
+                <TransactionLogTable transactionLogs={transactionLogs} />
 
             </div>
         </div>

@@ -16,6 +16,7 @@ import { setRedisData, startRedisConnection } from './services/redis.js';
 import { paidService } from './routes/paidService/paidService.js';
 import adsense from './routes/adsense/adsense.js';
 import connectDB from './db/db.db.js';
+import getPaypalAccessToken from './utils/paypalUtils.js';
 
 const app = express();
 const PORT = 5000;
@@ -48,9 +49,8 @@ app.get('/', (req, res) => {
 });
 
 // services 
-
 await connectDB();
-await setRedisData("USER-CHAT-a160da5c-00d0-48be-82b0-2e232012a218","['user have 8 year brother','user is woman']",30);
+await setRedisData("USER-CHAT-a160da5c-00d0-48be-82b0-2e232012a218", "['user have 8 year brother','user is woman']", 30);
 console.log("redis data set");
 console.log("redis connection started");
 // Start Kafka consumer

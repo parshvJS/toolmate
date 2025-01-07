@@ -66,7 +66,11 @@ export default function SubscriptionDetails() {
                             isPriceLoading ? <div className="flex gap-2 ">
                                 <Skeleton className="w-[100px] h-[20px] rounded-full" />
                             </div> : <AlertDialog
+
                                 onOpenChange={(isOpen) => {
+                                    if (isRequestSubscriptionPauseLoading) {
+                                        return;
+                                    }
                                     if (isCancelRequested || isSuspendRequested) {
                                         return;
                                     }
@@ -75,7 +79,11 @@ export default function SubscriptionDetails() {
                                 open={(isCancelRequested || isSuspendRequested) ? isDowngradeOpen : undefined}>
                                 <AlertDialogTrigger className="w-full">
                                     <div className="font-semibold w-full bg-slate-200 rounded-md shadow-md py-2 hover:bg-slate-300">
-                                        Down Grade
+                                        {
+                                            isRequestSubscriptionPauseLoading ? <div className="flex justify-center items-center">
+                                                <LoaderCircle className="animate-spin" />
+                                            </div> : "Downgrade"
+                                        }
                                     </div>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -105,13 +113,7 @@ export default function SubscriptionDetails() {
                                 </AlertDialogContent>
                             </AlertDialog>
                         }
-
                     </div>
-
-
-
-
-
                 </CardContent>
             </Card>
             <Card className={`w-full rounded-2xl justify-between md:h-72 h-48 bg-white ${userData?.planAccess[2] ? "shadow-yellow border-2 shadow-lg border-goldenYellow" : "shadow-lg "}  mt-4`}>
@@ -214,17 +216,17 @@ export default function SubscriptionDetails() {
                             open={!isSuspendRequested || !isCancelRequested ? isSuspendOpen : undefined}>
                             <AlertDialogTrigger className={`hover:bg-red-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-red-300 text-red-500 ${isSuspendRequested || isCancelRequested ? "bg-red-300 cursor-default" : ""}`}>
                                 {
-                                    isSuspendRequested && !isRequestSubscriptionPauseLoading && !isSuspendLoading ? <div >Suspend Already Requested</div> : <div>{
-                                        isCancelRequested ? "Suspend not allowed: Active plan will be cancelled first." : "suspend your subscription"
-                                    }</div>
-                                }
-
-                                {
-                                    isRequestSubscriptionPauseLoading && isSuspendLoading && (
+                                    isRequestSubscriptionPauseLoading && isSuspendLoading ? (
                                         <div className=" w-full h-fit flex gap-2 items-center justify-center">
                                             <LoaderCircle className="animate-spin" />
                                             <p>Loading....</p>
                                         </div>
+                                    ) : isSuspendRequested ? (
+                                        <div>Suspend Already Requested</div>
+                                    ) : isCancelRequested ? (
+                                        <div>Suspend not allowed: Active plan will be cancelled first.</div>
+                                    ) : (
+                                        <div>suspend your subscription</div>
                                     )
                                 }
                             </AlertDialogTrigger>
@@ -282,23 +284,18 @@ export default function SubscriptionDetails() {
                         >
                             <AlertDialogTrigger className={`hover:bg-red-300 transition-all w-full px-4 py-2 rounded-md mt-3 border-2 border-red-300 text-red-500 ${isCancelRequested || isSuspendRequested ? "bg-red-300 cursor-default" : ""}`}>
                                 <div className="text-center">
-                                    {isSuspendRequested && !isRequestSubscriptionPauseLoading ? (
+                                    {isRequestSubscriptionPauseLoading ? (
+                                        <div className=" w-full h-fit flex gap-2 items-center justify-center">
+                                            <LoaderCircle className="animate-spin" />
+                                            <p>Loading....</p>
+                                        </div>
+                                    ) : isSuspendRequested ? (
                                         <div>Cancellation not allowed: Active plan will be suspended first.</div>
                                     ) : isCancelRequested ? (
                                         <div>Cancellation is already in progress.</div>
                                     ) : (
-                                        <div> cancel your subscription.</div>
+                                        <div>Cancel Your Subscription.</div>
                                     )}
-
-                                    {
-                                        (isRequestSubscriptionPauseLoading && !isSuspendLoading) && (
-                                            <div className=" w-full h-fit flex gap-2 items-center justify-center">
-                                                <LoaderCircle className="animate-spin" />
-                                                <p>Loading....</p>
-                                            </div>
-                                        )
-                                    }
-
                                 </div>
                             </AlertDialogTrigger>
                             <AlertDialogContent>

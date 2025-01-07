@@ -43,6 +43,7 @@ export function extractBAToken(url: string) {
 
 
 export function getBunningsFilterData(bunningData: IBunningProduct[], exisitingFilter?: IBunningsFilter) {
+  
   // brands
   const brands = bunningData.map((product) => product.brand);
   const uniqueBrands = Array.from(new Set(brands));
@@ -82,7 +83,7 @@ export function getBunningsFilterData(bunningData: IBunningProduct[], exisitingF
 
   return {
     brands: exisitingFilter?.brands ? Array.from(new Set([...exisitingFilter.brands, ...uniqueBrands])) : uniqueBrands,
-    price: exisitingFilter?.price ? [Math.min(exisitingFilter.price[0], min), Math.max(exisitingFilter.price[1], max)] as [number,number] : [min, max] as [number,number],
+    price: exisitingFilter?.price ? [Math.min(exisitingFilter.price[0], min), Math.max(exisitingFilter.price[1], max)] as [number, number] : [min, max] as [number, number],
     bestSeller,
     newArrival,
     isTopBrand

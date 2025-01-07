@@ -60,7 +60,6 @@ interface Message {
     productSuggestionList?: any[];
     isMateyProduct?: boolean;
     isBunningsProduct?: boolean;
-    bunningsProductList?: any[];
     productId?: any[];
 }
 interface ChatHistorySuccessResponse {
@@ -107,10 +106,18 @@ async function fetchChatHistory(
                 mateyProduct.push(...chatItem.productData);
             }
         });
-        console.log("bunningsProduct", bunningsProduct)
+        console.log("bunningsProduct", bunningsProduct, response.data.data)
+        const modifiedData = response.data.data.map((item: any) => {
+            if (item.bunningsProductList) {
+                item.bunningsData = item.bunningsProductList;
+                delete item.bunningsProductList;
+            }
+            return item;
+        });
+
         return {
             success: true,
-            data: response.data.data,
+            data: modifiedData,
             ai: aiProduct,
             matey: mateyProduct,
             bunnings: bunningsProduct,
@@ -180,17 +187,13 @@ export function ChatPage() {
     const [currLoadingProductFeature, setCurrLoadingProductFeature] = useState<number[]>([]);
     const [currLoadingProductFeatureIndex, setCurrLoadingProductFeatureIndex] = useState(-1);
     const [isMateyOpen, setIsMateyOpen] = useState(false);
-    const [currOpenIndex, setCurrOpenIndex] = useState<number>(-1);
     const [currActiveTab, setCurrActiveTab] = useState("bunnings");
-    const [currActiveProductId, setCurrActiveProductId] = useState<string>("");
-    const [isProductDetails, setIsProductDetails] = useState<boolean>(false);
-    const [sidebarProductDetails, setSidebarProductDetails] = useState<any>(null);
-    const [currActiveProductDetailsTab, setCurrActiveProductDetailsTab] = useState("");
+
     const [currActiveCategory, setCurrActiveCategory] = useState<string>("");
     const [isToolsLoading, setIsToolsLoading] = useState<boolean>(false);
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
+    const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const handleScroll = () => { };
 
     useEffect(() => {
@@ -300,7 +303,6 @@ export function ChatPage() {
                     case 5: return "Provided project guidance as needed";
                 }
             });
-            workerQueue.includes(3) && setIsToolsLoading(true);
             setConversation((prev: any) => {
                 const lastMessage = prev[prev.length - 1];
                 if (lastMessage.role === "ai") {
@@ -315,6 +317,7 @@ export function ChatPage() {
                 const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/getProductFromId`, data);
                 if (response.status === 200) {
                     const productData = response.data.data;
+                    console.log(productData, "is product data from chat page")
                     appendVendor(productData);
                     setConversation((prev) => {
                         const lastMessage = prev[prev.length - 1];
@@ -323,6 +326,8 @@ export function ChatPage() {
                         }
                         return [...prev, { role: "ai", message: "", productData: productData as unknown as ProductItem[] }];
                     });
+                    setCurrLoadingProductFeature((prev) => prev.filter((item) => item !== 2));
+
                 }
             } catch (error) {
                 console.error("Error fetching product data:", error);
@@ -572,10 +577,9 @@ export function ChatPage() {
                         {data.role === "ai" ? (
                             <Aichat
                                 id={String(index)}
-                                workerQueue={data.workQueue}
                                 message={data.message.replace("Typing...", "")}
                                 productData={data.productData}
-                                bunningsData={data.isBunningsProduct ? data.bunningsProductList : []}
+                                bunningsData={data.bunningsData}
                                 aiData={data.mateyProduct}
                                 isToolsLoading={isToolsLoading}
                                 isBunningLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(1)}
@@ -703,20 +707,28 @@ export function ChatPage() {
                                 <TooltipProvider>
                                     <Tooltip delayDuration={10}>
                                         <TooltipTrigger className="">
-                                            <Drawer onOpenChange={(value) => {
-                                                if (value && currActiveCategory == "") setCurrActiveCategory(bunningProduct[0]?.categoryName)
+
+                                            <div
+                                                onClick={() => {
+                                                    setCurrActiveTab("bunnings")
+                                                    setCurrActiveCategory(bunningProduct[0]?.categoryName)
+                                                    setIsProductDialogOpen(true)
+                                                }}
+                                                className="p-2 rounded-xl bg-orange/40 md:hidden block">
+                                                <Box className="text-white" />
+                                            </div>
+
+                                            {
+                                                isProductDialogOpen && <ProductDialog
+                                                    isOpen={isProductDialogOpen}
+                                                    setIsOpen={setIsProductDialogOpen}
+                                                    bunningsProduct={bunningProduct}
+                                                    vendorProduct={vendorProduct}
+                                                    mateyMadeProduct={aiProduct}
+                                                />
                                             }
 
-                                            } >
-                                                <DrawerTrigger className="p-2 rounded-xl bg-orange/40 md:hidden block">
-                                                    <Box className="text-white" />
 
-                                                </DrawerTrigger>
-
-                                                <DrawerContent className="p-4 h-[calc(100%-10rem)]">
-                                                    <ProductDialog />
-                                                </DrawerContent>
-                                            </Drawer>
 
                                         </TooltipTrigger>
                                         <TooltipContent>

@@ -29,37 +29,6 @@ interface ProductCardProps {
   imageUrl: string;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, imageUrl }) => (
-  <a
-    target="_blank"
-    href={product.link}
-    className="flex gap-2 flex-col border-slate-400 m-1 ml-2 hover:bg-slate-200 rounded-md p-2"
-  >
-    <div className="w-full h-full">
-      <img
-        src={imageUrl}
-        alt={product.name}
-        className="w-full h-48 object-cover rounded-lg shadow-lg border-2 border-slate-300 hover:shadow-xl hover:border-slate-500 transition-all duration-150"
-      />
-    </div>
-    <div className="text-left">
-      <p className="font-semibold text-black">{product.name}</p>
-      <p className="font-thin text-slate-400">{product.description}</p>
-      <p className="font-semibold text-slate-700">{product.price} $</p>
-    </div>
-  </a>
-);
-
-interface ProductDialogProps {
-  isOpen: boolean;
-  onClose: (open: boolean) => void;
-  data: Category[];
-  selectedCategory: string | null;
-  setSelectedCategory: (category: string) => void;
-}
-
-
-
 interface AichatProps {
   id: string;
   workerQueue: string[] | undefined;
@@ -76,7 +45,6 @@ interface AichatProps {
 export default function Aichat({
   id, workerQueue, message, productData, bunningsData, aiData, isCurrFeatureLoading, isProductLoading, isBunningLoading, isAiProductLoading
 }: AichatProps) {
-  console.log("bunningsData", bunningsData, "isBunningLoading", isBunningLoading)
   const [isStreaming, setIsStreaming] = useState(false);
   const [showWorkerQueue, setShowWorkerQueue] = useState(false);
   const [productRendered, setProductRendered] = useState(true);
@@ -116,6 +84,7 @@ export default function Aichat({
   useEffect(() => {
     let total = 0;
     if (bunningsData) {
+      console.log(bunningsData, "bunningsData")
       total += bunningsData.reduce((count: any, category: any) => count + category.products.length, 0);
     }
     if (aiData) {
@@ -239,6 +208,7 @@ export default function Aichat({
       </div>
 
       <Separator orientation="vertical" className="border border-slate-300 w-full my-2" />
+      {console.log(bunningsData, "bunningsDatasss")}
       {
         isDialogOpen && <ProductDialog isOpen={isDialogOpen} setIsOpen={setDialogOpen} bunningsProduct={bunningsData} vendorProduct={productData} mateyMadeProduct={aiData} />
       }

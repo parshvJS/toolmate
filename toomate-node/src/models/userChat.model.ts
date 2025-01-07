@@ -11,8 +11,8 @@ const userChatSchema = new mongoose.Schema({
         required: true,
     },
     aiSessionMemory:{
-        type: String,
-        default: ""
+        type: [String],
+        default: []
     },
     chatName: {
         type: String,

@@ -170,6 +170,12 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
         }
     }
 
+
+
+
+
+
+
     if (planAccess === 1) {
         return {
             success: true,

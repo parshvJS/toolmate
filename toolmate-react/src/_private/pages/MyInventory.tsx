@@ -16,9 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
-    DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
 
@@ -62,9 +60,8 @@ export default function MyInventory() {
     const [delDialogOpen, setDelDialogOpen] = useState<boolean>(false);
     const [userToolInventory, setUserToolInventory] = useState<IToolItem[]>([]);
     const [isToolInventoryLoading, setIsToolInventoryLoading] = useState<boolean>(false);
-    const [isDeleteToolLoading, setIsDeleteToolLoading] = useState<boolean>(false);
     const [recentlyAddedToolData, setRecentlyAddedToolData] = useState<string[]>([]);
-    const [recentlyUpdatedToolData, setRecentlyUpdatedToolData] = useState<IToolItem[] | []>([]);
+    const [recentlyUpdatedToolData, setRecentlyUpdatedToolData] = useState<string[]>([]);
     const [isCreateNewDialogOpen, setIsCreateNewDialogOpen] = useState<boolean>(false);
     //create new tool stats
     const { userData } = useContext(UserContext);
@@ -83,7 +80,7 @@ export default function MyInventory() {
     const [isEditToolDialogOpen, setIsEditToolDialogOpen] = useState<boolean>(false);
     const [currEditIndex, setCurrEditIndex] = useState<string>("");
     const { toast } = useToast()
-
+    
     function handleEditbuttonClick(index: string) {
         setCurrEditIndex(index);
         setIsEditToolDialogOpen(true);
@@ -95,7 +92,7 @@ export default function MyInventory() {
         console.log(userToolInventory?.find(item => item._id == index)?.customFields)
         createNewProduct.clearErrors()
     }
-
+    console.log(toolName, toolDescription, toolTags, toolCount,isEditToolLoading, customField, "here is the data")
     useEffect(() => {
         console.log(userToolInventory)
     }, [userToolInventory])
@@ -158,13 +155,11 @@ export default function MyInventory() {
     //  delete item api call
     async function handleDeleteItem(_id: string) {
 
-        setIsDeleteToolLoading(true);
         const deleteItem = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/v1/deleteToolItem`, {
             userId: userData?.id,
             toolId: _id
         })
         if (deleteItem.data.success) {
-            setIsDeleteToolLoading(false)
             setDelDialogOpen(false)
             setUserToolInventory(userToolInventory.filter(item => item._id !== _id))
             return;
@@ -175,7 +170,6 @@ export default function MyInventory() {
                 description: "Failed to delete item",
                 variant: "destructive"
             })
-            setIsDeleteToolLoading(false)
             setDelDialogOpen(false)
             return;
         }
@@ -322,9 +316,6 @@ export default function MyInventory() {
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
-
-
-
                         </div>
                         <p className="md:block hidden">Matey will remember all your tools to provide the best utility in chat.</p>
                     </div>
@@ -523,7 +514,7 @@ export default function MyInventory() {
                 </div>
             </div>
             <hr className="w-full border border-slate-400" />
-            <div className={`w-full h-full ${userToolInventory.length !== 0 ? 'grid' : ''} md:grid-cols-4 grid-cols-2 gap-2`}>
+            <div className={`w-full h-full ${userToolInventory.length !== 0 ? 'grid' : ''} md:grid-cols-4 grid-cols-1 gap-2`}>
                 {
                     isToolInventoryLoading ?
                         <div className="flex items-center justify-center col-span-4">

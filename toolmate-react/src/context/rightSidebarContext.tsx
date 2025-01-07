@@ -133,6 +133,11 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     setTotalProductSuggestions(total);
   };
 
+  useEffect(() => {
+    console.log('vendorProduct', vendorProduct, bunningProduct, aiProduct);
+  }, [vendorProduct, bunningProduct, aiProduct])
+
+
   // Functions to mass add products
   const massAddVendor = (products: ProductGroup[]) => {
     setVendorProduct(products);
@@ -185,7 +190,6 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     setAiProduct([]);
     setNotification(INITIAL_RIGHT_SIDEBAR_CONTEXT.notification);
     setTotalProductSuggestions(INITIAL_RIGHT_SIDEBAR_CONTEXT.totalProductSuggestions);
-    console.log('RightSidebarProvider unmounted');
   }
 
   function setItemNumberToBunnings(itemNumber: number, data: IBunningProduct) {
@@ -196,9 +200,6 @@ export const RightSidebarProvider: React.FC<{ children: ReactNode }> = ({ childr
     return itemNumberBunningsProductCache.get(itemNumber);
   }
 
-  useEffect(() => {
-    console.log('item data', itemNumberBunningsProductCache);
-  }, [itemNumberBunningsProductCache]);
 
   return (
     <RightSidebarContext.Provider

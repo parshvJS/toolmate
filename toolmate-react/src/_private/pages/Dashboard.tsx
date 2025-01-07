@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { Anvil, CalendarDays, CreditCard, DotIcon, LoaderPinwheel, Package2, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "@/context/userContext";
-import { ChatItem, iChatname } from "@/types/types";
+import { ChatItem } from "@/types/types";
 import { UserButton } from "@clerk/clerk-react";
 import {
     Dialog,
@@ -24,44 +24,78 @@ export default function Dashboard() {
     const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
     const [error, setError] = useState("");
     const [cache, setCache] = useState<ChatItem[]>([]);
-    const [isTooltipLoading, setIsTooltipLoading] = useState(false)
-    const [toolTipMessage, setToolTipMessage] = useState("")
-    const [isTooltipAlreadyGiven, setIsTooltipAlreadyGiven] = useState(false)
+    const [isTooltipLoading, setIsTooltipLoading] = useState(false);
+    const [toolTipMessage, setToolTipMessage] = useState("");
+    const [isNewTooltip, setIsNewTooltip] = useState(false);
+    const [isTooltipAlreadyGiven, setIsTooltipAlreadyGiven] = useState(false);
     const navigate = useNavigate();
+    console.log(location, "location")
+    useEffect(() => {
+        const getLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        console.log("Got location:", latitude, longitude);
+                        setLocation({ latitude, longitude });
+                        localStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
+                    },
+                    (error) => {
+                        console.error("Error getting location:", error);
+                        setError("Unable to retrieve your location");
+                    }
+                );
+            } else {
+                setError("Geolocation is not supported by this browser.");
+            }
+        };
 
-
+        const storedLocation = localStorage.getItem("userLocation");
+        if (storedLocation) {
+            const parsedLocation = JSON.parse(storedLocation);
+            console.log("Retrieved location from storage:", parsedLocation);
+            setLocation(parsedLocation);
+        } else {
+            getLocation();
+        }
+    }, []);
     useEffect(() => {
         const lastTooltipDate = localStorage.getItem("lastTooltipDate");
         const currentDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
-        // Check if the stored date exists and if it matches today’s date
-        if (lastTooltipDate && new Date(lastTooltipDate).toDateString() === new Date(currentDate).toDateString()) {
-            console.log("hit getting tooltip")
+        // Compare directly as strings
+        if (lastTooltipDate === currentDate) {
+            console.log("Hit: Tooltip already given today");
             setIsTooltipAlreadyGiven(true);
             setToolTipMessage(localStorage.getItem("toolTipMessage") || "");
-            localStorage.setItem("lastTooltipDate", new Date().toISOString().split("T")[0]); // Save only date
         } else {
-            console.log("miss getting tooltip")
+            console.log("Miss: Fetching new tooltip");
             handleGetTooltip();
         }
     }, []);
 
     async function handleGetTooltip() {
-        setIsTooltipLoading(true);
-        if (isTooltipAlreadyGiven) {
-            setIsTooltipLoading(false);
-            return;
-        }
-        const url = `${import.meta.env.VITE_SERVER_URL}/api/v1/getTooltip`;
-        const response = await axios.post(url, { userId: userData?.id });
+        if (isTooltipAlreadyGiven) return; // Skip if already fetched for today
 
-        if (response.data.success) {
-            const tooltip = response.data.tooltip;
-            setToolTipMessage(tooltip);
-            localStorage.setItem("toolTipMessage", tooltip);
-            localStorage.setItem("lastTooltipDate", new Date().toISOString().split("T")[0]); // Save only date
+        setIsTooltipLoading(true);
+
+        try {
+            const url = `${import.meta.env.VITE_SERVER_URL}/api/v1/getTooltip`;
+            const response = await axios.post(url, { userId: userData?.id });
+
+            if (response.data.success) {
+                const tooltip = response.data.tooltip;
+                setToolTipMessage(tooltip);
+                localStorage.setItem("toolTipMessage", tooltip);
+                localStorage.setItem("lastTooltipDate", new Date().toISOString().split("T")[0]); // Save only date
+                setIsTooltipAlreadyGiven(true);
+                setIsNewTooltip(true);
+            }
+        } catch (error) {
+            console.error("Error fetching tooltip:", error);
+        } finally {
+            setIsTooltipLoading(false);
         }
-        setIsTooltipLoading(false);
     }
 
     useEffect(() => {
@@ -129,13 +163,25 @@ export default function Dashboard() {
                         <Package2 className="text-white" />
                         <p>Your Tool Inventory </p>
                     </div>
-                    <Dialog>
+                    <Dialog onOpenChange={(isOpen) => {
+                        if (!isOpen) {
+                            setIsNewTooltip(false);
+                        }
+                    }}>
                         <DialogTrigger>
-                            <div
-                                onClick={handleGetTooltip}
-                                className="w-full md:w-fit flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-lightOrange/80  hover:to-orange/80 cursor-pointer from-lightOrange to-orange p-2 px-4 gap-3 w-fit ">
-                                <CalendarDays className="text-white" />
-                                <p>Tooltip Of the Day </p>
+                            <div className="relative overflow-ellipsis  md:m-0 mr-2">
+                                <div
+                                    onClick={handleGetTooltip}
+                                    className="w-full md:w-fit flex text-white font-semibold bg-gradient-to-r rounded-sm hover:from-lightOrange/80  hover:to-orange/80 cursor-pointer from-lightOrange to-orange p-2 px-4 gap-3 ">
+                                    <CalendarDays className="text-white" />
+                                    <p>Tooltip Of the Day </p>
+                                </div>
+                                {
+                                    !isTooltipAlreadyGiven && isNewTooltip && <div className="px-1 py-0.5 w-4 h-5 bg-gradient-to-l from-orange to-lighterYellow min-w-5 rounded-full text-center text-white text-xs absolute -top-2 -end-1 translate-x-1/4 text-nowrap">
+                                        <div className="absolute top-0 start-0 rounded-full -z-10 animate-ping bg-orange w-full h-full"></div>
+                                    </div>
+                                }
+
                             </div>
                         </DialogTrigger>
                         <DialogContent>
@@ -234,10 +280,6 @@ export default function Dashboard() {
                     </div>
                 }
             </div>
-
-
-
-
         </div>
     );
 }

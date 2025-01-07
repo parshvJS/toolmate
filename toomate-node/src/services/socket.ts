@@ -13,6 +13,7 @@ import User from "../models/user.model.js";
 import UserMemory from "../models/userMemory.model.js";
 import { memory } from "./memory.js";
 import UserToolInventory from "../models/userToolInventory.model.js";
+import UserChat from "../models/userChat.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -79,16 +80,48 @@ export async function handleSocketSerivce(socket: Socket) {
             // chat memory
             const shortTermKey = `USER-CHAT-${data.sessionId}`;
             const longTermKey = `USER-MEM-${data.userId}`;
-            const redisShortTermMemory = await getRedisData(shortTermKey);
-            const redisLongTermMemory = currentPlan === 2 ? await getRedisData(longTermKey) : null;
-            console.log("redisShortTermMemory", redisShortTermMemory, "redisLongTermMemory", redisLongTermMemory,typeof redisLongTermMemory, "type", typeof redisShortTermMemory);
+            let redisShortTermMemory = await getRedisData(shortTermKey);
+            let redisLongTermMemory = currentPlan === 2 ? await getRedisData(longTermKey) : null;
+            console.log("redisShortTermMemory", redisShortTermMemory, "redisLongTermMemory", redisLongTermMemory, typeof redisLongTermMemory, "type", typeof redisShortTermMemory);
+            
+            if (!redisShortTermMemory.success || redisShortTermMemory.data === null) {
+                console.log("Short term memory not found in Redis, fetching from database...");
+                await connectDB();
+                const dbChatHistory = await UserChat.findOne({ sessionId: data.sessionId }).sort({ _id: -1 }).limit(30).lean();
+                const chatMemory = await UserMemory.findOne({ userId: mongoUserId }).lean();
+                console.log("chatMemory", chatMemory, "dbChatHistory", dbChatHistory);
+                if(dbChatHistory){
+                    await setRedisData(shortTermKey, JSON.stringify(dbChatHistory.aiSessionMemory), 3600);
+                    redisShortTermMemory = { success: true, data: dbChatHistory.aiSessionMemory };
+                }
+                if(chatMemory){
+                    await setRedisData(longTermKey, JSON.stringify(chatMemory.memory), 3600);
+                    redisLongTermMemory = { success: true, data: chatMemory.memory };
+                }
+            } else {
+                console.log("Short term memory found in Redis:", redisShortTermMemory.data);
+                if (currentPlan === 2 && redisLongTermMemory?.success) {
+                    console.log("Long term memory found in Redis:", redisLongTermMemory.data);
+                }
+            }
+
+            if (currentPlan === 2 && (!redisLongTermMemory || !redisLongTermMemory.success)) {
+                await connectDB();
+                const dbLongTermMemory = await UserMemory.findOne({ userId: mongoUserId });
+                if (dbLongTermMemory) {
+                    await setRedisData(longTermKey, JSON.stringify(dbLongTermMemory.memory), 3600);
+                    redisLongTermMemory = { success: true, data: dbLongTermMemory.memory };
+                }
+            }
+
             let _memory;
             if (redisShortTermMemory.success && (currentPlan === 1 || (currentPlan === 2 && redisLongTermMemory?.success))) {
                 _memory = await memory(data.message, JSON.stringify(redisShortTermMemory.data), JSON.stringify(redisLongTermMemory?.data) || "", currentPlan);
             } else {
                 _memory = await memory(data.message, "", "", currentPlan as 1 | 2);
             }
-            if(_memory.shortTermMemory.length !== 0 && _memory.flags.isShortTerm) {
+
+            if (_memory.shortTermMemory.length !== 0 && _memory.flags.isShortTerm) {
                 console.log("shortTermMemory", _memory.shortTermMemory);
                 await storeDataTypeSafe(shortTermKey, _memory.shortTermMemory, 3600);
             }
@@ -106,7 +139,30 @@ export async function handleSocketSerivce(socket: Socket) {
                     : JSON.stringify(redisShortTermMemory?.data) || " "
             };
 
+
+            // store in database
+            await Promise.all([
+                UserChat.findOneAndUpdate({
+                    sessionId: data.sessionId
+                }, {
+                    $push: { aiSessionMemory: { $each: JSON.parse(wholeMemory.shortTermKey) } }
+                }, { new: true, upsert: true }),
+
+                UserMemory.findOneAndUpdate({
+                    userId: mongoUserId
+                }, {
+                    $push: { memory: { $each: JSON.parse(wholeMemory.longTermKey) } }
+                }, { new: true, upsert: true })
+            ]);
+
             console.log("wholeMemory:: - :: -- :: --", wholeMemory);
+            const redisPromises = [
+                setRedisData(`USER-CHAT-${data.sessionId}`, wholeMemory.shortTermKey, 3600)
+            ];
+            if (currentPlan === 2) {
+                redisPromises.push(setRedisData(`USER-MEM-${data.userId}`, wholeMemory.longTermKey, 3600));
+            }
+            await Promise.all(redisPromises);
 
             // tool inventory access
 

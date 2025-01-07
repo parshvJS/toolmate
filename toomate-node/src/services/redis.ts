@@ -25,8 +25,13 @@ async function startRedisConnection(): Promise<Redis> {
             },
         });
 
+
         redis.on('connect', () => {
             console.log('Connected to Redis');
+        });
+
+        redis.on('error', (error) => {
+            console.error('Redis connection error:', error);
         });
 
         return redis;
@@ -59,45 +64,6 @@ async function setRedisData(key: string, value: any, expiry: number = 3600) {
     }
 }
 
-function subscribeToKeyExpiration(redis: Redis) {
-    expirationSubscriber = redis.duplicate();
-    expirationSubscriber.subscribe('__keyevent@0__:expired', (err, count) => {
-        if (err) {
-            console.error("Error subscribing to key expiration:", err);
-        } else {
-            console.log(`Subscribed to ${count} channels.`);
-        }
-    });
-
-    expirationSubscriber.on('message', async (channel, key) => {
-        if (channel === '__keyevent@0__:expired') {
-            try {
-                const metaKey = `meta:${key}`;
-                console.log(`Key ${key} has expired`, key.split('-'));
-                const matchedPrefix = getMatchingPrefix(key);
-                if (!matchedPrefix.isMatched || matchedPrefix.prefix == null) {
-                    console.log(`Key ${key} is not valid to store in database`);
-                    return;
-                }
-                // Get the metadata
-                const metadataStr = await redisInstance.get(metaKey);
-                if (metadataStr) {
-                    const metadata = JSON.parse(metadataStr);
-
-                    // Store in database
-                    await storeExpiredKeyInDatabase(key, metadata.value, matchedPrefix.prefix);
-
-                    // Clean up metadata after successful storage
-                    await redisInstance.del(metaKey);
-                }
-            } catch (error) {
-                console.error(`Error processing expired key ${key}:`, error);
-                // You might want to implement retry logic here
-            }
-        }
-    });
-}
-
 async function getRedisData(key: string) {
     try {
         const data = await redisInstance.get(key);
@@ -120,94 +86,15 @@ async function getRedisData(key: string) {
     }
 }
 
-// Function to check for any orphaned metadata during startup
-async function cleanupOrphanedMetadata() {
-    try {
-        // Scan for all metadata keys
-        const stream = redisInstance.scanStream({
-            match: 'meta:*',
-            count: 100
-        });
-
-        stream.on('data', async (keys: string[]) => {
-            for (const metaKey of keys) {
-                const originalKey = metaKey.replace('meta:', '');
-                const matchedPrefix = getMatchingPrefix(originalKey);
-                if (!matchedPrefix.isMatched || matchedPrefix.prefix == null) {
-                    console.log(`Key ${originalKey} is not valid to store in database`);
-                    return;
-                }
-                // Check if the original key exists
-                const exists = await redisInstance.exists(originalKey);
-                if (!exists) {
-                    // Get the metadata
-                    const metadataStr = await redisInstance.get(metaKey);
-                    if (metadataStr) {
-                        const metadata = JSON.parse(metadataStr);
-
-                        // If it's past expiration time, process it
-                        if (metadata.expiresAt < Date.now()) {
-                            await storeExpiredKeyInDatabase(originalKey, metadata.value, matchedPrefix.prefix);
-                        }
-                    }
-                    // Clean up the metadata
-                    await redisInstance.del(metaKey);
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error cleaning up orphaned metadata:', error);
-    }
-}
-
-// Example function to store expired key data in database
-async function storeExpiredKeyInDatabase(key: string, value: any, dbFlag: string) {
-    console.log(`Stored expired key ${key} with value:`, value);
-    try {
-        switch (dbFlag) {
-            case `USER-CHAT`:
-                const sessionId = key.split('-')[2];
-                console.log("SessionId", sessionId)
-                const userChat = await UserChat.findOne({ sessionId });
-                if (userChat) {
-                    const userMem = await UserMemory.findOne({ userId: userChat.userId });
-                    if (userMem) {
-                        userMem.memory = JSON.parse(value);
-                        await userMem.save();
-                    }
-                    else {
-                        const newUserMem = new UserMemory({
-                            userId: userChat.userId,
-                            memory: JSON.parse(value)
-                        });
-                        await newUserMem.save();
-                    }
-                } else {
-
-                }
-                break;
-            default:
-                console.log("Invalid key to store in database");
-        }
-    } catch (error) {
-        console.error('Error storing in database:', error);
-        throw error;
-    }
-}
-
 // Initialize Redis connection and start cleanup
 (async () => {
     redisInstance = await startRedisConnection();
-    subscribeToKeyExpiration(redisInstance);
 
-    // Run cleanup on startup
-    await cleanupOrphanedMetadata();
 })();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
     if (redisInstance) await redisInstance.quit();
-    if (expirationSubscriber) await expirationSubscriber.quit();
     console.log('Redis connections closed');
     process.exit(0);
 });
@@ -240,9 +127,9 @@ async function deleteRedisData(key: string) {
     }
 }
 
-async function storeDataTypeSafe(key: string, value: any,ttl:number=3600) {
+async function storeDataTypeSafe(key: string, value: any, ttl: number = 3600) {
     try {
-        await redisInstance.set(key,value,'EX',ttl);
+        await redisInstance.set(key, value, 'EX', ttl);
         return true;
     } catch (error: any) {
         console.error('Error storing data in Redis:', error);
@@ -254,7 +141,6 @@ async function storeDataTypeSafe(key: string, value: any,ttl:number=3600) {
 // Gracefully close Redis connections on shutdown
 process.on('SIGINT', async () => {
     if (redisInstance) await redisInstance.quit();
-    if (expirationSubscriber) await expirationSubscriber.quit();
     console.log('Redis connections closed');
     process.exit(0);
 });
