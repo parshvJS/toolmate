@@ -69,7 +69,7 @@ interface IProductDialogProps {
     isOpen: boolean;
     setIsOpen: Dispatch<SetStateAction<boolean>>;
     bunningsProduct: IProduct[];
-    vendorProduct: IProduct[];
+    vendorProduct: IProduct[] | undefined;
     mateyMadeProduct: IProduct[];
 }
 

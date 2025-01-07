@@ -1,49 +1,30 @@
 import Markdown from "react-markdown";
-
 import remarkGfm from "remark-gfm";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState, useRef, useContext } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useEffect, useState, useRef } from "react";
 import { Separator } from "../ui/separator";
-import { ScrollArea } from "../ui/scroll-area";
-import { Boxes, LoaderCircle, PackageOpen } from "lucide-react";
-import { getImageUrl } from "@/lib/utils";
-import { RightSidebarContext } from "@/context/rightSidebarContext";
+import { LoaderCircle } from "lucide-react";
 import ProductDialog from "./ProductDialog";
 
-interface Product {
-  name: string;
-  description: string;
-  price: string;
-  link: string;
-  imageParams: string[];
-}
 
 interface Category {
   categoryName: string;
   products: any[];
 }
 
-interface ProductCardProps {
-  product: Product;
-  imageUrl: string;
-}
-
 interface AichatProps {
   id: string;
-  workerQueue: string[] | undefined;
   message: string;
-  productData: Category[];
+  productData: any[] | undefined;
   bunningsData: any;
   aiData: Category[];
-  isCurrFeatureLoading: boolean;
   isProductLoading: boolean;
   isBunningLoading: boolean;
   isAiProductLoading: boolean;
 }
 
 export default function Aichat({
-  id, workerQueue, message, productData, bunningsData, aiData, isCurrFeatureLoading, isProductLoading, isBunningLoading, isAiProductLoading
+  id, message, productData, bunningsData, aiData, isProductLoading, isBunningLoading, isAiProductLoading
 }: AichatProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [showWorkerQueue, setShowWorkerQueue] = useState(false);
@@ -65,18 +46,15 @@ export default function Aichat({
         }
       }, 1000);
     };
-
+    
     handleStreaming();
   }, [message, productRendered]);
+  
+  console.log(isStreaming,showWorkerQueue,productRendered,totalProducts,"isStreaming,showWorkerQueue,productRendered,totalProducts")
+
 
   useEffect(() => {
-    if ((workerQueue?.length || 0) > 0 && workerQueue?.includes("Recommended useful products")) {
-      setProductRendered(false);
-    }
-  }, [workerQueue]);
-
-  useEffect(() => {
-    if (productData?.length > 0) {
+    if ((productData ?? []).length > 0) {
       setProductRendered(true);
     }
   }, [productData]);
@@ -131,19 +109,6 @@ export default function Aichat({
 
 
 
-          {workerQueue && workerQueue.length > 0 && (
-            <div className="flex gap-2 items-center">
-              <p className="text-slate-500 font-semibold">Matey Is Working On:</p>
-              <div className="flex gap-2 items-center">
-                {workerQueue.map((queue, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <p className="text-slate-500 font-semibold">{queue}</p>
-                    {index !== workerQueue.length - 1 && <div className="w-[5px] h-[5px] rounded-md bg-slate-500 " />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {
             (isAiProductLoading || isBunningLoading || isProductLoading) && (
@@ -177,7 +142,7 @@ export default function Aichat({
 
 
           {
-            (!isBunningLoading && !isProductLoading && !isAiProductLoading && (bunningsData?.length > 0 || productData?.length > 0 || aiData?.length > 0)) && (
+            (!isBunningLoading && !isProductLoading && !isAiProductLoading && (bunningsData?.length > 0 || (productData || [] )?.length > 0 || aiData?.length > 0)) && (
               <div
                 onClick={() => {
                   setDialogOpen(!isDialogOpen)
@@ -208,7 +173,6 @@ export default function Aichat({
       </div>
 
       <Separator orientation="vertical" className="border border-slate-300 w-full my-2" />
-      {console.log(bunningsData, "bunningsDatasss")}
       {
         isDialogOpen && <ProductDialog isOpen={isDialogOpen} setIsOpen={setDialogOpen} bunningsProduct={bunningsData} vendorProduct={productData} mateyMadeProduct={aiData} />
       }

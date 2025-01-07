@@ -70,7 +70,7 @@ export async function handleSocketSerivce(socket: Socket) {
                 const userPlan = await UserPayment.findOne({ userId: user._id });
                 if (!userPlan) throw new Error('User payment details not found');
 
-                await setRedisData(userPlanCacheKey, JSON.stringify(userPlan), 3600);
+                await setRedisData(userPlanCacheKey, userPlan, 3600);
                 currentPlan = userPlan.planAccess[2] ? 2 : userPlan.planAccess[1] ? 1 : 0;
 
                 mongoUserId = user._id;
@@ -91,13 +91,15 @@ export async function handleSocketSerivce(socket: Socket) {
                 const chatMemory = await UserMemory.findOne({ userId: mongoUserId }).lean();
                 console.log("chatMemory", chatMemory, "dbChatHistory", dbChatHistory);
                 if(dbChatHistory){
-                    await setRedisData(shortTermKey, JSON.stringify(dbChatHistory.aiSessionMemory), 3600);
+                    await setRedisData(shortTermKey, dbChatHistory.aiSessionMemory, 3600);
                     redisShortTermMemory = { success: true, data: dbChatHistory.aiSessionMemory };
                 }
                 if(chatMemory){
-                    await setRedisData(longTermKey, JSON.stringify(chatMemory.memory), 3600);
+                    await setRedisData(longTermKey, chatMemory.memory, 3600);
                     redisLongTermMemory = { success: true, data: chatMemory.memory };
                 }
+
+               
             } else {
                 console.log("Short term memory found in Redis:", redisShortTermMemory.data);
                 if (currentPlan === 2 && redisLongTermMemory?.success) {
@@ -109,14 +111,19 @@ export async function handleSocketSerivce(socket: Socket) {
                 await connectDB();
                 const dbLongTermMemory = await UserMemory.findOne({ userId: mongoUserId });
                 if (dbLongTermMemory) {
-                    await setRedisData(longTermKey, JSON.stringify(dbLongTermMemory.memory), 3600);
+                    await setRedisData(longTermKey,dbLongTermMemory.memory, 3600);
                     redisLongTermMemory = { success: true, data: dbLongTermMemory.memory };
+                }
+                if(!dbLongTermMemory){
+                    await UserMemory.create({ userId: mongoUserId, memory: [] });
+                    await setRedisData(longTermKey, "[]", 3600);
+                    redisLongTermMemory = { success: true, data: [] };
                 }
             }
 
             let _memory;
             if (redisShortTermMemory.success && (currentPlan === 1 || (currentPlan === 2 && redisLongTermMemory?.success))) {
-                _memory = await memory(data.message, JSON.stringify(redisShortTermMemory.data), JSON.stringify(redisLongTermMemory?.data) || "", currentPlan);
+                _memory = await memory(data.message, redisShortTermMemory.data, redisLongTermMemory?.data || "", currentPlan);
             } else {
                 _memory = await memory(data.message, "", "", currentPlan as 1 | 2);
             }
@@ -139,19 +146,30 @@ export async function handleSocketSerivce(socket: Socket) {
                     : JSON.stringify(redisShortTermMemory?.data) || " "
             };
 
-
+            try {
+                console.log("Hey, Cortana. Wow. Hey, Cortana. memory parsed", JSON.parse(_memory.shortTermMemory), JSON.parse(_memory.longTermMemory || "[]"));
+            } catch (error:any) {
+                console.error('Error processing message:', error);
+                socket.emit('error', {
+                    message: error.message || 'An error occurred while processing your message',
+                    success: false
+                });
+                
+            }
+            
+            console.log("wholeMemory:: - :: -- :: --", _memory.longTermMemory, _memory.shortTermMemory, wholeMemory);
             // store in database
             await Promise.all([
                 UserChat.findOneAndUpdate({
                     sessionId: data.sessionId
                 }, {
-                    $push: { aiSessionMemory: { $each: JSON.parse(wholeMemory.shortTermKey) } }
+                    $push: { aiSessionMemory: { $each: JSON.parse(_memory.shortTermMemory) } }
                 }, { new: true, upsert: true }),
 
                 UserMemory.findOneAndUpdate({
                     userId: mongoUserId
                 }, {
-                    $push: { memory: { $each: JSON.parse(wholeMemory.longTermKey) } }
+                    $push: { memory: { $each: JSON.parse(_memory?.longTermMemory || '[]') } }
                 }, { new: true, upsert: true })
             ]);
 

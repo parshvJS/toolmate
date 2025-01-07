@@ -13,37 +13,23 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
-import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Box, BadgeDollarSign, DollarSign, ExternalLink, Star, Info, Lock } from "lucide-react";
+import { ArrowDownToDot, ExpandIcon, Send, LoaderPinwheel, CircleDashed, CircleStop, Box, BadgeDollarSign, Lock } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { IMateyExpression, ProductItem } from "@/types/types";
 import { RightSidebarContext } from "@/context/rightSidebarContext";
-import { getImageUrl } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@radix-ui/react-separator";
 import { useUser } from "@clerk/clerk-react";
 import FullMateyExpression from "@/components/custom/FullMateyExpression";
 import {
     Drawer,
-    DrawerClose,
     DrawerContent,
     DrawerTrigger,
 } from "@/components/ui/drawer"
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
-} from "@/components/ui/carousel"
+
 
 import CustomSlider from "@/components/custom/Slider";
-import { ProductDetails, productSuggestionsTabs, VendorProductDetails } from "@/components/custom/ToolSpread";
-import BunningProduct from "@/components/custom/BunningProduct";
-import { AIProduct } from "@/components/custom/AIProduct";
-import { VendorProduct } from "@/components/custom/VendorProduct";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import classNames from "classnames";
 import { Button } from "@/components/ui/button";
 import ProductDialog from "@/components/custom/ProductDialog";
 
@@ -178,24 +164,21 @@ export function ChatPage() {
     const [isExpanded, setIsExpanded] = useState(false);
     const [mateyExpression, setMateyExpression] = useState("smile");
     const [stateOfButton, setStateOfButton] = useState(-1);
-    const [pagination, setPagination] = useState({ page: 1, limit: 10 });
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const pagination = useRef({ page: 1, limit: 10 }).current;
+    const isLoadingMore = useRef(false).current;
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [isError, setIsError] = useState(false);
     const [isMateyMemory, setIsMateyMemory] = useState(true);
     const [hasMore, setHasMore] = useState(true);
     const [currLoadingProductFeature, setCurrLoadingProductFeature] = useState<number[]>([]);
-    const [currLoadingProductFeatureIndex, setCurrLoadingProductFeatureIndex] = useState(-1);
     const [isMateyOpen, setIsMateyOpen] = useState(false);
     const [currActiveTab, setCurrActiveTab] = useState("bunnings");
 
     const [currActiveCategory, setCurrActiveCategory] = useState<string>("");
-    const [isToolsLoading, setIsToolsLoading] = useState<boolean>(false);
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const handleScroll = () => { };
-
     useEffect(() => {
         const chatContainer = chatContainerRef.current;
         if (chatContainer) {
@@ -203,6 +186,8 @@ export function ChatPage() {
             return () => chatContainer.removeEventListener('scroll', handleScroll);
         }
     }, [isLoadingMore, hasMore, pagination]);
+
+    console.log(currActiveCategory,currActiveTab)
 
     useEffect(() => {
         async function fetchHistory() {
@@ -354,7 +339,6 @@ export function ChatPage() {
             console.log("bunningProduct", data)
             appendBunnings(data);
             setCurrLoadingProductFeature([]);
-            setCurrLoadingProductFeatureIndex(-1);
             setConversation((prev) => {
                 const lastMessage = prev[prev.length - 1];
                 if (lastMessage.role === "ai") {
@@ -392,7 +376,6 @@ export function ChatPage() {
         socket?.on("terminate", () => {
             setStateOfButton(-1);
             setCurrStreamingRes("");
-            setIsToolsLoading(false);
         });
         socket?.on("error", handleError);
 
@@ -559,7 +542,6 @@ export function ChatPage() {
             </div>
         );
     }
-    const filteredProducts = currActiveTab == "bunnings" ? bunningProduct.filter((product: any) => product.categoryName === currActiveCategory) : currActiveTab == "ai" ? aiProduct.filter((product: any) => product.categoryName === currActiveCategory) : vendorProduct.filter((product: any) => product.categoryName === currActiveCategory)
 
     return (
         <div className={`flex flex-col md:w-auto  w-screen  h-screen py-4 md:pl-4 px-2 ${conversation.length === 1 ? "items-end" : "items-center"}`}>
@@ -581,7 +563,6 @@ export function ChatPage() {
                                 productData={data.productData}
                                 bunningsData={data.bunningsData}
                                 aiData={data.mateyProduct}
-                                isToolsLoading={isToolsLoading}
                                 isBunningLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(1)}
                                 isProductLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(2)}
                                 isAiProductLoading={conversation.length == index + 1 && currLoadingProductFeature.includes(3)}
