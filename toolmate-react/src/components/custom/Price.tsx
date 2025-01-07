@@ -160,7 +160,7 @@ export default function Price() {
   const resetCouponState = (message: string) => {
     setCouponCodeValidationLoading(false);
     setCouponCodeMessage("");
-    
+
     setCouponCodeDiscountPrice(0);
     setCouponCodeDiscountPercentage(0);
     setCouponCodeImpact(0);
@@ -177,7 +177,7 @@ export default function Price() {
 
   const handlePriceDialogClose = (value: boolean) => {
     if (!value) {
-      setCouponCode("");  
+      setCouponCode("");
       resetCouponState("");
       setShowCheckoutPopup(false);
     }
@@ -526,18 +526,16 @@ export default function Price() {
 
 
       {
-        activePlan && <Drawer open={showDrawer} onOpenChange={(value)=>{
-          if(!value){
+        activePlan && <Drawer open={showDrawer} onOpenChange={(value) => {
+          if (!value) {
             // reset coupon state
             setCouponCode("");
-
             resetCouponState("");
           }
           setShowDrawer(value);
-          
         }}>
-          <DrawerContent className="h-[calc(100%-5rem)] px-2 py-4 flex flex-col gap-2">
-            <div className="flex gap-2 w-full items-start p-4 h-fit  bg-gradient-to-t from-softYellow to-paleYellow  rounded-lg">
+          <DrawerContent className="h-[calc(100%-1rem)] px-2 py-7 flex flex-col gap-2 ">
+            <div className="flex gap-2  w-full items-start p-4 h-fit  bg-gradient-to-t from-softYellow to-paleYellow  rounded-lg">
               <div className="flex gap-4 items-start">
                 <img src={activePlan.icons} alt="icon" width={30} />
                 <div className="flex flex-col items-start">
@@ -549,7 +547,7 @@ export default function Price() {
 
             </div>
             <div className="flex gap-2 w-full h-full">
-              <div className="w-full flex flex-col items-start">
+              <div className="w-full flex flex-col items-start overflow-y-scroll">
                 <p className="font-semibold">Enter Coupon Code</p>
                 <div className="border-2 flex gap-2  border-slate-200 w-full h-fit rounded-lg mr-5">
                   <input
@@ -623,8 +621,11 @@ export default function Price() {
 
                   </div>
                 </div>
-                <div className="w-full mt-4 flex flex-wrap gap-2 leading-3 my-3">
-                  By clicking on the button below, you agree to our <Link target="_blank" to="/terms-of-service" className="font-semibold underline">Terms of Service</Link>, <Link target="_blank" to="/privacy-policy" className="font-semibold underline">Privacy Policy</Link> and <Link to="/refund-policy" target="_blank" className="font-semibold underline">Refund Policy</Link>
+                <div className="w-full mt-4 flex flex-col md:flex-row flex-wrap gap-2 leading-3 my-3 text-center">
+                  By clicking the button below, you agree to our
+                  <Link target="_blank" to="/terms-of-service" className="font-semibold underline mx-1">Terms of Service</Link>
+                  <Link target="_blank" to="/privacy-policy" className="font-semibold underline mx-1">Privacy Policy </Link>
+                  <Link target="_blank" to="/refund-policy" className="font-semibold underline mx-1">Refund Policy</Link>.
                 </div>
                 <button
                   onClick={getPaypalUrl}

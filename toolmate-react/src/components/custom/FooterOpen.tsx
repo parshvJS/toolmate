@@ -3,7 +3,7 @@ import Logo from "./Logo";
 
 export default function Footer() {
   return (
-    <footer className="relative py-10 overflow-hidden bg-white bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500from-0% to-white to-70%">
+    <footer className="relative overflow-hidden bg-white bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-500 from-0% to-white to-70%">
       {/* Radial gradient background */}
       <div className="absolute overflow-hidden">
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200%] aspect-[2/1]">
@@ -17,18 +17,24 @@ export default function Footer() {
           {/* Logo and dummy text */}
           <Logo />
 
-          <div className="flex w-3/6 justify-between">
+          <div className="flex w-full md:w-3/6 justify-between flex-wrap">
             {/* Quick Links */}
-            <div className="w-full md:w-1/3 mb-6 md:mb-0">
+            <div className="w-full mx-4 md:w-1/3 mb-6 md:mb-0">
               <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
               <div className="space-y-2 text-left">
-                {["Features", "Pricing", "Contact Us"].map((item) => (
-                  <div key={item}>
+                {[
+                  { name: "Home", path: "/" },
+                  { name: "Pricing", path: "/pricing" },
+                  { name: "Contact Us", path: "/contact" },
+                  { name: "About Us", path: "/AboutUs" },
+                  { name: "Privacy Policy", path: "/privacy-policy" },
+                ].map((item) => (
+                  <div key={item.name}>
                     <Link
-                      to="#"
+                      to={item.path}
                       className="hover:font-semibold text-gray-600 hover:text-gray-900"
                     >
-                      {item}
+                      {item.name}
                     </Link>
                   </div>
                 ))}
@@ -36,10 +42,10 @@ export default function Footer() {
             </div>
 
             {/* Social Media */}
-            <div className="w-full md:w-1/3">
+            <div className="w-full  mx-4 md:w-1/3">
               <h3 className="text-lg font-bold mb-4">Social Media</h3>
               <div className="space-y-2 text-left">
-                {["Dribbble", "X (formerly Twitter)", "Behance"].map((item) => (
+                {["Facebook", "X (formerly Twitter)", "Youtube","Instagram"].map((item) => (
                   <div key={item}>
                     <Link
                       to="#"

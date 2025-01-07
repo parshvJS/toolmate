@@ -49,15 +49,14 @@ export default function Landing() {
         <section className="flex justify-between md:flex-row flex-col md:p-12 p-2 relative">
           {/* left side */}
           <div className="text-center md:justify-start justify-center md:items-start items-center md:text-left md:w-2/3 max-w-2/5 place-content-center flex flex-col gap-8">
-            <p className="text-transparent flex md:hidden justify-center items-center   w-full text-justify    bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-5xl md:text-left">
-              Find The Right Tool <br /> For
-              Every DIY Job!
+            <p className="text-transparent flex md:hidden justify-center items-center w-full text-center bg-clip-text bg-gradient-to-r from-black to-black font-extrabold text-4xl sm:text-5xl leading-tight">
+              Find The Right Tool For Every DIY Job!
             </p>
             <p className="text-transparent text-center hidden md:block  bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-6xl md:text-left">
               Find The Right<br /> Tool For
               Every <br /> DIY Job!
             </p>
-            <p className="md:w-2/3 font-bold md:text-lg text-md w-full text-left">
+            <p className="md:w-2/3 text-center font-bold md:text-lg text-md w-full md:text-left">
               Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
             </p>
             <div className="md:block flex gap-2 items-center justify-center md:justify-start md:items-start ">
@@ -94,8 +93,8 @@ export default function Landing() {
           </div>
 
 
-          <div className="p-2 w-full md:w-3/5 h-full flex justify-center items-start">
-            <div className="md:mt-0 hidden md:flex  absolute w-[700px]  h-[700px] -top-9  -z-20 justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
+          <div className="md:p-2 p-5 w-full md:w-3/5 h-full flex justify-center items-start">
+            <div className="md:mt-0 hidden md:flex  absolute md:w-[700px]  md:h-[700px] w-[400px] -top-9  -z-20 justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
             <MobileMock />
           </div>
         </section>
@@ -134,7 +133,7 @@ export default function Landing() {
 
         {/* grid stock video section */}
         <div id="impact" className="mb-10 p-6"></div>
-        <p className=" md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4 h-full">
+        <p className=" md:text-8xl text-3xl my-5 font-black md:text-center text-left px-4 h-full">
           How
           <span className="text-orange text-left"> Matey </span>
           Simplifies Your <br />
@@ -142,7 +141,7 @@ export default function Landing() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* card 1 */}
-          <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
+          <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[350px] md:h-[440px]">
             <video
               className="absolute inset-0 w-full h-full object-cover rounded-3xl"
               src="/video/vid1.mp4"
@@ -251,7 +250,7 @@ export default function Landing() {
         </div>
         {/* community section */}
 
-        <div className="mx-16">
+        <div className="md:mx-16 mx-4">
 
           <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left mt-32">
             Explore
