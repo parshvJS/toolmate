@@ -9,4 +9,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: 'dist',  // Ensure this is the correct output directory
+  },
+  base: '/',  // Make sure this is correct based on your deployment URL
 });
