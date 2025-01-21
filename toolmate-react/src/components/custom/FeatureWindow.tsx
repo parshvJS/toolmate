@@ -65,18 +65,20 @@ export default function FeatureWindow() {
           {/* main content */}
           <div className="flex mx-4 justify-between md:flex-row flex-col">
             {/* left side */}
-            <div className="flex flex-col gap-4">
-              <div className="bg-lightYellow text-black md:block hidden font-semibold px-14 py-2 rounded-md md:w-fit w-full">
-                {feature.tag}
-              </div>
-              <hr className="md:hidden border border-slate-500" />
-              <p className="font-bold md:text-6xl text-5xl text-left text-black">
-                {feature.title}
-              </p>
+            <div className="flex flex-co justify-between flex-col gap-10">
+              <div>
+                <div className="bg-softYellow text-black md:block hidden font-semibold px-14 py-1 rounded-md md:w-fit w-full">
+                  {feature.tag}
+                </div>
+                <hr className="md:hidden border border-slate-500" />
+                <p className="font-bold md:text-6xl text-5xl text-left text-black">
+                  {feature.title}
+                </p>
 
-              <p className="text-left font-normal text-slate-700 text-lg">
-                {feature.desc}
-              </p>
+                <p className="text-left font-normal text-slate-700 text-lg">
+                  {feature.desc}
+                </p>
+              </div>
 
               {/* <Button
                 variant={"orangeGradient"}
@@ -101,7 +103,7 @@ export default function FeatureWindow() {
               {feature.featuresList.map((feauteItem, index: number) => (
                 <div key={index}>
                   {/* main content */}
-                  <div className="p-2 px-4 flex gap-4 text-left items-center">
+                  <div className="p-2 px-4 flex gap-4  text-left items-center">
                     {/* icon */}
                     <div>
                       <img src={feauteItem.icon} alt={feauteItem.title} />
@@ -127,7 +129,7 @@ export default function FeatureWindow() {
           </div>
 
           {/* feautre image */}
-          <div className="md:my-10 h-[500px] hidden md:block">
+          <div className="md:my-10  hidden md:block">
             <img
               src={feature.windowExampleImage}
               className="w-full "
@@ -138,10 +140,10 @@ export default function FeatureWindow() {
 
           {/* mobile side section */}
           <div className="md:hidden flex flex-col">
-            <div className="md:my-24 my-10 ">
+            <div className="flex gap-2 overflow-hidden  ">
               <img
                 src={feature.windowExampleImage}
-                className="w-full "
+                className="w-[40rem] h-[20rem] object-cover my-14 rounded-md border-x-2 border-black"
                 alt={feature.CTA}
               />
             </div>

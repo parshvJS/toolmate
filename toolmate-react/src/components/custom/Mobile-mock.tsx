@@ -124,14 +124,13 @@ export function MobileMock() {
     }, [currChat]);
 
     return (
-        <div className="w-full h-full flex justify-center md:justify-start items-center mb-5 relative">
+        <div className="w-full h-full flex md:flex-row flex-col justify-center it md:justify-start items-center mb-5 relative">
             <div className="hidden md:flex">
                 <img src="/assets/matey/langingMatey.svg" alt="back" className="z-0 top-0 left-48 absolute rotate-12" />
             </div>
 
-
             <motion.div
-                className="absolute hidden md:flex bottom-28 z-20 -left-40  flex-col gap-4 justify-end items-end"
+                className="absolute hidden lg:flex bottom-28 z-20 -left-40  flex-col gap-4 justify-end items-end"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -146,7 +145,7 @@ export function MobileMock() {
                     Tool Recommendations
                 </motion.div>
                 <motion.div
-                    className="flex justify-between gap-3 rounded-full w-fit p-4 h-fit bg-white/70 backdrop-blur-xl border-2 border-yellow"
+                    className="flex capitalize justify-between gap-3 rounded-full w-fit p-4 h-fit bg-white/70 backdrop-blur-xl border-2 border-yellow"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.4 }}
@@ -155,7 +154,7 @@ export function MobileMock() {
                     Step-by-Step Guides
                 </motion.div>
                 <motion.div
-                    className="flex justify-between gap-3 rounded-full w-fit p-4 h-fit bg-white/50 backdrop-blur-xl border-2 border-yellow"
+                    className="flex  capitalize justify-between gap-3 rounded-full w-fit p-4 h-fit bg-white/50 backdrop-blur-xl border-2 border-yellow"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6 }}
@@ -164,8 +163,12 @@ export function MobileMock() {
                     Save Time on Projects
                 </motion.div>
             </motion.div>
-            <div className="w-[330px] h-[550px] md:mb-10 z-10 p-2 md:ml-28 rounded-3xl bg-gradient-to-t from-slate-300 to-softYellow ">
-                <div ref={scrollAreaRef} className=" z-10  bg-white w-[315px] h-[535px] mb-10 overflow-scroll hide-scrollbar  p-2 rounded-3xl ">
+
+            <div className="block md:hidden w-full h-full">
+                <img src="/assets/matey/langingMatey.svg" alt="back" className="w-96 h-96 -mb-40 -mt-10" />
+            </div>
+            <div className="md:w-[330px] md:h-[550px] w-[250px] h-[530px] md:mb-10 z-10 p-2 md:ml-28 rounded-3xl bg-gradient-to-t from-slate-300 to-softYellow ">
+                <div ref={scrollAreaRef} className=" z-10  bg-white md:w-[315px] w-[235px] h-[515px] md:h-[535px] h mb-10 overflow-scroll hide-scrollbar  p-2 rounded-3xl ">
                     <div className="flex flex-col space-y-4 mt-3 mb-40 ">
                         {currChat.map((chat, index) => (
                             <div
@@ -213,7 +216,7 @@ export function MobileMock() {
                                                     transition={{ duration: 1.2, delay: idx * 0.2 }}
                                                 >
                                                     <img src={product.assets} alt={product.name} className="border-2 border-yellow rounded-lg" />
-                                                    <p className="font-semibold text-darkYellow text-[4px]">{product.name}</p>
+                                                    <p className="font-semibold text-darkYellow text-m">{product.name}</p>
                                                 </motion.div>
                                             ))}
                                         </div>

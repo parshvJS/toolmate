@@ -43,249 +43,247 @@ export default function Landing() {
 
 
   return (
-    <div className="md:px-20 px-2 scroll-smooth overflow-x-hidden">
-      <div className="md:mt-28 mt-20">
-        {/* hero section */}
-        <section className="flex justify-between md:flex-row flex-col md:p-12 p-2 relative">
-          {/* left side */}
-          <div className="text-center md:justify-start justify-center md:items-start items-center md:text-left md:w-2/3 max-w-2/5 place-content-center flex flex-col gap-8">
-            <p className="text-transparent flex md:hidden justify-center items-center w-full text-center bg-clip-text bg-gradient-to-r from-black to-black font-extrabold text-4xl sm:text-5xl leading-tight">
-              Find The Right Tool For Every DIY Job!
-            </p>
-            <p className="text-transparent text-center hidden md:block  bg-clip-text bg-gradient-to-r from-black  to-black font-[1000] md:text-8xl  text-6xl md:text-left">
-              Find The Right<br /> Tool For
-              Every <br /> DIY Job!
-            </p>
-            <p className="md:w-2/3 text-center font-bold md:text-lg text-md w-full md:text-left">
-              Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
-            </p>
-            <div className="md:block flex gap-2 items-center justify-center md:justify-start md:items-start ">
-              <ButtonCustom
-                navigator="/preview"
-                text="Chat With Matey Now"
-                isArrow={true}
-                isDark={true}
-              />
-            </div>
-            <div className="flex gap-2 flex-col mt-5">
-              {/* users */}
-              <div className="font-bold text-3xl items-center gap-10 text-left w-fit flex  ">
-                <div>
-                  <img
-                    src="/assets/icons/image.png"
-                    alt="user"
-                    className="max-w-32"
-                    width={220}
-                  />
-                </div>
-                {/* <Separator
+    <div className="w-full capitalize flex items-center justify-center">
+
+      <div className="md:px-20 px-2 scroll-smooth overflow-x-hidden max-w-[1480px]">
+        <div className="md:mt-28 mt-20">
+          {/* hero section */}
+          <section className="flex justify-between md:flex-row flex-col md:p-12 p-2 relative">
+            {/* left side */}
+            <div className="text-center md:justify-start justify-center md:items-start items-center md:text-left md:w-2/3 max-w-2/5 place-content-center flex flex-col gap-8">
+              <p className="text-transparent flex md:hidden justify-center items-center w-full text-center bg-clip-text bg-gradient-to-r from-black to-black font-extrabold text-4xl sm:text-5xl leading-tight">
+                Find The Right Tool For Every DIY Job!
+              </p>
+              <p className="text-transparent text-center hidden sm:block md:block lg:block bg-clip-text bg-gradient-to-r from-black to-black font-[1000] sm:text-6xl md:text-8xl lg:text-8xl text-6xl sm:text-left md:text-left lg:text-left">
+                Find The Right<br /> Tool For
+                Every <br /> DIY Job!
+              </p>
+              <p className="md:w-2/3 text-center font-bold md:text-lg text-md w-full md:text-left">
+                Meet Matey, your ultimate DIY companion. From novices to experts, Matey guides you to the perfect tools for every project.
+              </p>
+              <div className="md:block flex gap-2 items-center justify-center md:justify-start md:items-start ">
+                <ButtonCustom
+                  navigator="/preview"
+                  text="Chat With Matey Now"
+                  isArrow={true}
+                  isDark={true}
+                />
+              </div>
+              <div className="flex gap-2 flex-col mt-5">
+                {/* users */}
+                <div className="font-bold text-3xl items-center gap-10 text-left w-fit flex  ">
+                  <div>
+                    <img
+                      src="/assets/icons/image.png"
+                      alt="user"
+                      className="max-w-32 md:block hidden"
+                      width={220}
+                    />
+                  </div>
+                  {/* <Separator
                   orientation="vertical"
                   className="border border-gray"
                 /> */}
-                {/* <div className="flex items-center flex-col text-left">
+                  {/* <div className="flex items-center flex-col text-left">
                   <p className="font-semibold text-left opacity-80 text-slate-500 text-md">
                     Trusted by People
                   </p>
                   <p className="font-mono md:text-2xl text-lg">100K+ Users</p>
                 </div> */}
+                </div>
+              </div>
+            </div>
+
+
+            <div className="md:p-2 py-5 w-full md:w-3/5 h-full flex justify-center items-start">
+              <div className="md:mt-0 hidden md:flex  absolute md:w-[700px]  md:h-[700px] w-[400px] -top-9  -z-20 justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
+              <MobileMock />
+            </div>
+          </section>
+          <div className="w-full items-center flex justify-center">
+            <img
+              src="/assets/icons/image.png"
+              alt="user"
+              className="max-w-32 md:hidden block"
+              width={220}
+            />
+          </div>
+
+          {/* demo video section */}
+          <section className="w-full mt-5 md:mt-10">
+            {/* main/base */}
+            <div className="bg-white p-0 rounded-2xl px-0">
+
+              <DemoVideo />
+            </div>
+          </section>
+
+
+
+
+
+
+          {/* grid stock video section */}
+          <div id="impact" className="mb-10 p-6"></div>
+          <p className="hidden md:block md:text-8xl text-4xl my-5 font-black text-center px-4 h-full">
+            How
+            <span className="text-orange text-left"> Matey </span>
+            Simplifies Your <br />
+            DIY Journey
+          </p>
+          <p className="text-4xl block md:hidden font-bold leading-8 my-3">How <span className="text-orange text-left"> Matey </span> Simplifies Your DIY Journey </p>
+
+          <div className="flex items-center justify-center w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:w-[calc(100%-5rem)]">
+              {/* card 1 */}
+              <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[350px] md:h-[440px]">
+                <img
+                  className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+                  src="public/assets/images/bg-1.jpg"
+                />
+                <div
+                  className="absolute inset-0 w-full h-full object-cover rounded-3xl bg-gradient-to-br from-black/60 via-black/30 to-transparent"
+                />
+                <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+                <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+                  {/* content */}
+                  <div>
+                    <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                      Find the Right Tools Fast
+                    </p>
+                    <p className="text-slate-300 text-xl font-bold mt-4 w-3/4</p>">
+                      Effortlessly discover the perfect tools tailored to your
+                      unique projects.
+                    </p>
+                  </div>
+
+                  {/* CTA */}
+                  <Link
+                    to={"/preview"}
+                    className="w-fit bg-orange hover:bg-lightOrange rounded-lg px-4 py-2  text-white hover:bg-transparent hover:text-orange border-2 border-orange"
+                  >
+                    <p className="font-bold">Explore Tool Suggestions</p>
+                  </Link>
+                </div>
+              </div>
+
+              {/* card2 */}
+              <div className="relative bg-slate-400 rounded-3xl shadow-md md:h-[440px] h-[200px]">
+                <img
+                  className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+                  src="/assets/images/tools.jpg"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/30 to-transparent rounded-3xl"></div>
+
+
+                <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+                  {/* content */}
+                  <div>
+                    <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                      Your Project, Your Tools, One Click
+                    </p>
+                    <p className="text-slate-300 text-xl font-semibold mt-4 w</p>-3/4">
+                      Get a complete list of what you need, instantly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* card3 */}
+              <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
+                <img
+                  className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+                  src="/assets/images/personalized.jpg"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-black via-black/40 to-transparent rounded-3xl"></div>
+
+                <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+                  {/* content */}
+                  <div>
+                    <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
+                      Keep Track of Every Project and Tool
+                    </p>
+                    <p className="text-white text-xl font-semibold mt-4 w-3/4">
+                      Personalized help based on what you've used before.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* card 4 */}
+              <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
+                <img
+                  className="absolute inset-0 w-full h-full object-cover rounded-3xl"
+                  src="public/assets/images/bg-3.jpg"
+                />
+                <div
+                  className="absolute inset-0 w-full h-full object-cover rounded-3xl bg-gradient-to-br from-black/90 via-black/30 to-transparent"
+                />
+                <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+                <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
+                  {/* content */}
+                  <div>
+                    <p className="md:text-5xl text-3xl p-0 md:w-3/4 w-full font-bold text-white">
+                      Join a DIY Community
+                    </p>
+                    <p className="text-slate-300 text-xl font-bold mt-4 w-3/4">
+                      Connect, share, and learn with fellow DIY enthusiasts through
+                      our dedicated community.
+                    </p>
+                  </div>
+
+                  {/* CTA */}
+                  <Link
+                    to={"/preview"}
+                    className="w-fit bg-orange hover:bg-lightOrange rounded-lg px-4 py-2 text-white hover:bg-transparent hover:text-orange border-2 border-orange"
+                  >
+                    <p className="font-bold">Join the DIY Community</p>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
+          {/* community section */}
+          <div className="w-full flex items-center justify-center ">
 
+            <div className="md:mx-16 w-full md:w-[calc(100%-5rem)]">
 
-          <div className="md:p-2 p-5 w-full md:w-3/5 h-full flex justify-center items-start">
-            <div className="md:mt-0 hidden md:flex  absolute md:w-[700px]  md:h-[700px] w-[400px] -top-9  -z-20 justify-center bg-[url('/assets/images/square.svg')] bg-cover bg-center bg-no-repeat"></div>
-            <MobileMock />
-          </div>
-        </section>
-
-
-        {/* demo video section */}
-        <section className="w-full mt-10">
-          {/* main/base */}
-          <div className="bg-white md:p-0 p-2 rounded-2xl">
-            {/* title infography
-            <div className="md:flex hidden gap-2 items-center justify-center">
-              <p className="text-3xl md:text-8xl font-semibold">
-                Let Matey Show His
+              <p className="md:text-8xl text-4xl font-bold leading-7 mt-20 block md:flex gap-3">
+                Explore
+                <span className="text-orange text-left"> Interactive </span>
+                Community
               </p>
-              <h1 className="text-6xl font-bold">
-                <span className="font-semibold text-3xl md:text-8xl  bg-clip-text text-transparent bg-gradient-to-r from-yellow to-orange drop-shadow-[0_4px_4px_rgba(4,4,4,0.3)]">
-                  Know-how
-                </span>
-              </h1>
-            </div> */}
+              {/* content */}
+              <CommunityExample />
+            </div>
+          </div>
 
-            {/* mobile text */}
-            <p className="md:hidden font-semibold text-4xl w-full h-full">
-              Let Matey Show his
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow to-orange drop-shadow-[0_4px_4px_rgba(4,4,4,0.3)]"> Know-How</span>
+          {/* feature window section */}
+          <div id="features" className="mb-10 md:p-6 p-0 md:px-2 px-0"></div>
+
+          <div className="mt-30">
+            {/* header */}
+            <p className="md:text-8xl text-4xl  font-black hidden md:block">
+              Every Tool You Need,
+              <span className="text-orange"> Matey’s </span>
+              Got You Covered!
             </p>
-            {/* videop */}
-            <DemoVideo />
-          </div>
-        </section>
-
-
-
-
-
-
-        {/* grid stock video section */}
-        <div id="impact" className="mb-10 p-6"></div>
-        <p className=" md:text-8xl text-3xl my-5 font-black md:text-center text-left px-4 h-full">
-          How
-          <span className="text-orange text-left"> Matey </span>
-          Simplifies Your <br />
-          DIY Journey
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* card 1 */}
-          <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[350px] md:h-[440px]">
-            <video
-              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/video/vid1.mp4"
-              autoPlay
-              loop
-              muted
-            />
-            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
-            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
-              {/* content */}
-              <div>
-                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
-                  Find the Right Tools Fast
-                </p>
-                <p className="text-slate-300 text-xl font-bold mt-4 w-3/4</p>">
-                  Effortlessly discover the perfect tools tailored to your
-                  unique projects.
-                </p>
-              </div>
-
-              {/* CTA */}
-              <Link
-                to={"/preview"}
-                className="w-fit bg-orange hover:bg-lightOrange rounded-lg p-4 text-white hover:bg-transparent hover:text-orange border-2 border-orange"
-              >
-                <p className="font-bold">Explore Tool Suggestions</p>
-              </Link>
-            </div>
+            <FeatureWindow />
           </div>
 
-          {/* card2 */}
-          <div className="relative bg-slate-400 rounded-3xl shadow-md md:h-[440px] h-[200px]">
-            <img
-              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/assets/images/tools.jpg"
-            />
-            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
+          {/* price page */}
 
-            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
-              {/* content */}
-              <div>
-                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
-                  Your Project, Your Tools, One Click
-                </p>
-                <p className="text-slate-300 text-xl font-semibold mt-4 w</p>-3/4">
-                  Get a complete list of what you need, instantly.
-                </p>
-              </div>
-            </div>
+          <div className="my-20 md:my-36">
+            {/* header */}
+            <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
+              Get Started With
+              <span className="text-orange text-left"> ToolMate </span>
+              Today
+            </p>
+            {/* prices */}
+
+            <Price />
           </div>
-
-          {/* card3 */}
-          <div className="relative bg-slate-400 rounded-3xl shadow-md h-[440px]">
-            <img
-              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/assets/images/personalized.jpg"
-            />
-            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
-
-            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
-              {/* content */}
-              <div>
-                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
-                  Keep Track of Every Project and Tool
-                </p>
-                <p className="text-white text-xl font-semibold mt-4 w-3/4">
-                  Personalized help based on what you've used before.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* card 4 */}
-          <div className="relative col-span-1 md:col-span-2 bg-slate-400 rounded-3xl shadow-md h-[440px]">
-            <video
-              className="absolute inset-0 w-full h-full object-cover rounded-3xl"
-              src="/video/vid2.mp4"
-              autoPlay
-              loop
-              muted
-              preload="auto"
-              playsInline
-            />
-            <div className="absolute inset-0 bg-black opacity-35 rounded-3xl"></div>
-            <div className="relative z-10 p-7 drop-shadow-sm h-full text-left flex flex-col justify-between">
-              {/* content */}
-              <div>
-                <p className="md:text-5xl text-3xl md:w-3/4 w-full font-bold text-white">
-                  Join a DIY Community
-                </p>
-                <p className="text-slate-300 text-xl font-bold mt-4 w-3/4">
-                  Connect, share, and learn with fellow DIY enthusiasts through
-                  our dedicated community.
-                </p>
-              </div>
-
-              {/* CTA */}
-              <Link
-                to={"/preview"}
-                className="w-fit bg-orange hover:bg-lightOrange rounded-lg p-4 text-white hover:bg-transparent hover:text-orange border-2 border-orange"
-              >
-                <p className="font-bold">Join the DIY Community</p>
-              </Link>
-            </div>
-          </div>
-        </div>
-        {/* community section */}
-
-        <div className="md:mx-16 mx-4">
-
-          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left mt-32">
-            Explore
-            <span className="text-orange text-left"> Interactive </span>
-            Community
-          </p>
-          {/* content */}
-          <CommunityExample />
-        </div>
-
-        {/* feature window section */}
-        <div id="features" className="mb-10 p-6"></div>
-
-        <div className="md:my-36 my-20">
-          {/* header */}
-          <p className="md:text-8xl text-4xl  font-black hidden md:block">
-            Every Tool You Need,
-            <span className="text-orange"> Matey’s </span>
-            Got You Covered!
-          </p>
-          <FeatureWindow />
-        </div>
-
-        {/* price page */}
-
-        <div className="my-20 md:my-36">
-          {/* header */}
-          <p className="md:text-8xl text-4xl my-5 font-black md:text-center text-left px-4">
-            Get Started With
-            <span className="text-orange text-left"> ToolMate </span>
-            Today
-          </p>
-          {/* prices */}
-
-          <Price />
         </div>
       </div>
     </div>

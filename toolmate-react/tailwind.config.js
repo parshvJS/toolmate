@@ -156,7 +156,11 @@ export default {
         'orange-yellow': ['#FF5900', '#FFEB73']
       },
       fontFamily: {
-        roboto: ['Roboto', 'sans-serif']
+        roboto: ['Roboto', 'sans-serif'],
+        funnel: ['Funnel Sans', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+        lato: ['Lato', 'sans-serif'],
+
       }
     }
   },

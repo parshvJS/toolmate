@@ -60,21 +60,21 @@ export default function CommunityExample() {
   ];
 
   return (
-    <section className="w-full mt-10">
-  
+    <section className="w-full mt-5 md:mt-10">
+
       <Carousel
         opts={{
           align: "start",
         }}
         className="w-full"
       >
-        <CarouselContent className="flex">
+        <CarouselContent className="flex w-full">
           {communityState.map((community, index) => (
             <CarouselItem
               key={index}
-              className="md:basis-1/2  lg:basis-1/3  flex justify-between "
+              className="md:basis-1/2 w-full  lg:basis-1/3  flex justify-between "
             >
-              <div className="border border-slate-300 rounded-2xl overflow-hidden flex flex-col justify-between  bg-gradient-to-tr bg-slate-50">
+              <div className="border border-slate-300 rounded-2xl flex flex-col justify-between overflow-hidden bg-gradient-to-tr bg-slate-50">
                 {/* top side  */}
                 <div className="p-4">
                   {/* community header and profile image section */}

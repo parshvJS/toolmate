@@ -43,7 +43,7 @@ export function extractBAToken(url: string) {
 
 
 export function getBunningsFilterData(bunningData: IBunningProduct[], exisitingFilter?: IBunningsFilter) {
-  
+
   // brands
   const brands = bunningData.map((product) => product.brand);
   const uniqueBrands = Array.from(new Set(brands));

@@ -45,6 +45,10 @@ export async function handleSocketSerivce(socket: Socket) {
 
 
 
+    // socket.on('preview',async ())
+
+
+
     socket.on('userMessage', async (data: INewUserMessage) => {
         try {
             console.log("budgetDetails in socket", "budgetDetails", data.budgetSliderValue, "isBudgetSliderChangable", data.isBudgetSliderChangable, "isBudgetSliderPresent", data.isBudgetSliderPresent);

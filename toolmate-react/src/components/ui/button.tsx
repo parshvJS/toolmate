@@ -20,13 +20,13 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         orangeGradient:
-          "flex items-center justify-center gap-2 bg-gradient-to-tr from-orange to-lightOrange p-3 rounded-md border-2 border-transparent text-white transition-all duration-400 hover:from-white hover:to-white hover:border-orange hover:text-orange  px-6 py-4",
+          "flex items-center justify-center gap-2 bg-gradient-to-tr from-orange to-lightOrange p-3 rounded-md border-2 border-transparent text-white transition-all duration-400 hover:from-white hover:to-white hover:border-orange hover:text-orange ",
         grayGradient:
           "inline-flex items-center gap-2 rounded bg-gradient-to-l from-slate-300 to-slate-600 px-6 py-3 text-md font-semibold text-black transition-all ease-in-out active:scale-100 disabled:pointer-events-none disabled:opacity-50",
       },
       size: {
         default: "h-9 px-4 py-4",
-        sm: "py-4 h-8 rounded-md px-3 text-md",
+        sm: "py-4 h-8 rounded-md px-3",
         lg: "h-10 rounded-md px-8 py-4",
         icon: "h-9 w-9",
         StretchedButton: "w-full px-8 py-2",

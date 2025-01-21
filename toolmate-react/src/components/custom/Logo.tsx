@@ -6,7 +6,7 @@ export default function Logo() {
       <Link to="/" className="w-fit">
         <div className="flex gap-2 font-bold text-2xl ">
           <img src="./assets/full-logo.svg" alt="Logo" />{" "}
-         
+     
         </div>
       </Link>
     </>

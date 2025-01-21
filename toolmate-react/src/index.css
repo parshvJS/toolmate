@@ -13,27 +13,32 @@
 
 
 /* styles.css */
-  @keyframes glow {
-    0% {
-      box-shadow: 0 0 1px rgba(255, 223, 0, 0.2), 0 0 2px rgba(255, 223, 0, 0.3);
-    }
-
-    50% {
-      box-shadow: 0 0 5px rgba(255, 223, 0, 0.3), 0 0 6px rgba(255, 223, 0, 0.4);
-    }
-
-    100% {
-      box-shadow: 0 0 1px rgba(255, 223, 0, 0.2), 0 0 2px rgba(255, 223, 0, 0.3);
-    }
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 1px rgba(255, 223, 0, 0.2), 0 0 2px rgba(255, 223, 0, 0.3);
   }
-  .hide-scrollbar {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
+
+  50% {
+    box-shadow: 0 0 5px rgba(255, 223, 0, 0.3), 0 0 6px rgba(255, 223, 0, 0.4);
+  }
+
+  100% {
+    box-shadow: 0 0 1px rgba(255, 223, 0, 0.2), 0 0 2px rgba(255, 223, 0, 0.3);
+  }
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* Internet Explorer 10+ */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, and Opera */
+  display: none;
+  /* Chrome, Safari, and Opera */
 }
+
 .glowing-border {
   animation: glow 1.5s infinite alternate;
   border-radius: 8px;
@@ -70,9 +75,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -93,12 +100,14 @@
 
 @keyframes fadeIn {
   from {
-      opacity: 0;
-      transform: translateY(10px); /* Adjust as needed */
+    opacity: 0;
+    transform: translateY(10px);
+    /* Adjust as needed */
   }
+
   to {
-      opacity: 1;
-      transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -164,7 +173,7 @@
 @layer base {
   * {
     @apply border-border;
-    @apply font-roboto;
+    @apply font-funnel;
   }
 
   body {
