@@ -395,7 +395,7 @@ export async function getUserIntend(prompt: string, chatHistory: IChatMemory, pl
 	// Ensure intent 1 is always present
 	intentArray = [1, ...intentArray];
 
-	return intentArray.includes(6) ? [6] : intentArray;
+	return intentArray
 }
 
 // intend list and user Id
@@ -613,7 +613,7 @@ async function findAndSuggestProduct(prompt: string, chatHistory: IChatMemory, s
 		- analyze it and choose accordingly
 `}
 
-	User Prompt: {prompt}
+	User Prompt: {prompt} (if prompt require using all other data then only use it. only focusing on answering this without over informing about data you have)
 	Chat Context: {longTerm}
 	User Specific memory: {shortTerm}
 	${chatHistory.isToolInventoryMemory && `Tool Inventory: ${chatHistory.isToolInventoryMemory}`}
@@ -826,7 +826,7 @@ async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, s
 
 	const productPrompt = `
 		Based on User Prompt And Chat Context generate DIY Product that are relavent to search in internet and return to user 
-		User Prompt: {prompt}
+		User Prompt: {prompt} 
 		Chat Context: {shortTerm}
 		User Specific: {longTerm}
 		${chatHistory.isToolInventoryMemory && `Tool Inventory: ${chatHistory.isToolInventoryMemory}`}
@@ -899,7 +899,7 @@ async function HandleGeneralResponse(prompt: string, chatHistory: IChatMemory, i
 		Based on the user's prompt and chat history, provide concise and relevant suggestions.
 	
 		User Context:
-		- Prompt: ${prompt}
+		- Prompt: ${prompt} (if prompt require using all other data then only use it. only focusing on answering this without over informing about data you have)
 		- Chat History: ${chatHistory.shortTermKey && chatHistory.shortTermKey.length > 0 ? chatHistory.shortTermKey : "No chat history available."}
 		- Specific Memory: ${chatHistory.longTermKey && chatHistory.longTermKey.length > 0 ? chatHistory.longTermKey : "No Specific Memory Available"}
 		${chatHistory.isToolInventoryMemory ? `- Tool Inventory: ${chatHistory.toolInventoryMemory}` : ''}
@@ -1271,7 +1271,8 @@ ${chatHistory.isToolInventoryMemory ? `Tool inventory is provided of existing to
 		});
 
 		try {
-			const parsedBudgetSlider = JSON.parse(budgetSlider);
+			console.log(parsedNeedOfBudgetSlider, "is here")
+			const parsedBudgetSlider = JSON.parse(budgetSlider.replace(/`/g, '').replace('json', '').replace('JSON', '').replace('Array:', '').trim());
 			socket.emit('budgetSlider', parsedBudgetSlider);
 		} catch (error: any) {
 			console.error('Error during budget slider creation:', error.message);

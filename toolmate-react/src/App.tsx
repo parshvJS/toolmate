@@ -26,7 +26,7 @@ import TermsOfService from "./_open/pages/legalDocs/TermAndCon";
 import PrivacyPolicy from "./_open/pages/legalDocs/PrivacyPolicy";
 import SafetyPolicy from "./_open/pages/legalDocs/SafetyPolicy";
 import ManageSub from "./_private/pages/ManageSub";
-import SubscriptionLayout  from "./_private/pages/subscription/SubscriptionLayout";
+import SubscriptionLayout from "./_private/pages/subscription/SubscriptionLayout";
 import Entry from "./_private/pages/Entry";
 import OverDue from "./components/custom/OverDue";
 
@@ -67,7 +67,7 @@ function App() {
             <Route path="/matey/:sessionId" element={<ChatPage />} />
             <Route path="/c" element={<ChatPageNew />} />
           </Route>
-        <Route path="/manage-subscription" element={<SubscriptionLayout/>}/>
+          <Route path="/manage-subscription" element={<SubscriptionLayout />} />
         </Route>
         <Route path="/entry" element={<Entry />} />
         <Route path="/overdue" element={<OverDue />} />

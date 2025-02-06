@@ -42,41 +42,30 @@ const llm = new ChatOpenAI({
     temperature: 0.1, // Lower temperature for more consistent responses
     maxRetries: 3, // Add retries for reliability
 });
-
 // Cached prompt templates for better performance
 const longTermMemoryTemplate = PromptTemplate.fromTemplate(`
-    Determine if this interaction requires long-term memory storage.
-    Return ONLY 'true' if the prompt includes:
-    - Personal preferences or settings
-    - Context necessary for future interactions
-    - Significant decisions or choices
-    - Persistent requirements or constraints
-    - Custom configurations
-    - The context is minimal or empty
-
-    Return ONLY 'false' for:
-    - General questions or inquiries
-    - Statements without long-term relevance
-    - Requests for explanations
-    - Temporary or session-specific instructions
+    Analyze the user prompt and determine if it contains information that should be stored in long-term memory.
+    
+    Return ONLY 'true' or 'false' based on the following criteria:
+    - If the prompt contains information that should be remembered permanently, return 'true'
+    - If the prompt is general or not relevant for future conversations, return 'false'
 
     User Prompt: {prompt}
     Current Chat Memory: {chatMemory}
 `);
 
 const shortTermMemoryTemplate = PromptTemplate.fromTemplate(`
-    Determine if this interaction requires short-term memory storage.
+    Analyze the user prompt and determine if it contains information that should be stored in short-term memory.
     Return ONLY 'true' if the prompt includes:
     - Temporary instructions relevant to this session
     - Task sequences specific to the current session
     - Context pertinent to the ongoing session
-    - The context is minimal or empty
+    - Any information that could be useful for the current session
 
     Return ONLY 'false' if the prompt:
     - Contains general knowledge or information requests
-    - Does not impact the session context
     - Is already stored in long-term memory
-    
+
     User Prompt: {prompt}
     Current Chat Memory: {chatMemory}
 `);
@@ -140,8 +129,8 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
     console.log("New long term memory:", newLongTermMemory);
     console.log("New short term memory:", newShortTermMemory);
 
-    let updatedLongTermMemory = newLongTermMemory;
-    let updatedShortTermMemory = newShortTermMemory;
+    let updatedLongTermMemory: any = newLongTermMemory;
+    let updatedShortTermMemory: any = newShortTermMemory;
 
     if (isLongTerm && isShortTerm) {
         const [newLongTerm, newShortTerm] = await Promise.all([
@@ -151,22 +140,22 @@ async function memory(prompt: string, shortTermMemory: string, longTermMemory: s
         console.log("Updated long term memory:", newLongTerm);
         console.log("Updated short term memory:", newShortTerm);
         if (newLongTerm.success) {
-            updatedLongTermMemory = JSON.stringify(newLongTerm.data);
+            updatedLongTermMemory = newLongTerm.data;
         }
         if (newShortTerm.success) {
-            updatedShortTermMemory = JSON.stringify(newShortTerm.data);
+            updatedShortTermMemory = newShortTerm.data;
         }
     } else if (isLongTerm) {
         const newLongTerm = await updateChatMemory(prompt, newLongTermMemory, 'long');
         console.log("Updated long term memory:", newLongTerm);
         if (newLongTerm.success) {
-            updatedLongTermMemory = JSON.stringify(newLongTerm.data);
+            updatedLongTermMemory = newLongTerm.data;
         }
     } else if (isShortTerm) {
         const newShortTerm = await updateChatMemory(prompt, newShortTermMemory, 'short');
         console.log("Updated short term memory:", newShortTerm);
         if (newShortTerm.success) {
-            updatedShortTermMemory = JSON.stringify(newShortTerm.data);
+            updatedShortTermMemory = newShortTerm.data;
         }
     }
 
@@ -394,22 +383,17 @@ export async function updateChatMemory(prompt: string, chatMemory: string, memor
         - Persistent requirements or constraints
         - Key facts that might be needed in future conversations
         
-        DO NOT include:
-        - Temporary context or instructions
-        - Session-specific details
-        - General conversation flow
-        - Information already in memory
-
         GUIDELINES:
-        - Each memory item must be self-contained and understandable without context
         - Be extremely specific and precise
         - Format as complete sentences
-        - Only extract NEW information not present in current memory
+        - create whole new full memory which combine both old and new memory. so dont just create new item but create whole new chat memory with exisiting and new memory items
+        - you can perform Addition and deletion of memory element. but prefer not to till user not explicitly tell to
         
         OUTPUT FORMAT:
         Return ONLY an array of strings: ["memory item 1", "memory item 2"]
-        No explanations or additional text.
-
+        No explanations or additional text just array as given format.
+        
+        ["existing memory item1" ,"exisitng memory item 2 ","....","new Item"]
         User Prompt: {prompt}
         Current Memory: {chatMemory}
         `;
@@ -425,9 +409,6 @@ export async function updateChatMemory(prompt: string, chatMemory: string, memor
         - Immediate user needs or requests
         
         DO NOT include:
-        - Long-term preferences or settings
-        - Permanent configurations
-        - Information needed for future sessions
         - Information already in memory
 
         GUIDELINES:
@@ -437,10 +418,11 @@ export async function updateChatMemory(prompt: string, chatMemory: string, memor
         - make an detailed but brief sentence of the clear memory information
         - Only extract NEW information not present in current memory
         
+        
         OUTPUT FORMAT:
         Return ONLY an array of strings: ["memory item 1", "memory item 2"]
         No explanations or additional text.
-
+        make sure the new array dont take reference from existing memory ,just create new memory combining everything
         User Prompt: {prompt}
         Current Memory: {chatMemory}
         `;
@@ -486,19 +468,20 @@ export async function updateChatMemory(prompt: string, chatMemory: string, memor
             };
         }
 
-        // Remove duplicates and empty items
-        const validNewMemory = newMemory.filter(item =>
+        // Combine old and new memory items, remove duplicates and empty items
+        const combinedMemory = [...oldMemory, ...newMemory];
+        const validMemory = combinedMemory.filter((item, index) =>
             item &&
             typeof item === 'string' &&
             item.trim() !== '' &&
-            !oldMemory.includes(item.trim())
+            combinedMemory.indexOf(item) === index
         ).map(item => item.trim());
 
-        console.log("Valid new memory items:", validNewMemory);
+        console.log("Valid combined memory items:", validMemory);
 
         return {
             success: true,
-            data: [...oldMemory, ...validNewMemory],
+            data: validMemory,
         };
     } catch (error: any) {
         console.error('Error updating chat memory:', error);
@@ -518,3 +501,12 @@ export {
     TOKEN_LIMITS,
     MEMORY_CONFIG
 };
+
+
+
+
+
+
+
+
+

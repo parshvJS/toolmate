@@ -143,3 +143,18 @@ export function getMatchingPrefix(str: string) {
 }
 
 
+export function cleanMemory(memoryString: string): string[] {
+    try {
+        // Fix over-escaped JSON string
+        let parsed = JSON.parse(memoryString); // First parse
+        if (typeof parsed === "string") {
+            parsed = JSON.parse(parsed); // Second parse (if needed)
+        }
+
+        // Ensure it's an array
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error("Error parsing long-term memory:", error, memoryString);
+        return [];
+    }
+}

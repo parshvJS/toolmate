@@ -44,16 +44,8 @@ async function startRedisConnection(): Promise<Redis> {
 // Store both the value and its metadata in Redis
 async function setRedisData(key: string, value: any, expiry: number = 3600) {
     try {
-        // Create a metadata key that won't expire
-        const metaKey = `meta:${key}`;
-        const metadata = {
-            value: value,
-            expiresAt: Date.now() + (expiry * 1000)
-        };
 
-        // Store the metadata without expiration
-        await redisInstance.set(metaKey, JSON.stringify(metadata));
-
+        console.log('Setting data to Redis:', key, value, expiry);
         // Store the actual value with expiration as before
         const data = await redisInstance.set(key, JSON.stringify(value), 'EX', expiry);
 
@@ -68,6 +60,7 @@ async function getRedisData(key: string) {
     try {
         const data = await redisInstance.get(key);
         if (data) {
+            console.log('Got data from Redis:', key, JSON.parse(data));
             return {
                 success: true,
                 data: JSON.parse(data)
@@ -85,6 +78,8 @@ async function getRedisData(key: string) {
         };
     }
 }
+
+
 
 // Initialize Redis connection and start cleanup
 (async () => {
@@ -129,6 +124,7 @@ async function deleteRedisData(key: string) {
 
 async function storeDataTypeSafe(key: string, value: any, ttl: number = 3600) {
     try {
+        console.log("Store arrayMatch", key, value, ttl);
         await redisInstance.set(key, value, 'EX', ttl);
         return true;
     } catch (error: any) {

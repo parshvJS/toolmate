@@ -9,7 +9,7 @@ dotenv.config();
 
 
 const kafka = new Kafka({
-	brokers: ['kafka-116e7a49-parshvaiven2-fbb8.l.aivencloud.com:18672'],
+	brokers: ['kafka-309b0cce-parshvsheth2006-9a06.k.aivencloud.com:28353'],
 	ssl: {
 		ca: [fs.readFileSync(path.resolve('./ca.pem'), 'utf-8')],
 	},
@@ -17,8 +17,8 @@ const kafka = new Kafka({
 		//   username: process.env.KAFKA_USERNAME!,
 		//   password: process.env.KAFKA_PASSWORD!,
 		username: 'avnadmin',
-		password: 'AVNS_2sqOM_QMVXKQQiL7cXk',
-		mechanism: 'plain',	
+		password: 'AVNS_dMCR688RNZ7WyuZZ4DR',
+		mechanism: 'plain',
 	},
 });
 
@@ -72,7 +72,7 @@ export async function produceNewMessage(
 			}
 		]
 	});
-	
+
 	return true;
 }
 
@@ -117,7 +117,7 @@ export async function startNewMessageConsumer() {
 					isProductSuggested,
 					isMateyProduct,
 					isBunningsProduct,
-					productSuggestionList:productSuggestionList,
+					productSuggestionList: productSuggestionList,
 					mateyProduct,
 					bunningsProductList: bunningsProductList,
 					isCommunitySuggested,
@@ -180,7 +180,7 @@ export async function startMessageConsumer() {
 					return;
 				}
 
-		
+
 				// Insert message into the database
 				await Chat.create({
 					message: msg,

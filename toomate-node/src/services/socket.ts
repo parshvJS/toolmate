@@ -11,9 +11,10 @@ import { UserPayment } from "../models/userPayment.model.js";
 import { Chat } from "../models/chat.model.js";
 import User from "../models/user.model.js";
 import UserMemory from "../models/userMemory.model.js";
-import { memory } from "./memory.js";
+import { isLongTermMemoryNeeded, memory, updateChatMemory } from "./memory.js";
 import UserToolInventory from "../models/userToolInventory.model.js";
 import UserChat from "../models/userChat.model.js";
+import { cleanMemory } from "../utils/utilsFunction.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -61,14 +62,17 @@ export async function handleSocketSerivce(socket: Socket) {
             const userPlanCacheKey = `USER-PAYMENT-${data.userId}`;
             let currentPlan = 0;
             let mongoUserId;
-            const redisUserData = await getRedisData(userPlanCacheKey);
+            let redisUserData = await getRedisData(userPlanCacheKey);
+            let coreUserId = ""
+            let longTermMem =""
             if (redisUserData.success) {
                 const plan = JSON.parse(redisUserData.data).planAccess;
                 currentPlan = plan[2] ? 2 : plan[1] ? 1 : 0;
                 mongoUserId = JSON.parse(redisUserData.data).id;
+                coreUserId = JSON.parse(redisUserData.data).id
             } else {
                 await connectDB();
-                const user = await User.findOne({ clerkUserId: data.userId });
+                const user = await User.findOne({ clerkUserId: data.userId }).lean();
                 if (!user) throw new Error('User not found');
 
                 const userPlan = await UserPayment.findOne({ userId: user._id });
@@ -76,126 +80,89 @@ export async function handleSocketSerivce(socket: Socket) {
 
                 await setRedisData(userPlanCacheKey, userPlan, 3600);
                 currentPlan = userPlan.planAccess[2] ? 2 : userPlan.planAccess[1] ? 1 : 0;
-
+                coreUserId = JSON.stringify(user._id)
                 mongoUserId = user._id;
             }
-
+            console.log(coreUserId,"is here ")
             
-            // chat memory
-            const shortTermKey = `USER-CHAT-${data.sessionId}`;
-            const longTermKey = `USER-MEM-${data.userId}`;
-            let redisShortTermMemory = await getRedisData(shortTermKey);
-            let redisLongTermMemory = currentPlan === 2 ? await getRedisData(longTermKey) : null;
-            console.log("redisShortTermMemory", redisShortTermMemory, "redisLongTermMemory", redisLongTermMemory, typeof redisLongTermMemory, "type", typeof redisShortTermMemory);
-            
-            if (!redisShortTermMemory.success || redisShortTermMemory.data === null) {
-                console.log("Short term memory not found in Redis, fetching from database...");
-                await connectDB();
-                const dbChatHistory = await UserChat.findOne({ sessionId: data.sessionId }).sort({ _id: -1 }).limit(30).lean();
-                const chatMemory = await UserMemory.findOne({ userId: mongoUserId }).lean();
-                console.log("chatMemory", chatMemory, "dbChatHistory", dbChatHistory);
-                if(dbChatHistory){
-                    await setRedisData(shortTermKey, dbChatHistory.aiSessionMemory, 3600);
-                    redisShortTermMemory = { success: true, data: dbChatHistory.aiSessionMemory };
+            // handle long term
+            if(currentPlan === 2) {
+
+                const existingMemory = await UserMemory.findOne({userId:coreUserId});
+                if(existingMemory){
+                    const isLongTermMemory = await isLongTermMemoryNeeded(data.message, existingMemory.memory.join(" "));
+                    
+                    if(isLongTermMemory){
+                        const newMem = await updateChatMemory(data.message, existingMemory?.memory ? JSON.stringify(existingMemory.memory) : "", "long");
+                        longTermMem = newMem.data?.join() || ""
+                        console.log(newMem,"is here!");
+                        existingMemory.memory = newMem.data || [];
+                        await existingMemory.save();
+                    }
+
                 }
-                if(chatMemory){
-                    await setRedisData(longTermKey, chatMemory.memory, 3600);
-                    redisLongTermMemory = { success: true, data: chatMemory.memory };
+                else{
+                    await UserMemory.create({
+                        userId:coreUserId,
+                        memory:[]
+                    })
                 }
 
-               
-            } else {
-                console.log("Short term memory found in Redis:", redisShortTermMemory.data);
-                if (currentPlan === 2 && redisLongTermMemory?.success) {
-                    console.log("Long term memory found in Redis:", redisLongTermMemory.data);
-                }
+                // let existingMemory = await UserMemory.findOne({ userId: coreUserId });
+                // console.log(existingMemory, "existing memory");
+
+                // if (isLongTermMemory) {
+                //     const newMem = await updateChatMemory(data.message, existingMemory?.memory ? existingMemory.memory.join(' ') : "", "long");
+                //     console.log(newMem, "is new memory");
+
+                //     if (existingMemory) {
+                //         await UserMemory.findOneAndUpdate({
+                //             userId: coreUserId
+                //         }, {
+                //             memory: newMem.data
+                //         });
+                //     } else {
+                //         await UserMemory.create({
+                //             userId: coreUserId,
+                //             memory: newMem.data
+                //         });
+                //     }
+                // }
             }
 
-            if (currentPlan === 2 && (!redisLongTermMemory || !redisLongTermMemory.success)) {
-                await connectDB();
-                const dbLongTermMemory = await UserMemory.findOne({ userId: mongoUserId });
-                if (dbLongTermMemory) {
-                    await setRedisData(longTermKey,dbLongTermMemory.memory, 3600);
-                    redisLongTermMemory = { success: true, data: dbLongTermMemory.memory };
-                }
-                if(!dbLongTermMemory){
-                    await UserMemory.create({ userId: mongoUserId, memory: [] });
-                    await setRedisData(longTermKey, "[]", 3600);
-                    redisLongTermMemory = { success: true, data: [] };
-                }
-            }
 
-            let _memory;
-            if (redisShortTermMemory.success && (currentPlan === 1 || (currentPlan === 2 && redisLongTermMemory?.success))) {
-                _memory = await memory(data.message, redisShortTermMemory.data, redisLongTermMemory?.data || "", currentPlan);
-            } else {
-                _memory = await memory(data.message, "", "", currentPlan as 1 | 2);
-            }
+            // handle generatal
+            const chatData = await Chat.find({ sessionId: data.sessionId }).sort({ createdAt: -1 }).limit(10);
+            console.log("chatData", chatData,longTermMem);
 
-            if (_memory.shortTermMemory.length !== 0 && _memory.flags.isShortTerm) {
-                console.log("shortTermMemory", _memory.shortTermMemory);
-                await storeDataTypeSafe(shortTermKey, _memory.shortTermMemory, 3600);
-            }
-
-            if (currentPlan === 2 && _memory.longTermMemory && _memory.longTermMemory.length !== 0 && _memory.flags.isLongTerm) {
-                await storeDataTypeSafe(longTermKey, _memory.longTermMemory, 3600);
-            }
-
-            const wholeMemory:IChatMemory = {
-                longTermKey: _memory.flags.isLongTerm 
-                    ? _memory.longTermMemory || " " 
-                    : JSON.stringify(redisLongTermMemory?.data) || " ",
-                shortTermKey: _memory.flags.isShortTerm 
-                    ? _memory.shortTermMemory || " " 
-                    : JSON.stringify(redisShortTermMemory?.data) || " "
+            const wholeMemory: IChatMemory = {
+                longTermKey: longTermMem,
+                shortTermKey: JSON.stringify(chatData.map(item => {
+                    const chatItem: any = {
+                        role: item.role,
+                        message: item.message,
+                    };
+                    if (item.isBunningsProduct) {
+                        chatItem.bunnngsProduct = item.bunningsProductList.map(product => product.categoryName);
+                    }
+                    if (item.isMateyProduct) {
+                        chatItem.aiGeneratedProducts = item.mateyProduct.map(product => product.categoryName);
+                    }
+                    return chatItem;
+                })),
             };
 
-            try {
-                console.log("Hey, Cortana. Wow. Hey, Cortana. memory parsed", JSON.parse(_memory.shortTermMemory), JSON.parse(_memory.longTermMemory || "[]"));
-            } catch (error:any) {
-                console.error('Error processing message:', error);
-                socket.emit('error', {
-                    message: error.message || 'An error occurred while processing your message',
-                    success: false
-                });
-                
-            }
-            
-            console.log("wholeMemory:: - :: -- :: --", _memory.longTermMemory, _memory.shortTermMemory, wholeMemory);
-            // store in database
-            await Promise.all([
-                UserChat.findOneAndUpdate({
-                    sessionId: data.sessionId
-                }, {
-                    $push: { aiSessionMemory: { $each: JSON.parse(_memory.shortTermMemory) } }
-                }, { new: true, upsert: true }),
-
-                UserMemory.findOneAndUpdate({
-                    userId: mongoUserId
-                }, {
-                    $push: { memory: { $each: JSON.parse(_memory?.longTermMemory || '[]') } }
-                }, { new: true, upsert: true })
-            ]);
-
-            console.log("wholeMemory:: - :: -- :: --", wholeMemory);
-            const redisPromises = [
-                setRedisData(`USER-CHAT-${data.sessionId}`, wholeMemory.shortTermKey, 3600)
-            ];
-            if (currentPlan === 2) {
-                redisPromises.push(setRedisData(`USER-MEM-${data.userId}`, wholeMemory.longTermKey, 3600));
-            }
-            await Promise.all(redisPromises);
+            console.log("wholeMemory:: - :: -- :: -- 111111", wholeMemory);
 
             // tool inventory access
 
             let isToolInventoryAccess = false;
             if (currentPlan === 2) {
                 try {
-
                         // get the tool inventory map
                        let userToolmap = ``;
                        
-                        const redisDataToolsMap  =await getRedisData(`USER-TOOL-${data.userId}`);
+                        const redisDataToolsMap = await getRedisData(`USER-TOOL-${data.userId}`);
                         if(redisDataToolsMap.success) {
                             console.log('Tool map found in Redis:', redisDataToolsMap.data);
                             userToolmap = redisDataToolsMap.data;
