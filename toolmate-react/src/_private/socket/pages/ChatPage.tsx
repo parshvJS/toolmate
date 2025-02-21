@@ -187,7 +187,7 @@ export function ChatPage() {
         }
     }, [isLoadingMore, hasMore, pagination]);
 
-    console.log(currActiveCategory,currActiveTab)
+    console.log(currActiveCategory, currActiveTab)
 
     useEffect(() => {
         async function fetchHistory() {

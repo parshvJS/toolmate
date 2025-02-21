@@ -15,6 +15,7 @@ import { isLongTermMemoryNeeded, memory, updateChatMemory } from "./memory.js";
 import UserToolInventory from "../models/userToolInventory.model.js";
 import UserChat from "../models/userChat.model.js";
 import { cleanMemory } from "../utils/utilsFunction.js";
+import TempSession from "@/models/preview/session.model.js";
 
 export async function handleSocketSerivce(socket: Socket) {
 
@@ -48,10 +49,21 @@ export async function handleSocketSerivce(socket: Socket) {
 
     // socket.on('preview',async ())
 
+    socket.on("freeUserMessage",async (data:{
+        prompt:string,
+        id:string
+    })=>{
+        produceNewMessage(data.prompt, data.id, false, false, false, [], [], [], false, [], "user");
+        const prevChat = await Chat.find({sessionId:data.id}).sort({createdAt:-1}).limit(5);
 
+        
+
+
+    })   
 
     socket.on('userMessage', async (data: INewUserMessage) => {
         try {
+            
             console.log("budgetDetails in socket", "budgetDetails", data.budgetSliderValue, "isBudgetSliderChangable", data.isBudgetSliderChangable, "isBudgetSliderPresent", data.isBudgetSliderPresent);
             // Initialize controller for stream handling
 
@@ -108,26 +120,6 @@ export async function handleSocketSerivce(socket: Socket) {
                     })
                 }
 
-                // let existingMemory = await UserMemory.findOne({ userId: coreUserId });
-                // console.log(existingMemory, "existing memory");
-
-                // if (isLongTermMemory) {
-                //     const newMem = await updateChatMemory(data.message, existingMemory?.memory ? existingMemory.memory.join(' ') : "", "long");
-                //     console.log(newMem, "is new memory");
-
-                //     if (existingMemory) {
-                //         await UserMemory.findOneAndUpdate({
-                //             userId: coreUserId
-                //         }, {
-                //             memory: newMem.data
-                //         });
-                //     } else {
-                //         await UserMemory.create({
-                //             userId: coreUserId,
-                //             memory: newMem.data
-                //         });
-                //     }
-                // }
             }
 
 

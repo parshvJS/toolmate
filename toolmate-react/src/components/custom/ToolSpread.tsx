@@ -18,11 +18,13 @@ import CustomSlider from "@/components/custom/Slider"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "../ui/carousel"
 import { getImageUrl } from "@/lib/utils"
 import ProductDialog from "./ProductDialog"
+import { useLocation } from "react-router-dom"
 
 export function ToolSpread() {
     const socket = useSocket();
     const { userData } = useContext(UserContext);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const {pathname} = useLocation()
     const {
         sliderValue,
         breakpoints,
@@ -40,7 +42,7 @@ export function ToolSpread() {
         setSliderValue,
     } = useContext(RightSidebarContext);
 
-    const isBudgetSliderAccessable = userData?.planAccess[2]
+    const isBudgetSliderAccessable = pathname == '/preview' ? true :  userData?.planAccess[2]
 
     const handleBudgetChange = (value: boolean) => {
         socket?.emit("tempTest", {

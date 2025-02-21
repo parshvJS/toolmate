@@ -1,7 +1,10 @@
+import { ChatPage } from "@/_private/socket/pages/ChatPage";
+import { ToolSpread } from "@/components/custom/ToolSpread";
+import { RightSidebarContext } from "@/context/rightSidebarContext";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { LoaderPinwheel, ShieldX } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 
 
@@ -18,7 +21,28 @@ export default function PreviewChat() {
   const [isSessionValid, setIsSessionValid] = useState(true)
   const [isFreePlanOver, setIsFreePlanOver] = useState(false)
   const [currentCredit, setCurrentCredit] = useState(0)
+  const {
+    sliderValue,
+    breakpoints,
+    isSliderBreakPointEmpty,
+    setIsBudgetOn,
+    isBudgetOn,
+    totalProductSuggestions,
+    aiProduct,
+    notificationRemove,
+    vendorProduct,
+    bunningProduct,
+    notification,
+    isBudgetChangable,
+    setIsBudgetChangable,
+    setSliderValue,
+    setBreakpoints
+  } = useContext(RightSidebarContext);
+
+
   // create new session 
+
+
   async function getSessionDetails() {
     setIsSessionLoading(true)
     try {
@@ -35,7 +59,7 @@ export default function PreviewChat() {
       if (res.data.isSessionOver) {
         setIsFreePlanOver(true)
       }
-      else{
+      else {
         setCurrentCredit(res.data.credit)
       }
     } catch (error) {
@@ -63,12 +87,6 @@ export default function PreviewChat() {
     }
   }
 
-  // use effect
-  useEffect(() => {
-    getSessionDetails()
-  }, [])
-
-
   // JSX Bounday
   if (isSessionLoading) {
     return (
@@ -93,10 +111,15 @@ export default function PreviewChat() {
     )
   }
 
+  useEffect(() => {
+
+  }, [])
+
+
   return (
     <div className="flex items-center justify-center  w-full h-full">
       <div className="max-w-6xl">
-        asdas
+        <ToolSpread />
       </div>
     </div>
   )

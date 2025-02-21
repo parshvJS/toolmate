@@ -810,13 +810,6 @@ export async function summarizeToTokenLimit(text: string, maxTokens: number): Pr
 }
 
 
-
-
-
-
-
-
-
 // get products from bunnigns
 
 async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, sessionId: string, isBudgetAvailable: boolean, maxBudget: number, minBudget: number, socket: Socket) {
