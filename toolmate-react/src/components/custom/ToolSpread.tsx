@@ -24,7 +24,7 @@ export function ToolSpread() {
     const socket = useSocket();
     const { userData } = useContext(UserContext);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const {pathname} = useLocation()
+    const { pathname } = useLocation()
     const {
         sliderValue,
         breakpoints,
@@ -42,7 +42,7 @@ export function ToolSpread() {
         setSliderValue,
     } = useContext(RightSidebarContext);
 
-    const isBudgetSliderAccessable = pathname == '/preview' ? true :  userData?.planAccess[2]
+    const isBudgetSliderAccessable = pathname == '/preview' ? true : userData?.planAccess[2]
 
     const handleBudgetChange = (value: boolean) => {
         socket?.emit("tempTest", {
@@ -98,20 +98,17 @@ export function ToolSpread() {
             </div>
 
             {/* Budget Selection Section */}
-            {isBudgetSliderAccessable ? (
-                <BudgetSection
-                    isSliderBreakPointEmpty={isSliderBreakPointEmpty}
-                    isBudgetOn={isBudgetOn}
-                    onBudgetChange={handleBudgetChange}
-                    isBudgetChangable={isBudgetChangable}
-                    onBudgetAdjustChange={handleBudgetAdjustChange}
-                    breakpoints={breakpoints}
-                    sliderValue={sliderValue}
-                    setSliderValue={setSliderValue}
-                />
-            ) : (
-                <LockedBudgetSection />
-            )}
+            <BudgetSection
+                isSliderBreakPointEmpty={isSliderBreakPointEmpty}
+                isBudgetOn={isBudgetOn}
+                onBudgetChange={handleBudgetChange}
+                isBudgetChangable={isBudgetChangable}
+                onBudgetAdjustChange={handleBudgetAdjustChange}
+                breakpoints={breakpoints}
+                sliderValue={sliderValue}
+                setSliderValue={setSliderValue}
+            />
+
         </div>
     )
 }

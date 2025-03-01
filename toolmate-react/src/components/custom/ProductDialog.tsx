@@ -649,7 +649,7 @@ export default function ProductDialog({
                                     setSelectedCategory(bunningsProduct[0]?.categoryName || "")
                                 }
                                 else if (value == "vendor") {
-                                    setSelectedCategory(vendorProduct[0]?.categoryName || "")
+                                    setSelectedCategory(vendorProduct && vendorProduct[0]?.categoryName ? vendorProduct[0]?.categoryName : "")
                                 }
                                 else if (value == "matey-made") {
                                     setSelectedCategory(mateyMadeProduct[0]?.categoryName || "")

@@ -53,8 +53,9 @@ function App() {
         <Route path="/safety-policy" element={<SafetyPolicy />} />
 
         {/* Preview page can be accessed without authentication but without standard navigation */}
-        <Route path="/preview" element={<PreviewChat />} />
-
+        <Route element={<SocketLayout />}>
+          <Route path="/preview" element={<PreviewChat />} />
+        </Route>
         {/* Private pages */}
         <Route element={<DashaboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />

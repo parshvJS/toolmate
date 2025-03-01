@@ -26,11 +26,11 @@ export default {
         '7xl': '64px'
       },
       gridTemplateColumns: {
-        sidebar: '310px auto',
+        sidebar: '330px auto',
         'sidebar-collapsed': '64px auto'
       },
       gridTemplateColumnsMain: {
-        sidebar: '270px auto',
+        sidebar: '300px auto',
         'sidebar-collapsed': '64px auto'
       },
       gridTemplateColumnsRightSidebar: {

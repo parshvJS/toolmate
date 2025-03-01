@@ -24,9 +24,9 @@ const PORT = 5000;
 
 // Middleware
 app.use(cors({
-	origin: '*',
+	origin: 'http://localhost:5173',
 	methods: ['GET', 'POST', 'PUT', 'DELETE'],
-	// credentials: true, // Allow credentials
+	credentials: true, // Allow credentials
 }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: '50kb' }));
@@ -45,7 +45,7 @@ app.use('/api/v1/admin', admin)
 app.use('/api/v1', community);
 // app.use('/api/v1', paidService)
 app.use('/api/v1/adsense', adsense)
-app.use('/api/v1/preview',previewRoute)
+app.use('/api/v1/preview', previewRoute)
 app.get('/', (req, res) => {
 	res.send('Hello World');
 });

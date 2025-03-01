@@ -11,6 +11,7 @@ dotenv.config();
 const kafka = new Kafka({
 	brokers: ['kafka-1469a6a3-parshvpal-470c.i.aivencloud.com:12555'],
 	ssl: {
+		rejectUnauthorized: false, // Set to true if you have a valid CA cert
 		ca: [fs.readFileSync(path.resolve('./ca.pem'), 'utf-8')],
 	},
 	sasl: {
@@ -20,8 +21,10 @@ const kafka = new Kafka({
 		password: 'AVNS_Qg_SxTRTPJCSVzqmSyP',
 		mechanism: 'plain',
 	},
+	logLevel: 2, // Debug
+	connectionTimeout: 10000,  // 10s
+	requestTimeout: 30000,
 });
-
 let producer: null | Producer = null;
 
 export async function createProducer() {
@@ -33,6 +36,7 @@ export async function createProducer() {
 	return producer;
 }
 
+console.log(fs.readFileSync(path.resolve('./ca.pem'), 'utf-8'))
 
 // this message producer is for premium or logged in user only
 export async function produceNewMessage(

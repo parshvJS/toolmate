@@ -836,7 +836,7 @@ async function handleBunningsProduct(prompt: string, chatHistory: IChatMemory, s
 		- Return only the product names in an array (response should contain only an array that can be parsed to JSON):
 		- No Comment or additional text
 		- give in one linear plain text response
-
+		- try to make search terms that dont gives toys and kids related stuff. if not asked for.
 		${chatHistory.isToolInventoryMemory && `
 			- there is existing tool inventory user 
 			- analyze it and choose products accordingly

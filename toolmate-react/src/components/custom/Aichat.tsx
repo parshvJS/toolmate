@@ -46,11 +46,11 @@ export default function Aichat({
         }
       }, 1000);
     };
-    
+
     handleStreaming();
   }, [message, productRendered]);
-  
-  console.log(isStreaming,showWorkerQueue,productRendered,totalProducts,"isStreaming,showWorkerQueue,productRendered,totalProducts")
+
+  console.log(isStreaming, showWorkerQueue, productRendered, totalProducts, "isStreaming,showWorkerQueue,productRendered,totalProducts")
 
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function Aichat({
   return (
     <div className="flex flex-col w-fit" key={id}>
       <div className="flex items-start gap-2 justify-start">
-        <img src="/assets/icons/blur-ball.svg" alt="matey" width={45} />
+        <img src="/assets/matey-emoji/smile.svg" alt="matey" width={45} className="!rotate-3" />
         <div className="font-roboto custom-p flex flex-col w-fit bg-gray-100 p-3 rounded-md">
           {message === "" ? (
             <div className="flex flex-col gap-4 w-full">
@@ -142,7 +142,7 @@ export default function Aichat({
 
 
           {
-            (!isBunningLoading && !isProductLoading && !isAiProductLoading && (bunningsData?.length > 0 || (productData || [] )?.length > 0 || aiData?.length > 0)) && (
+            (!isBunningLoading && !isProductLoading && !isAiProductLoading && (bunningsData?.length > 0 || (productData || [])?.length > 0 || aiData?.length > 0)) && (
               <div
                 onClick={() => {
                   setDialogOpen(!isDialogOpen)

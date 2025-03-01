@@ -48,18 +48,57 @@ export async function handleSocketSerivce(socket: Socket) {
 
 
     // socket.on('preview',async ())
-
+    // tool Inventory : {name,description} []
     socket.on("freeUserMessage",async (data:{
         prompt:string,
-        id:string
+        id:string,
+        toolInventory:string[]
     })=>{
+        const wholeMemory:IChatMemory = {
+            longTermKey:'',
+            shortTermKey:'',
+            toolInventoryMemory:[''],
+            isToolInventoryMemory:false
+        }
         produceNewMessage(data.prompt, data.id, false, false, false, [], [], [], false, [], "user");
         const prevChat = await Chat.find({sessionId:data.id}).sort({createdAt:-1}).limit(5);
-
         
+        // determine need ot tool inveotry
+        const isToolInventoryAccessNeeded_ = await isToolInventoryAccessNeeded(data.prompt,{
+            shortTermKey: JSON.stringify(prevChat),
+            longTermKey:'',
+        },
+        JSON.stringify(data.toolInventory)
+    )
+    if(isToolInventoryAccessNeeded_){
+        wholeMemory.isToolInventoryMemory=true;
+        wholeMemory.toolInventoryMemory=data.toolInventory
+    }
 
+    wholeMemory.longTermKey='';
+    wholeMemory.shortTermKey=JSON.stringify(prevChat);
+
+        // determine tool need
+        const intendList = await getUserIntend(data.prompt, wholeMemory, 2,null);
+    console.log(intendList,"k8912739")
+
+    const messageStream = await executeIntend(
+        data.prompt,
+        wholeMemory,
+        data.id,
+        intendList,
+        data.id,
+        2,
+        false,
+        0,
+        socket
+    );
+    console.log(messageStream,"is here 1234")
+    
 
     })   
+
+    
 
     socket.on('userMessage', async (data: INewUserMessage) => {
         try {
@@ -263,7 +302,9 @@ export async function handleSocketSerivce(socket: Socket) {
                         0,
                         socket
                     );
-
+                    if (data.isBudgetSliderChangable) {
+                        await FindNeedOfBudgetSlider(data.message, wholeMemory, socket);
+                    }
                     if (messageStream) {
 
                         await Promise.all([
@@ -294,6 +335,9 @@ export async function handleSocketSerivce(socket: Socket) {
                                 "ai",
                             )
                         ]);
+
+
+                       
                     }
                     break;
                 }
