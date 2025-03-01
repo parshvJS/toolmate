@@ -24,7 +24,7 @@ const PORT = 5000;
 
 // Middleware
 app.use(cors({
-	origin: 'http://localhost:5173,https://toolmate-m.vercel.app',
+	origin: 'https://toolmate-m.vercel.app',
 	methods: ['GET', 'POST', 'PUT', 'DELETE'],
 	credentials: true, // Allow credentials
 }));
