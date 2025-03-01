@@ -73,7 +73,7 @@ export default function PreviewChat() {
         })
       }
       setCurrentCredit(res.data.credit || res.data.creditLeft)
-      if(res.data.isTerminate){
+      if (res.data.isTerminate) {
         setIsTerminated(res.data.isTerminate)
       }
     } catch (error) {
